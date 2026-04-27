@@ -1,12 +1,12 @@
 #!name=YouTube Self Enhance iOS
-#!desc=完全自写 YouTube 去广告模块。iOS 安装兼容版，不含第三方脚本。
+#!desc=完全自写可审计 YouTube 增强：JSON 去广告 + iOS player protobuf 去广告、后台播放、画中画。不含第三方脚本。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=屏蔽上传按钮:true,屏蔽选段按钮:true,屏蔽Shorts按钮:false,字幕翻译语言:off,歌词翻译语言:off,启用调试模式:false
-#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off] \n\nprotobuf 部分采用通用 wire-format 清理广告字段；后台播放/画中画的 iOS protobuf 字段仍需 player 样本继续完善。
-#!date=2026-04-27
+#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off] \n\nprotobuf 部分仅改已知 player 字段：adPlacements/adSlots/pageadViewthroughconversion 与后台播放/画中画能力。
+#!date=2026-04-28
 
 [Rule]
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT

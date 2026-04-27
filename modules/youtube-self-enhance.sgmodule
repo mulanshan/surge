@@ -1,8 +1,8 @@
 #!name=YouTube Self Enhance
-#!desc=自写 YouTube 安全增强 v4：UDP/QUIC 拒绝 + JSON 响应去广告 + PiP/后台播放注入。覆盖 youtubei.googleapis.com / www.youtube.com 上的 player / get_watch / next / browse 等关键端点。Protobuf 响应不修改。
+#!desc=完全自写可审计 YouTube 增强：JSON 去广告 + player protobuf 去广告、后台播放、画中画。不含第三方脚本。
 #!author=mulanshan
 #!category=Enhance
-#!date=2026-04-27
+#!date=2026-04-28
 
 [Rule]
 AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT-NO-DROP

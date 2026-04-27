@@ -1,14 +1,13 @@
 /*
- * Self-written YouTube cleaner for Surge — SAFE mode.
+ * Self-written YouTube cleaner for Surge.
  *
  * Behavior:
  * - JSON responses (Web/desktop YouTube): conservative ad-field removal,
  *   plus optional player capability enhancement for picture-in-picture
  *   and background playback.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
- *   PASS THROUGH UNCHANGED. The previous generic protobuf cleaner could
- *   corrupt wire-format messages and break normal playback, so we no
- *   longer modify protobuf payloads here.
+ *   schema-light wire editing for the YouTube player response only:
+ *   remove known ad fields and inject background/PiP capability fields.
  *
  * Does not include any third-party source code.
  */
@@ -47,6 +46,13 @@ function bodyText(body) {
   if (body instanceof Uint8Array) return new TextDecoder().decode(body);
   if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
   return "";
+}
+
+function bodyBytes(body) {
+  if (body instanceof Uint8Array) return body;
+  if (body instanceof ArrayBuffer) return new Uint8Array(body);
+  if (typeof body === "string") return new TextEncoder().encode(body);
+  return new Uint8Array(0);
 }
 
 // Only delete fields that are unambiguously ads. Keep this list narrow so
@@ -136,6 +142,204 @@ function cleanJson(text, endpoint) {
   return JSON.stringify(payload);
 }
 
+// Minimal protobuf wire editor. It preserves all unknown fields byte-for-byte
+// and only rewrites length-delimited messages that contain fields we explicitly
+// know. Field numbers below are observed from YouTube iOS player responses.
+const WIRE_VARINT = 0;
+const WIRE_64BIT = 1;
+const WIRE_LENGTH = 2;
+const WIRE_32BIT = 5;
+
+const PLAYER_FIELDS = {
+  playabilityStatus: 2,
+  adPlacements: 7,
+  playbackTracking: 9,
+  adSlots: 68,
+};
+
+const PLAYABILITY_FIELDS = {
+  backgroundPlayerRender: 11,
+  pictureInPictureRender: 21,
+};
+
+const PLAYBACK_TRACKING_FIELDS = {
+  pageadViewthroughconversion: 18,
+};
+
+function readVarint(bytes, offset) {
+  let value = 0;
+  let shift = 0;
+  let pos = offset;
+  while (pos < bytes.length && shift <= 35) {
+    const byte = bytes[pos++];
+    value += (byte & 0x7f) * Math.pow(2, shift);
+    if ((byte & 0x80) === 0) return { value, offset: pos };
+    shift += 7;
+  }
+  throw new Error("invalid protobuf varint");
+}
+
+function writeVarint(value) {
+  const out = [];
+  let n = value;
+  while (n > 0x7f) {
+    out.push((n & 0x7f) | 0x80);
+    n = Math.floor(n / 128);
+  }
+  out.push(n);
+  return new Uint8Array(out);
+}
+
+function concatBytes(parts) {
+  const length = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+function encodeTag(fieldNo, wireType) {
+  return writeVarint(fieldNo * 8 + wireType);
+}
+
+function encodeVarintField(fieldNo, value) {
+  return concatBytes([encodeTag(fieldNo, WIRE_VARINT), writeVarint(value)]);
+}
+
+function encodeLengthField(fieldNo, payload) {
+  return concatBytes([encodeTag(fieldNo, WIRE_LENGTH), writeVarint(payload.length), payload]);
+}
+
+function parseFields(bytes) {
+  const fields = [];
+  let pos = 0;
+  while (pos < bytes.length) {
+    const start = pos;
+    const tag = readVarint(bytes, pos);
+    pos = tag.offset;
+    const fieldNo = Math.floor(tag.value / 8);
+    const wireType = tag.value & 7;
+    let valueStart = pos;
+    let valueEnd;
+    let payload = null;
+
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      valueEnd = readVarint(bytes, pos).offset;
+    } else if (wireType === WIRE_64BIT) {
+      valueEnd = pos + 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const length = readVarint(bytes, pos);
+      valueStart = length.offset;
+      valueEnd = valueStart + length.value;
+      payload = bytes.slice(valueStart, valueEnd);
+    } else if (wireType === WIRE_32BIT) {
+      valueEnd = pos + 4;
+    } else {
+      throw new Error(`unsupported protobuf wire type ${wireType}`);
+    }
+
+    if (valueEnd > bytes.length) throw new Error("protobuf field exceeds message length");
+    fields.push({
+      fieldNo,
+      wireType,
+      start,
+      end: valueEnd,
+      payload,
+      raw: bytes.slice(start, valueEnd),
+    });
+    pos = valueEnd;
+  }
+  return fields;
+}
+
+function rebuildFields(fields) {
+  return concatBytes(fields.map((field) => field.raw));
+}
+
+function makeBackgroundPlayerRender() {
+  const backgroundAbility = encodeVarintField(1, 1); // active=true
+  return encodeLengthField(64657230, backgroundAbility);
+}
+
+function makePictureInPictureRender() {
+  const pictureAbility = concatBytes([
+    encodeVarintField(1, 1), // active=true
+    encodeVarintField(8, 1), // observed iOS capability flag
+  ]);
+  return encodeLengthField(151635310, pictureAbility);
+}
+
+function makePlayabilityStatus() {
+  return concatBytes([
+    encodeLengthField(PLAYABILITY_FIELDS.pictureInPictureRender, makePictureInPictureRender()),
+    encodeLengthField(PLAYABILITY_FIELDS.backgroundPlayerRender, makeBackgroundPlayerRender()),
+  ]);
+}
+
+function enhancePlayabilityStatus(payload) {
+  const kept = parseFields(payload).filter(
+    (field) =>
+      field.fieldNo !== PLAYABILITY_FIELDS.pictureInPictureRender &&
+      field.fieldNo !== PLAYABILITY_FIELDS.backgroundPlayerRender,
+  );
+  kept.push({ raw: encodeLengthField(PLAYABILITY_FIELDS.pictureInPictureRender, makePictureInPictureRender()) });
+  kept.push({ raw: encodeLengthField(PLAYABILITY_FIELDS.backgroundPlayerRender, makeBackgroundPlayerRender()) });
+  return rebuildFields(kept);
+}
+
+function cleanPlaybackTracking(payload) {
+  return rebuildFields(
+    parseFields(payload).filter((field) => field.fieldNo !== PLAYBACK_TRACKING_FIELDS.pageadViewthroughconversion),
+  );
+}
+
+function cleanPlayerProtobuf(bytes) {
+  let sawPlayability = false;
+  let changed = false;
+  const out = [];
+
+  for (const field of parseFields(bytes)) {
+    if (field.fieldNo === PLAYER_FIELDS.adPlacements || field.fieldNo === PLAYER_FIELDS.adSlots) {
+      changed = true;
+      continue;
+    }
+
+    if (field.fieldNo === PLAYER_FIELDS.playabilityStatus && field.wireType === WIRE_LENGTH && field.payload) {
+      sawPlayability = true;
+      const payload = enhancePlayabilityStatus(field.payload);
+      out.push({ raw: encodeLengthField(PLAYER_FIELDS.playabilityStatus, payload) });
+      changed = true;
+      continue;
+    }
+
+    if (field.fieldNo === PLAYER_FIELDS.playbackTracking && field.wireType === WIRE_LENGTH && field.payload) {
+      const payload = cleanPlaybackTracking(field.payload);
+      out.push({ raw: encodeLengthField(PLAYER_FIELDS.playbackTracking, payload) });
+      changed = true;
+      continue;
+    }
+
+    out.push(field);
+  }
+
+  if (!sawPlayability && config.enhancePlayer) {
+    out.push({ raw: encodeLengthField(PLAYER_FIELDS.playabilityStatus, makePlayabilityStatus()) });
+    changed = true;
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
+function cleanProtobuf(bytes, endpoint) {
+  if (endpoint === "player") return cleanPlayerProtobuf(bytes);
+  return bytes;
+}
+
 const endpoint = endpointFromUrl($request.url);
 const originalBody = $response.body !== undefined ? $response.body : $response.bodyBytes;
 
@@ -148,9 +352,17 @@ try {
     console.log(`[YouTube Self] json ${endpoint} ${text.length} -> ${output.length}`);
     $done({ body: output });
   } else {
-    // Binary / protobuf — do NOT modify. Pass response through untouched.
-    console.log(`[YouTube Self] protobuf-passthrough ${endpoint} bytes=${(originalBody && originalBody.length) || 0}`);
-    $done({});
+    const input = bodyBytes(originalBody);
+    const output = cleanProtobuf(input, endpoint);
+    if (output.length !== input.length || output !== input) {
+      console.log(`[YouTube Self] protobuf ${endpoint} ${input.length} -> ${output.length}`);
+      // Surge exposes binary response bodies as $response.body when
+      // binary-body-mode is enabled, and accepts a Uint8Array in body.
+      $done({ body: output });
+    } else {
+      console.log(`[YouTube Self] protobuf-passthrough ${endpoint} bytes=${input.length}`);
+      $done({});
+    }
   }
 } catch (error) {
   debug("error", endpoint, error && error.message);
