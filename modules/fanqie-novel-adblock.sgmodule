@@ -1,0 +1,54 @@
+#!name=番茄小说去广告
+#!desc=自用番茄小说广告与统计域名拦截模块。无脚本、无 MITM、无远程依赖。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=去广告
+#!openUrl=https://apps.apple.com/app/id1468454200
+#!date=2026-04-27
+
+[Rule]
+# 番茄小说日志、广告、监控
+DOMAIN,log3-applog.fqnovel.com,REJECT
+DOMAIN,log5-applog.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog.fqnovel.com,REJECT
+DOMAIN,mon11-misc-lq.fqnovel.com,REJECT
+DOMAIN,mon11-misc.fqnovel.com,REJECT
+DOMAIN,mon3-misc.fqnovel.com,REJECT
+
+# 字节广告、实验、监控、埋点
+DOMAIN,ads3-normal.zijieapi.com,REJECT
+DOMAIN,ads5-normal.zijieapi.com,REJECT
+DOMAIN,abtest3-misc.zijieapi.com,REJECT
+DOMAIN,ma.zijieapi.com,REJECT
+DOMAIN,timon.zijieapi.com,REJECT
+DOMAIN,vcs.zijieapi.com,REJECT
+DOMAIN,feedback-c.zijieapi.com,REJECT
+DOMAIN,mon.toutiaocloud.com,REJECT
+DOMAIN,mon.toutiaocloud.net,REJECT
+
+# 字节安全、风控、活动组件。若出现登录、支付或任务异常，可先注释这些行排查。
+DOMAIN,mssdk.zijieapi.com,REJECT
+DOMAIN,security.snssdk.com,REJECT
+DOMAIN,i.snssdk.com,REJECT
+DOMAIN,is.snssdk.com,REJECT
+DOMAIN,is-lq.snssdk.com,REJECT
+DOMAIN,vas.snssdk.com,REJECT
+DOMAIN,effect.snssdk.com,REJECT
+
+# Gecko/资源热更新，常用于下发活动页、广告组件和动态资源
+DOMAIN,gecko3.zijieapi.com,REJECT
+DOMAIN,gecko5.zijieapi.com,REJECT
+DOMAIN,lf-normal-gr-sourcecdn.bytegecko.com,REJECT
+DOMAIN,lf-webcast-gr-sourcecdn.bytegecko.com,REJECT
+
+# 直播、小程序、活动资源
+DOMAIN,minigame3-normal.zijieapi.com,REJECT
+DOMAIN,minigame5-normal.zijieapi.com,REJECT
+DOMAIN,webcast-open.douyin.com,REJECT
+DOMAIN,p11-webcast-sign.douyinpic.com,REJECT
+DOMAIN,p3-webcast-sign.douyinpic.com,REJECT
+DOMAIN,p3-developer.bytemaimg.com,REJECT
+
+# 第三方 SDK
+DOMAIN,zlink.ugsdk.cn,REJECT
