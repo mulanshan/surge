@@ -116,3 +116,9 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enha
 说明：
 
 这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。已用 iOS YouTube App `next/browse/guide` 样本验证过部分广告字段可清理，但 protobuf 结构仍需更多 `player/get_setting/get_watch` 样本继续完善，尤其是 iOS 后台播放和画中画字段。
+
+iOS 兼容安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-ios.sgmodule
+```
