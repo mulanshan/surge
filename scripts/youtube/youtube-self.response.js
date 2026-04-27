@@ -127,7 +127,11 @@ function enhanceJsonPlayer(payload) {
 
 function cleanJson(text, endpoint) {
   const payload = JSON.parse(text);
-  if (endpoint === "player") enhanceJsonPlayer(payload);
+  // player and get_watch both return playabilityStatus / streamingData;
+  // inject PiP + background playback capability on either.
+  if (endpoint === "player" || endpoint === "get_watch") {
+    enhanceJsonPlayer(payload);
+  }
   walkJson(payload);
   return JSON.stringify(payload);
 }
@@ -140,11 +144,12 @@ try {
   const trimmed = text.trim();
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     const output = cleanJson(text, endpoint);
-    debug("json", endpoint, text.length, "->", output.length);
+    // Always log JSON path length-change so we can see hits in Surge logs.
+    console.log(`[YouTube Self] json ${endpoint} ${text.length} -> ${output.length}`);
     $done({ body: output });
   } else {
     // Binary / protobuf — do NOT modify. Pass response through untouched.
-    debug("protobuf-passthrough", endpoint);
+    console.log(`[YouTube Self] protobuf-passthrough ${endpoint} bytes=${(originalBody && originalBody.length) || 0}`);
     $done({});
   }
 } catch (error) {
