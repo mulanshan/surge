@@ -179,6 +179,13 @@ const AD_MARKERS = [
   "googleads",
   "googleadservices",
   "doubleclick.net",
+  "ytcs",
+  "activeview",
+  "adformat",
+  "adhost",
+  "adpromoted",
+  "is_ad",
+  "ad_cpn",
   "adPlacement",
   "adSlots",
 ];
