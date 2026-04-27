@@ -1,5 +1,5 @@
 #!name=YouTube Self Enhance
-#!desc=自写 YouTube 去广告与后台播放增强，脚本与规则均托管于本仓库，不引用第三方脚本。
+#!desc=自写 YouTube 安全增强：UDP/QUIC 拒绝 + JSON 响应去广告 + PiP/后台播放能力注入。Protobuf 响应不修改。
 #!author=mulanshan
 #!category=Enhance
 #!date=2026-04-27
@@ -12,7 +12,7 @@ AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT-NO-DROP
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
+youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|guide|account\/get_setting|reel\/reel_watch_sequence),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
 
 [MITM]
 hostname = %APPEND% youtubei.googleapis.com, *.googlevideo.com
