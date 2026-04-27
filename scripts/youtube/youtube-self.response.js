@@ -166,6 +166,23 @@ const PLAYBACK_TRACKING_FIELDS = {
   pageadViewthroughconversion: 18,
 };
 
+const WATCH_FIELDS = {
+  contents: 1,
+};
+
+const WATCH_CONTENT_FIELDS = {
+  player: 2,
+};
+
+const AD_MARKERS = [
+  "pagead",
+  "googleads",
+  "googleadservices",
+  "doubleclick.net",
+  "adPlacement",
+  "adSlots",
+];
+
 function readVarint(bytes, offset) {
   let value = 0;
   let shift = 0;
@@ -335,8 +352,83 @@ function cleanPlayerProtobuf(bytes) {
   return changed ? rebuildFields(out) : bytes;
 }
 
+function cleanWatchContentProtobuf(bytes) {
+  let changed = false;
+  const out = [];
+
+  for (const field of parseFields(bytes)) {
+    if (field.fieldNo === WATCH_CONTENT_FIELDS.player && field.wireType === WIRE_LENGTH && field.payload) {
+      const payload = cleanPlayerProtobuf(field.payload);
+      out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.player, payload) });
+      changed = true;
+      continue;
+    }
+    out.push(field);
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
+function cleanWatchProtobuf(bytes) {
+  let changed = false;
+  const out = [];
+
+  for (const field of parseFields(bytes)) {
+    if (field.fieldNo === WATCH_FIELDS.contents && field.wireType === WIRE_LENGTH && field.payload) {
+      const payload = cleanWatchContentProtobuf(field.payload);
+      out.push({ raw: encodeLengthField(WATCH_FIELDS.contents, payload) });
+      changed = true;
+      continue;
+    }
+    out.push(field);
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
+function bytesContainAdMarker(bytes) {
+  const text = new TextDecoder().decode(bytes);
+  return AD_MARKERS.some((marker) => text.includes(marker));
+}
+
+function cleanAdMarkedNestedProtobuf(bytes, depth) {
+  if (depth <= 0) return bytes;
+
+  let changed = false;
+  const out = [];
+  for (const field of parseFields(bytes)) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+      out.push(field);
+      continue;
+    }
+
+    if (bytesContainAdMarker(field.payload)) {
+      changed = true;
+      continue;
+    }
+
+    try {
+      const payload = cleanAdMarkedNestedProtobuf(field.payload, depth - 1);
+      if (payload !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+        changed = true;
+      } else {
+        out.push(field);
+      }
+    } catch {
+      out.push(field);
+    }
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
 function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
+  if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
+  if (endpoint === "browse" || endpoint === "next" || endpoint === "search") {
+    return cleanAdMarkedNestedProtobuf(bytes, 4);
+  }
   return bytes;
 }
 
