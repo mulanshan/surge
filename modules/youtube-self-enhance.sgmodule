@@ -17,6 +17,11 @@ URL-REGEX,^https:\/\/www\.youtube\.com\/youtubei\/v1\/log_event,REJECT
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
 ^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/api\/stats\/ads data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=adhost data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/atr\?.*is_ad=1 data-type=text data="" status-code=204
+^https?:\/\/googleads\.g\.doubleclick\.net\/ytcs\/adview data-type=text data="" status-code=204
 ^https?:\/\/www\.google(?:\.com|\.com\.hk)\/pagead\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.google(?:\.com|\.com\.hk)\/ads\/on-device\/ data-type=text data="" status-code=204
 
@@ -24,4 +29,4 @@ URL-REGEX,^https:\/\/www\.youtube\.com\/youtubei\/v1\/log_event,REJECT
 youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|guide|account\/get_setting(?:_values)?|reel\/reel_watch_sequence),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, *.googlevideo.com, www.google.com, www.google.com.hk
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, googleads.g.doubleclick.net, *.googlevideo.com, www.google.com, www.google.com.hk
