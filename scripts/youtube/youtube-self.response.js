@@ -311,7 +311,11 @@ function enhancePlayabilityStatus(payload) {
 
 function cleanPlaybackTracking(payload) {
   return rebuildFields(
-    parseFields(payload).filter((field) => field.fieldNo !== PLAYBACK_TRACKING_FIELDS.pageadViewthroughconversion),
+    parseFields(payload).filter((field) => {
+      if (field.fieldNo === PLAYBACK_TRACKING_FIELDS.pageadViewthroughconversion) return false;
+      if (field.wireType === WIRE_LENGTH && field.payload && bytesContainAdMarker(field.payload)) return false;
+      return true;
+    }),
   );
 }
 
@@ -425,9 +429,9 @@ function cleanAdMarkedNestedProtobuf(bytes, depth) {
 
 function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
-  if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
+  if (endpoint === "get_watch") return cleanAdMarkedNestedProtobuf(cleanWatchProtobuf(bytes), 8);
   if (endpoint === "browse" || endpoint === "next" || endpoint === "search") {
-    return cleanAdMarkedNestedProtobuf(bytes, 4);
+    return cleanAdMarkedNestedProtobuf(bytes, 8);
   }
   return bytes;
 }
