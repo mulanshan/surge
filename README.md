@@ -88,3 +88,17 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-safe-lite
 说明：
 
 这是完全自写、最小权限的安全版。它的目标是减少可通过网络层识别的广告请求，而不是完整替代 `Youtube (Music) Enhance`。后台播放、画中画、字幕增强、信息流广告清理等功能都依赖解析并修改 YouTube protobuf 响应，安全版不会做这些高风险操作。
+
+## YouTube Readable Enhance
+
+文件：[modules/youtube-readable-enhance.sgmodule](modules/youtube-readable-enhance.sgmodule)
+
+安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-readable-enhance.sgmodule
+```
+
+说明：
+
+这是完全自写的可读脚本版本，脚本在 [scripts/youtube/youtube-readable.response.js](scripts/youtube/youtube-readable.response.js)。它处理 JSON 形态的 YouTube `youtubei` 响应，可以清理常见广告字段、屏蔽部分入口、增加字幕翻译轨道和播放能力字段。它不包含第三方脚本，也不解析 protobuf，因此不能完整替代面向 iOS/YouTube Music App 的深度增强模块。

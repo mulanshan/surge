@@ -1,0 +1,22 @@
+#!name=YouTube Readable Enhance
+#!desc=完全自写可读版 YouTube JSON 去广告与播放能力增强。不包含第三方脚本，不解析 protobuf。
+#!author=mulanshan
+#!category=Enhance
+#!tag=YouTube
+#!openUrl=https://apps.apple.com/app/id544007664
+#!arguments=屏蔽上传按钮:true,屏蔽选段按钮:true,屏蔽Shorts按钮:false,字幕翻译语言:off,歌词翻译语言:off,启用调试模式:false
+#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off] \n\n此模块仅处理 JSON 响应。iOS/YouTube Music App 的 protobuf 深度增强需要另行基于抓包样本实现。
+#!date=2026-04-27
+
+[Rule]
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+[Script]
+youtube.readable.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch)(\?.*)?$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-readable.response.js,argument="{\"lyricLang\":\"{{{歌词翻译语言}}}\",\"captionLang\":\"{{{字幕翻译语言}}}\",\"blockUpload\":{{{屏蔽上传按钮}}},\"blockImmersive\":{{{屏蔽选段按钮}}},\"blockShorts\":{{{屏蔽Shorts按钮}}},\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+
+[MITM]
+hostname = %APPEND% www.youtube.com, *.googlevideo.com, youtubei.googleapis.com
