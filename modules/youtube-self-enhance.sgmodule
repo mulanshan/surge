@@ -1,5 +1,5 @@
 #!name=YouTube Self Enhance
-#!desc=自写 YouTube 安全增强：UDP/QUIC 拒绝 + JSON 响应去广告 + PiP/后台播放能力注入。Protobuf 响应不修改。
+#!desc=自写 YouTube 安全增强 v3：UDP/QUIC 拒绝 + JSON 响应去广告 + PiP/后台播放注入。同时拦截 youtubei.googleapis.com 与 www.youtube.com 上的 youtubei API。Protobuf 响应不修改。
 #!author=mulanshan
 #!category=Enhance
 #!date=2026-04-27
@@ -7,12 +7,13 @@
 [Rule]
 AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT-NO-DROP
 AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT-NO-DROP
+AND,((DOMAIN,www.youtube.com),(PROTOCOL,UDP)),REJECT-NO-DROP
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|guide|account\/get_setting|reel\/reel_watch_sequence),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
+youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(browse|next|player|search|guide|account\/get_setting|reel\/reel_watch_sequence),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, *.googlevideo.com
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, *.googlevideo.com
