@@ -40,6 +40,6 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`YouTube capture server listening on http://127.0.0.1:${port}/capture`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`YouTube capture server listening on http://0.0.0.0:${port}/capture`);
 });
