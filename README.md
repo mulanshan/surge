@@ -66,3 +66,25 @@ YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所�
   "debug": false
 }
 ```
+
+## YouTube Safe Lite
+
+文件：[modules/youtube-safe-lite.sgmodule](modules/youtube-safe-lite.sgmodule)
+
+安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-safe-lite.sgmodule
+```
+
+功能范围：
+
+- 拒绝 YouTube 相关 UDP/QUIC 连接，使流量回落到 TCP/HTTPS
+- 对 `googlevideo.com/initplayback` 的部分广告初始化请求返回空响应
+- 不执行任何 JavaScript
+- 不 MITM `youtubei.googleapis.com`
+- 不修改 YouTube protobuf API 响应
+
+说明：
+
+这是完全自写、最小权限的安全版。它的目标是减少可通过网络层识别的广告请求，而不是完整替代 `Youtube (Music) Enhance`。后台播放、画中画、字幕增强、信息流广告清理等功能都依赖解析并修改 YouTube protobuf 响应，安全版不会做这些高风险操作。
