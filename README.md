@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/fanqie-novel-adbl
 
 如果番茄小说后续新增广告域名，可以把域名追加到模块的 `[Rule]` 区域，然后重新推送仓库。Surge 里更新模块即可生效。
 
-## YouTube Enhance
+## Youtube (Music) Enhance
 
 文件：[modules/youtube-enhance.sgmodule](modules/youtube-enhance.sgmodule)
 
@@ -41,6 +41,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-enhance.s
 - 后台播放、画中画能力增强
 - 可选字幕翻译增强
 - 可选隐藏上传、沉浸式入口、Shorts 入口
+- 拒绝 YouTube 相关 UDP/QUIC 连接，使流量回落到可处理的 HTTPS
+- 对 `googlevideo.com/initplayback` 的广告初始化请求返回空响应
 
 脚本来源：
 
@@ -50,7 +52,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-enhance.s
 
 安全说明：
 
-YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所以这个模块需要启用 MITM，并且会执行响应脚本。为降低风险，模块只 MITM `youtubei.googleapis.com`，脚本也只引用本仓库固定副本；不要继续引用不受控的第三方 raw 地址。
+YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所以这个模块需要启用 MITM，并且会执行响应脚本。`*.googlevideo.com` 用于配合 `[Map Local]` 处理部分播放初始化广告请求；这是更完整但权限更大的配置。脚本只引用本仓库固定副本，不继续引用不受控的第三方 raw 地址。
 
 默认参数：
 
