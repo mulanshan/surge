@@ -182,12 +182,21 @@ const AD_MARKERS = [
   "ytcs",
   "activeview",
   "adformat",
+  "adcontext",
   "adhost",
   "adpromoted",
   "is_ad",
   "ad_cpn",
+  "break_type",
   "adPlacement",
   "adSlots",
+  "WATCH_NEXT_ADS_STATE",
+  "ad_badge.eml-fe",
+  "ad_avatar.eml-fe",
+  "ad_button.eml-fe",
+  "ad_details_line.eml-fe",
+  "ad_icon_text.eml-fe",
+  "ad_rating.eml-fe",
 ];
 
 function readVarint(bytes, offset) {
@@ -402,6 +411,10 @@ function bytesContainAdMarker(bytes) {
   return AD_MARKERS.some((marker) => text.includes(marker));
 }
 
+function bytesContainMarker(bytes, marker) {
+  return new TextDecoder().decode(bytes).includes(marker);
+}
+
 function cleanAdMarkedNestedProtobuf(bytes, depth) {
   if (depth <= 0) return bytes;
 
@@ -438,6 +451,12 @@ function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
   if (endpoint === "get_watch") return cleanAdMarkedNestedProtobuf(cleanWatchProtobuf(bytes), 8);
   if (endpoint === "browse" || endpoint === "next" || endpoint === "search") {
+    if (
+      endpoint === "next" &&
+      (bytesContainMarker(bytes, "WATCH_NEXT_ADS_STATE") || bytesContainMarker(bytes, "ad_badge.eml-fe"))
+    ) {
+      return new Uint8Array(0);
+    }
     return cleanAdMarkedNestedProtobuf(bytes, 8);
   }
   return bytes;
