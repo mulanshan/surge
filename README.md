@@ -102,3 +102,17 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-readable-
 说明：
 
 这是完全自写的可读脚本版本，脚本在 [scripts/youtube/youtube-readable.response.js](scripts/youtube/youtube-readable.response.js)。它处理 JSON 形态的 YouTube `youtubei` 响应，可以清理常见广告字段、屏蔽部分入口、增加字幕翻译轨道和播放能力字段。它不包含第三方脚本，也不解析 protobuf，因此不能完整替代面向 iOS/YouTube Music App 的深度增强模块。
+
+## YouTube Self Enhance
+
+文件：[modules/youtube-self-enhance.sgmodule](modules/youtube-self-enhance.sgmodule)
+
+安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enhance.sgmodule
+```
+
+说明：
+
+这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。已用 iOS YouTube App `next/browse/guide` 样本验证过部分广告字段可清理，但 protobuf 结构仍需更多 `player/get_setting/get_watch` 样本继续完善，尤其是 iOS 后台播放和画中画字段。

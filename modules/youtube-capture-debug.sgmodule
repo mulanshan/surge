@@ -1,0 +1,16 @@
+#!name=YouTube Capture Debug
+#!desc=临时采样 YouTube youtubei 响应体到本机。仅用于自研分析，不修改响应。
+#!author=mulanshan
+#!category=Debug
+#!tag=YouTube
+#!date=2026-04-27
+
+[Rule]
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+[Script]
+youtube.capture = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch)(\?.*)?$,requires-body=true,max-size=-1,binary-body-mode=true,script-path=/Users/mulanshan/surge/tools/youtube-capture.response.js
+
+[MITM]
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com
