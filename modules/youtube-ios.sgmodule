@@ -1,11 +1,11 @@
 #!name=YouTube Self Enhance iOS
-#!desc=完全自写可审计 YouTube 增强：JSON 去广告 + iOS player protobuf 去广告、后台播放、画中画。不含第三方脚本。
+#!desc=完全自写可审计 YouTube 增强：JSON 去广告 + iOS protobuf 去广告、后台播放、画中画与设置页后台播放入口。不含第三方脚本。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=屏蔽上传按钮:true,屏蔽选段按钮:true,屏蔽Shorts按钮:false,字幕翻译语言:off,歌词翻译语言:off,启用调试模式:false
-#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off] \n\nprotobuf 部分仅改已知 player 字段：adPlacements/adSlots/pageadViewthroughconversion 与后台播放/画中画能力。命中记录会写入 Surge Logbook（支持时）。
+#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off] \n\nprotobuf 部分仅改已知字段：播放响应的 adPlacements/adSlots/pageadViewthroughconversion、后台播放/画中画能力，以及 account/get_setting 的后台播放设置入口。命中记录会写入 Surge Logbook（支持时）。
 #!date=2026-05-07
 
 [Rule]
