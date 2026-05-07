@@ -115,7 +115,12 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enha
 
 说明：
 
-这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。iOS 兼容模块会处理 `player/get_watch` 的已知 player 字段，清理 `adPlacements`、`adSlots`、`pageadViewthroughconversion`，并注入后台播放和画中画能力字段。脚本命中记录会写入 Surge 普通日志；在支持 Logbook 的 Surge 版本中，也会同步写入日志簿，便于远程查看脚本输入、输出和运行细节。
+这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。iOS 兼容模块会处理 `player/get_watch` 的已知 player 字段，清理 `adPlacements`、`adSlots`、`pageadViewthroughconversion`，并注入后台播放和画中画能力字段。它还会处理 `account/get_setting`，向设置响应中补入后台播放入口和开关项。脚本命中记录会写入 Surge 普通日志；在支持 Logbook 的 Surge 版本中，也会同步写入日志簿，便于远程查看脚本输入、输出和运行细节。
+
+调试方式：
+
+- 通过 Surge Mac Dashboard 连接 iOS 远程实例，可以查看 Logbook 中的脚本运行细节。
+- 当前 `surge-cli` 可读取远程 `dump request`、`dump active`、`dump event`，但尚不能通过 `dump logbook` 直接导出 Logbook；脚本是否命中可先看请求备注中的 `Modified by script youtube.self.response` 和响应脚本记录。
 
 注意：如果仓库保持私有，`raw.githubusercontent.com` 安装地址不能被 Surge 客户端直接拉取。需要将仓库公开、使用可访问的镜像地址，或改成你自己的带鉴权分发方式。
 
