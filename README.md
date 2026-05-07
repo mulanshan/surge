@@ -129,3 +129,14 @@ iOS 兼容安装地址：
 ```text
 https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-ios.sgmodule
 ```
+
+iCloud 本地同步版：
+
+- 文件：[modules/youtube-ios-local.sgmodule](modules/youtube-ios-local.sgmodule)
+- 调试与制作流程：[docs/youtube-ios-local-debug.md](docs/youtube-ios-local-debug.md)
+
+这个版本用于私有仓库场景。模块本体在 iOS 上通过“新建本地模块”粘贴安装，脚本通过 Surge iCloud Documents 同步并以相对路径加载：
+
+```ini
+script-path=scripts/youtube/youtube-self.response.js
+```
