@@ -268,6 +268,20 @@ const AD_MARKERS = [
   "ad_rating.eml-fe",
 ];
 
+const FEED_AD_CARD_MARKERS = [
+  "赞助商广告",
+  "Sponsored",
+  "sponsored",
+  "Promoted",
+  "promoted",
+  "ad_badge.eml-fe",
+  "inline_injection_entrypoint_layout.eml",
+  "in_feed_ad",
+  "googleads",
+  "doubleclick.net",
+  "pagead",
+];
+
 function readVarint(bytes, offset) {
   let value = 0;
   let shift = 0;
@@ -713,6 +727,61 @@ function bytesContainMarker(bytes, marker) {
   return new TextDecoder().decode(bytes).includes(marker);
 }
 
+function bytesContainAnyMarker(bytes, markers) {
+  const text = new TextDecoder().decode(bytes);
+  return markers.some((marker) => text.includes(marker));
+}
+
+function isLikelyNestedMessage(bytes) {
+  try {
+    const fields = parseFields(bytes);
+    return fields.length >= 2 && fields.some((field) => field.wireType === WIRE_LENGTH);
+  } catch {
+    return false;
+  }
+}
+
+function isLikelyFeedAdCard(payload) {
+  // Feed ad cards are usually tens of KB. The full feed response is much
+  // larger, while a single label/string is tiny. Keep this intentionally
+  // narrow so a bad marker cannot erase the whole home/search feed again.
+  if (payload.length < 800 || payload.length > 180000) return false;
+  if (!bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
+  return isLikelyNestedMessage(payload);
+}
+
+function cleanFeedAdCardsProtobuf(bytes, depth) {
+  if (depth <= 0) return bytes;
+
+  let changed = false;
+  const out = [];
+  for (const field of parseFields(bytes)) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+      out.push(field);
+      continue;
+    }
+
+    if (isLikelyFeedAdCard(field.payload)) {
+      changed = true;
+      continue;
+    }
+
+    try {
+      const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
+      if (payload !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+        changed = true;
+      } else {
+        out.push(field);
+      }
+    } catch {
+      out.push(field);
+    }
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
 function cleanAdMarkedNestedProtobuf(bytes, depth) {
   if (depth <= 0) return bytes;
 
@@ -751,10 +820,10 @@ function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
   }
-  // Browse/search/next carry the feed, search results, comments and "up next"
-  // containers. Without a stable schema, marker-based recursive deletion can
-  // remove normal content and leave the YouTube UI stuck on skeleton rows.
-  if (endpoint === "browse" || endpoint === "next" || endpoint === "search") return bytes;
+  if (endpoint === "browse" || endpoint === "search") return cleanFeedAdCardsProtobuf(bytes, 6);
+  // `next` carries comments, "up next", playlists and episode navigation.
+  // Leave it untouched until we have a stable schema for those containers.
+  if (endpoint === "next") return bytes;
   return bytes;
 }
 
