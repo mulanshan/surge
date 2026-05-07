@@ -186,6 +186,63 @@ const WATCH_CONTENT_FIELDS = {
   player: 2,
 };
 
+const SETTING_FIELDS = {
+  settingItems: 6,
+  collectionItems: 7,
+};
+
+const SETTING_ITEM_FIELDS = {
+  backgroundPlayBackSettingRenderer: 88478200,
+  settingCategoryCollectionRenderer: 66930374,
+};
+
+const BACKGROUND_PLAYBACK_SETTING_FIELDS = {
+  backgroundPlayback: 2,
+  download: 3,
+  downloadQualitySelection: 9,
+  smartDownload: 10,
+  icon: 14,
+};
+
+const ICON_FIELDS = {
+  iconType: 1,
+};
+
+const SETTING_CATEGORY_COLLECTION_FIELDS = {
+  subSettings: 3,
+  categoryId: 4,
+};
+
+const SUB_SETTING_FIELDS = {
+  settingBooleanRenderer: 61331416,
+};
+
+const SETTING_BOOLEAN_RENDERER_FIELDS = {
+  enableServiceEndpoint: 5,
+  disableServiceEndpoint: 6,
+};
+
+const SERVICE_ENDPOINT_FIELDS = {
+  setClientSettingEndpoint: 81212182,
+};
+
+const SET_CLIENT_SETTING_ENDPOINT_FIELDS = {
+  settingData: 1,
+};
+
+const SETTING_DATA_FIELDS = {
+  clientSettingEnum: 1,
+  boolValue: 3,
+};
+
+const CLIENT_SETTING_ENUM_FIELDS = {
+  item: 1,
+};
+
+const BACKGROUND_PLAYBACK_CATEGORY_ID = 10135;
+const BACKGROUND_PLAYBACK_SETTING_ITEM = 151;
+const BACKGROUND_PLAYBACK_ICON_TYPE = 1093;
+
 const AD_MARKERS = [
   "pagead",
   "googleads",
@@ -306,6 +363,12 @@ function rebuildFields(fields) {
   return concatBytes(fields.map((field) => field.raw));
 }
 
+function readFieldVarintValue(field) {
+  if (field.wireType !== WIRE_VARINT) return null;
+  const tag = readVarint(field.raw, 0);
+  return readVarint(field.raw, tag.offset).value;
+}
+
 function makeBackgroundPlayerRender() {
   const backgroundAbility = encodeVarintField(1, 1); // active=true
   return encodeLengthField(64657230, backgroundAbility);
@@ -419,6 +482,228 @@ function cleanWatchProtobuf(bytes) {
   return changed ? rebuildFields(out) : bytes;
 }
 
+function makeIcon(iconType) {
+  return encodeVarintField(ICON_FIELDS.iconType, iconType);
+}
+
+function makeBackgroundPlaybackSettingRenderer() {
+  return concatBytes([
+    encodeVarintField(BACKGROUND_PLAYBACK_SETTING_FIELDS.backgroundPlayback, 1),
+    encodeVarintField(BACKGROUND_PLAYBACK_SETTING_FIELDS.download, 1),
+    encodeVarintField(BACKGROUND_PLAYBACK_SETTING_FIELDS.downloadQualitySelection, 1),
+    encodeVarintField(BACKGROUND_PLAYBACK_SETTING_FIELDS.smartDownload, 1),
+    encodeLengthField(BACKGROUND_PLAYBACK_SETTING_FIELDS.icon, makeIcon(BACKGROUND_PLAYBACK_ICON_TYPE)),
+  ]);
+}
+
+function makeBackgroundPlaybackSettingItem() {
+  return encodeLengthField(
+    SETTING_ITEM_FIELDS.backgroundPlayBackSettingRenderer,
+    makeBackgroundPlaybackSettingRenderer(),
+  );
+}
+
+function makeClientSettingEnum(item) {
+  return encodeVarintField(CLIENT_SETTING_ENUM_FIELDS.item, item);
+}
+
+function makeSettingData(item, enabled) {
+  const parts = [encodeLengthField(SETTING_DATA_FIELDS.clientSettingEnum, makeClientSettingEnum(item))];
+  if (enabled) parts.push(encodeVarintField(SETTING_DATA_FIELDS.boolValue, 1));
+  return concatBytes(parts);
+}
+
+function makeSetClientSettingEndpoint(item, enabled) {
+  return encodeLengthField(SET_CLIENT_SETTING_ENDPOINT_FIELDS.settingData, makeSettingData(item, enabled));
+}
+
+function makeServiceEndpoint(item, enabled) {
+  return encodeLengthField(
+    SERVICE_ENDPOINT_FIELDS.setClientSettingEndpoint,
+    makeSetClientSettingEndpoint(item, enabled),
+  );
+}
+
+function makeSettingBooleanRenderer(item) {
+  return concatBytes([
+    encodeLengthField(SETTING_BOOLEAN_RENDERER_FIELDS.enableServiceEndpoint, makeServiceEndpoint(item, true)),
+    encodeLengthField(SETTING_BOOLEAN_RENDERER_FIELDS.disableServiceEndpoint, makeServiceEndpoint(item, false)),
+  ]);
+}
+
+function makeBackgroundPlaybackSubSetting() {
+  return encodeLengthField(
+    SUB_SETTING_FIELDS.settingBooleanRenderer,
+    makeSettingBooleanRenderer(BACKGROUND_PLAYBACK_SETTING_ITEM),
+  );
+}
+
+function settingDataHasClientSettingItem(payload, item) {
+  for (const field of parseFields(payload)) {
+    if (
+      field.fieldNo === SETTING_DATA_FIELDS.clientSettingEnum &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload
+    ) {
+      for (const enumField of parseFields(field.payload)) {
+        if (
+          enumField.fieldNo === CLIENT_SETTING_ENUM_FIELDS.item &&
+          readFieldVarintValue(enumField) === item
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function setClientSettingEndpointHasItem(payload, item) {
+  for (const field of parseFields(payload)) {
+    if (
+      field.fieldNo === SET_CLIENT_SETTING_ENDPOINT_FIELDS.settingData &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      settingDataHasClientSettingItem(field.payload, item)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function serviceEndpointHasItem(payload, item) {
+  for (const field of parseFields(payload)) {
+    if (
+      field.fieldNo === SERVICE_ENDPOINT_FIELDS.setClientSettingEndpoint &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      setClientSettingEndpointHasItem(field.payload, item)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function settingBooleanRendererHasItem(payload, item) {
+  for (const field of parseFields(payload)) {
+    if (
+      (field.fieldNo === SETTING_BOOLEAN_RENDERER_FIELDS.enableServiceEndpoint ||
+        field.fieldNo === SETTING_BOOLEAN_RENDERER_FIELDS.disableServiceEndpoint) &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      serviceEndpointHasItem(field.payload, item)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function subSettingHasItem(payload, item) {
+  for (const field of parseFields(payload)) {
+    if (
+      field.fieldNo === SUB_SETTING_FIELDS.settingBooleanRenderer &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      settingBooleanRendererHasItem(field.payload, item)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function settingCategoryHasItem(fields, item) {
+  return fields.some(
+    (field) =>
+      field.fieldNo === SETTING_CATEGORY_COLLECTION_FIELDS.subSettings &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      subSettingHasItem(field.payload, item),
+  );
+}
+
+function enhanceSettingCategoryCollection(payload) {
+  const fields = parseFields(payload);
+  const categoryId = fields
+    .filter((field) => field.fieldNo === SETTING_CATEGORY_COLLECTION_FIELDS.categoryId)
+    .map(readFieldVarintValue)
+    .find((value) => value !== null);
+
+  if (categoryId !== BACKGROUND_PLAYBACK_CATEGORY_ID) return payload;
+  if (settingCategoryHasItem(fields, BACKGROUND_PLAYBACK_SETTING_ITEM)) return payload;
+
+  const out = fields.slice();
+  out.push({
+    raw: encodeLengthField(SETTING_CATEGORY_COLLECTION_FIELDS.subSettings, makeBackgroundPlaybackSubSetting()),
+  });
+  return rebuildFields(out);
+}
+
+function settingItemHasBackgroundPlaybackRenderer(payload) {
+  return parseFields(payload).some(
+    (field) =>
+      field.fieldNo === SETTING_ITEM_FIELDS.backgroundPlayBackSettingRenderer &&
+      field.wireType === WIRE_LENGTH,
+  );
+}
+
+function enhanceSettingItem(payload) {
+  let changed = false;
+  const out = [];
+
+  for (const field of parseFields(payload)) {
+    if (
+      field.fieldNo === SETTING_ITEM_FIELDS.settingCategoryCollectionRenderer &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload
+    ) {
+      const categoryPayload = enhanceSettingCategoryCollection(field.payload);
+      if (categoryPayload !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, categoryPayload) });
+        changed = true;
+        continue;
+      }
+    }
+    out.push(field);
+  }
+
+  return changed ? rebuildFields(out) : payload;
+}
+
+function cleanSettingProtobuf(bytes) {
+  let changed = false;
+  let sawBackgroundPlaybackRenderer = false;
+  const out = [];
+
+  for (const field of parseFields(bytes)) {
+    if (
+      (field.fieldNo === SETTING_FIELDS.settingItems || field.fieldNo === SETTING_FIELDS.collectionItems) &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload
+    ) {
+      sawBackgroundPlaybackRenderer =
+        sawBackgroundPlaybackRenderer || settingItemHasBackgroundPlaybackRenderer(field.payload);
+      const payload = enhanceSettingItem(field.payload);
+      if (payload !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+        changed = true;
+        continue;
+      }
+    }
+    out.push(field);
+  }
+
+  if (!sawBackgroundPlaybackRenderer) {
+    out.push({ raw: encodeLengthField(SETTING_FIELDS.settingItems, makeBackgroundPlaybackSettingItem()) });
+    changed = true;
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
 function bytesContainAdMarker(bytes) {
   const text = new TextDecoder().decode(bytes);
   return AD_MARKERS.some((marker) => text.includes(marker));
@@ -463,6 +748,9 @@ function cleanAdMarkedNestedProtobuf(bytes, depth) {
 function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
   if (endpoint === "get_watch") return cleanAdMarkedNestedProtobuf(cleanWatchProtobuf(bytes), 8);
+  if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
+    return cleanSettingProtobuf(bytes);
+  }
   if (endpoint === "browse" || endpoint === "next" || endpoint === "search") {
     if (
       endpoint === "next" &&
