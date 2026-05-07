@@ -115,7 +115,9 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enha
 
 说明：
 
-这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。已用 iOS YouTube App `next/browse/guide` 样本验证过部分广告字段可清理，但 protobuf 结构仍需更多 `player/get_setting/get_watch` 样本继续完善，尤其是 iOS 后台播放和画中画字段。
+这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。iOS 兼容模块会处理 `player/get_watch` 的已知 player 字段，清理 `adPlacements`、`adSlots`、`pageadViewthroughconversion`，并注入后台播放和画中画能力字段。脚本命中记录会写入 Surge 普通日志；在支持 Logbook 的 Surge 版本中，也会同步写入日志簿，便于远程查看脚本输入、输出和运行细节。
+
+注意：如果仓库保持私有，`raw.githubusercontent.com` 安装地址不能被 Surge 客户端直接拉取。需要将仓库公开、使用可访问的镜像地址，或改成你自己的带鉴权分发方式。
 
 iOS 兼容安装地址：
 
