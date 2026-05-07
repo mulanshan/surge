@@ -33,7 +33,19 @@ function parseArgument() {
 }
 
 function debug(...args) {
-  if (config.debug) console.log("[YouTube Self]", ...args);
+  if (config.debug) logbook(args.join(" "));
+}
+
+function logbook(message) {
+  const text = `[YouTube Self] ${message}`;
+  console.log(text);
+  try {
+    if (typeof $surge !== "undefined" && typeof $surge.logbook === "function") {
+      $surge.logbook(text);
+    }
+  } catch {
+    // Logbook is diagnostic-only; never let it affect response processing.
+  }
 }
 
 function endpointFromUrl(url) {
@@ -315,6 +327,7 @@ function makePlayabilityStatus() {
 }
 
 function enhancePlayabilityStatus(payload) {
+  if (!config.enhancePlayer) return payload;
   const kept = parseFields(payload).filter(
     (field) =>
       field.fieldNo !== PLAYABILITY_FIELDS.pictureInPictureRender &&
@@ -350,7 +363,7 @@ function cleanPlayerProtobuf(bytes) {
       sawPlayability = true;
       const payload = enhancePlayabilityStatus(field.payload);
       out.push({ raw: encodeLengthField(PLAYER_FIELDS.playabilityStatus, payload) });
-      changed = true;
+      changed = changed || payload !== field.payload;
       continue;
     }
 
@@ -470,19 +483,19 @@ try {
   const trimmed = text.trim();
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     const output = cleanJson(text, endpoint);
-    // Always log JSON path length-change so we can see hits in Surge logs.
-    console.log(`[YouTube Self] json ${endpoint} ${text.length} -> ${output.length}`);
+    // Always log JSON path length-change so hits show in Surge logs and Logbook.
+    logbook(`json ${endpoint} ${text.length} -> ${output.length}`);
     $done({ body: output });
   } else {
     const input = bodyBytes(originalBody);
     const output = cleanProtobuf(input, endpoint);
     if (output.length !== input.length || output !== input) {
-      console.log(`[YouTube Self] protobuf ${endpoint} ${input.length} -> ${output.length}`);
+      logbook(`protobuf ${endpoint} ${input.length} -> ${output.length}`);
       // Surge exposes binary response bodies as $response.body when
       // binary-body-mode is enabled, and accepts a Uint8Array in body.
       $done({ body: output });
     } else {
-      console.log(`[YouTube Self] protobuf-passthrough ${endpoint} bytes=${input.length}`);
+      debug(`protobuf-passthrough ${endpoint} bytes=${input.length}`);
       $done({});
     }
   }
