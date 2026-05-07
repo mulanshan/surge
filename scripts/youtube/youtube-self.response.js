@@ -747,19 +747,14 @@ function cleanAdMarkedNestedProtobuf(bytes, depth) {
 
 function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
-  if (endpoint === "get_watch") return cleanAdMarkedNestedProtobuf(cleanWatchProtobuf(bytes), 8);
+  if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
   }
-  if (endpoint === "browse" || endpoint === "next" || endpoint === "search") {
-    if (
-      endpoint === "next" &&
-      (bytesContainMarker(bytes, "WATCH_NEXT_ADS_STATE") || bytesContainMarker(bytes, "ad_badge.eml-fe"))
-    ) {
-      return new Uint8Array(0);
-    }
-    return cleanAdMarkedNestedProtobuf(bytes, 8);
-  }
+  // Browse/search/next carry the feed, search results, comments and "up next"
+  // containers. Without a stable schema, marker-based recursive deletion can
+  // remove normal content and leave the YouTube UI stuck on skeleton rows.
+  if (endpoint === "browse" || endpoint === "next" || endpoint === "search") return bytes;
   return bytes;
 }
 
