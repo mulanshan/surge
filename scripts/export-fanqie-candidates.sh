@@ -137,7 +137,7 @@ rules_path = root / "rules" / "fanqie-novel-adblock.list"
 TOPIC_RE = re.compile(
     r"fqnovel|fanqie|snssdk|zijieapi|byteimg|bdurl|applog|bytegecko|pangolin|"
     r"pglstat|pangle|ad-sign|ad[.]oceanengine|timon|vcs|mon[0-9]+-misc|"
-    r"douyinpic|ecombdimg|ydycdn|manlaxycloud",
+    r"douyinpic|douyin[.]com|ecombdapi|ecombdimg|ydycdn|manlaxycloud",
     re.I,
 )
 HIGH_CONF_RE = re.compile(
@@ -146,7 +146,7 @@ HIGH_CONF_RE = re.compile(
     re.I,
 )
 RESOURCE_RE = re.compile(
-    r"bytegecko|douyinpic|ecombdimg|ydycdn|manlaxycloud|fqnovelpic|fqnovelvod",
+    r"bytegecko|douyinpic|ecombdapi|ecombdimg|ydycdn|manlaxycloud|fqnovelpic|fqnovelvod",
     re.I,
 )
 
