@@ -24,6 +24,12 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adbloc
 https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-cn.list
 ```
 
+命名为“番茄小说”的云端规则集地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rules/%E7%95%AA%E8%8C%84%E5%B0%8F%E8%AF%B4.list
+```
+
 如果不用模块，也可以在主配置 `[Rule]` 顶部加入：
 
 ```ini
@@ -35,6 +41,12 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-nov
 ```ini
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-cn.list,你的回国策略,extended-matching
+```
+
+也可以使用命名为“番茄小说”的中文规则集地址：
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/%E7%95%AA%E8%8C%84%E5%B0%8F%E8%AF%B4.list,你的回国策略,extended-matching
 ```
 
 如果人在中国大陆、不需要代理回国，第二行策略可以用 `DIRECT`。两条规则的顺序不要反过来，否则广告/日志域名会先被回国分流而不是拒绝。
