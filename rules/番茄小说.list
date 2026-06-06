@@ -20,14 +20,34 @@ DOMAIN-SUFFIX,ydycdn.com
 DOMAIN-SUFFIX,manlaxycloud.com
 
 # ByteDance / Fanqie auxiliary resources observed from iOS Surge logs.
+DOMAIN,gecko5-lq.zijieapi.com
+DOMAIN,ma.zijieapi.com
 DOMAIN,saveu5-normal-lq.zijieapi.com
 DOMAIN,p11.douyinpic.com
 DOMAIN,p3.douyinpic.com
 DOMAIN,p26-item.ecombdimg.com
 DOMAIN,p3-aio.ecombdimg.com
 
-# Embedded commerce/live entrypoints seen during app navigation. Keep these
-# behind the adblock ruleset so confirmed ad/log domains are still rejected.
+# Embedded commerce/live entrypoints seen during app navigation and global
+# proxy testing. Keep these behind the adblock ruleset so confirmed ad/log
+# domains are still rejected.
+DOMAIN,ec3-core-lq.ecombdapi.com
+DOMAIN,ec5-core-lq.ecombdapi.com
 DOMAIN,ecom3-normal-lq.ecombdapi.com
 DOMAIN,ecom5-normal-lq.ecombdapi.com
+DOMAIN,isaas5-normal-lq.ecombdapi.com
+DOMAIN,content-open.douyin.com
 DOMAIN,webcast5-open-lq.douyin.com
+
+# Exact snssdk / ByteDance auxiliary hosts seen during global-proxy testing.
+# Avoid broad DOMAIN-SUFFIX,snssdk.com or bytedance.com because those families
+# also carry unrelated app and ad traffic.
+DOMAIN,aweme.snssdk.com
+DOMAIN,tp-pay.snssdk.com
+DOMAIN,vas.snssdk.com
+DOMAIN,pitaya.bytedance.com
+DOMAIN,vc-brain.ndcpp.com
+
+# Observed ad/telemetry endpoint. If you also use the adblock ruleset, place it
+# before this routing ruleset so this domain is rejected instead of routed.
+DOMAIN,dig.bdurl.net
