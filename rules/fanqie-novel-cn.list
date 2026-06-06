@@ -1,0 +1,32 @@
+# Fanqie Novel routing ruleset for returning app traffic to a China policy.
+# Usage:
+# Place the adblock ruleset first, then this routing ruleset.
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-cn.list,China,extended-matching
+#
+# Replace "China" with your China-return policy group. If you are in mainland
+# China and do not need a proxy, use DIRECT instead.
+
+# Fanqie core business and reading resources.
+DOMAIN-SUFFIX,fqnovel.com
+DOMAIN-SUFFIX,fanqienovel.com
+DOMAIN-SUFFIX,fqnovelpic.com
+DOMAIN-SUFFIX,fqnovelvod.com
+
+# Dynamic resources and CDN hosts observed from iOS Surge logs.
+DOMAIN-SUFFIX,bytegecko.com
+DOMAIN-SUFFIX,ydycdn.com
+DOMAIN-SUFFIX,manlaxycloud.com
+
+# ByteDance / Fanqie auxiliary resources observed from iOS Surge logs.
+DOMAIN,saveu5-normal-lq.zijieapi.com
+DOMAIN,p11.douyinpic.com
+DOMAIN,p3.douyinpic.com
+DOMAIN,p26-item.ecombdimg.com
+DOMAIN,p3-aio.ecombdimg.com
+
+# Embedded commerce/live entrypoints seen during app navigation. Keep these
+# behind the adblock ruleset so confirmed ad/log domains are still rejected.
+DOMAIN,ecom3-normal-lq.ecombdapi.com
+DOMAIN,ecom5-normal-lq.ecombdapi.com
+DOMAIN,webcast5-open-lq.douyin.com

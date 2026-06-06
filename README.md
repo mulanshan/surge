@@ -18,15 +18,31 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/fanqie-novel-adbl
 https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list
 ```
 
+回国分流规则集地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-cn.list
+```
+
 如果不用模块，也可以在主配置 `[Rule]` 顶部加入：
 
 ```ini
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
 ```
 
+如果在海外使用番茄小说，可以把广告规则放前面，再把业务流量交给你的回国策略组：
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-cn.list,你的回国策略,extended-matching
+```
+
+如果人在中国大陆、不需要代理回国，第二行策略可以用 `DIRECT`。两条规则的顺序不要反过来，否则广告/日志域名会先被回国分流而不是拒绝。
+
 功能范围：
 
 - 拦截番茄小说和字节系广告、统计、监控、热更新资源域名
+- 可选把番茄小说业务、阅读图片、阅读视频和动态资源分流到回国策略
 - 对穿山甲广告 SDK 和广告素材路径使用 URL Rewrite reject
 - 不包含 JavaScript 脚本
 - 仅对广告 SDK/素材域名追加 MITM hostname
