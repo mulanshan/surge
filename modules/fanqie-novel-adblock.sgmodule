@@ -5,9 +5,13 @@
 [Rule]
 # 番茄小说日志、广告、监控。模块规则会插入主配置 Rule 顶部，策略仅使用 Surge 内置 REJECT。
 DOMAIN,log3-applog.fqnovel.com,REJECT
+DOMAIN,log3-applog-lq.fqnovel.com,REJECT
 DOMAIN,log5-applog.fqnovel.com,REJECT
+DOMAIN,log5-applog-lq.fqnovel.com,REJECT
 DOMAIN,rtlog3-applog.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog-lq.fqnovel.com,REJECT
 DOMAIN,rtlog5-applog.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog-lq.fqnovel.com,REJECT
 DOMAIN,mon11-misc-lq.fqnovel.com,REJECT
 DOMAIN,mon11-misc.fqnovel.com,REJECT
 DOMAIN,mon3-misc.fqnovel.com,REJECT

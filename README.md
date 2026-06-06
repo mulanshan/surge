@@ -21,7 +21,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adbloc
 如果不用模块，也可以在主配置 `[Rule]` 顶部加入：
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
 ```
 
 功能范围：
