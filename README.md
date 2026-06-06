@@ -38,6 +38,34 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-nov
 
 如果番茄小说后续新增广告域名，可以把域名追加到模块的 `[Rule]` 区域和规则集文件，然后重新推送仓库。Surge 里更新模块或外部资源即可生效。
 
+### 日志导出与候选规则开发
+
+脚本：[scripts/export-fanqie-candidates.sh](scripts/export-fanqie-candidates.sh)
+
+默认连接 iPhone Surge External Controller，读取最近请求并生成候选报告：
+
+```bash
+scripts/export-fanqie-candidates.sh
+```
+
+也可以复盘之前保存的 `dump request` JSON：
+
+```bash
+scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-20260606-151744.json
+```
+
+输出会写入 `reports/fanqie/`，该目录已忽略，不会误提交到公开仓库。主要文件：
+
+- `*.summary.tsv`：域名、次数、规则、策略、是否拒绝的聚合表
+- `*.candidate-rules.list`：只包含高置信新候选，复制到生产规则前必须人工复核
+- `*.report.md`：按 `candidate-reject`、`observe`、`existing-rule` 分类的审查报告
+
+开发原则：
+
+- 已被 `fanqie-novel-adblock.list` 拦截的域名保持在生产规则里
+- 新域名先进入候选或观察，不直接整域拦截
+- `bytegecko`、`douyinpic`、`ecombdimg`、`ydycdn` 等 CDN/图片/动态资源域名默认观察，确认和广告强相关后再精确单域拦截
+
 ## Youtube (Music) Enhance
 
 文件：[modules/youtube-enhance.sgmodule](modules/youtube-enhance.sgmodule)
