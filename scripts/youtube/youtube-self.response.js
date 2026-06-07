@@ -256,6 +256,11 @@ const AD_MARKERS = [
   "adpromoted",
   "is_ad",
   "ad_cpn",
+  "adurl",
+  "adview",
+  "ad_type",
+  "google_ad",
+  "googlevideo_ad",
   "break_type",
   "adPlacement",
   "adSlots",
@@ -266,20 +271,33 @@ const AD_MARKERS = [
   "ad_details_line.eml-fe",
   "ad_icon_text.eml-fe",
   "ad_rating.eml-fe",
+  "inline_injection_entrypoint_layout.eml",
 ];
 
 const FEED_AD_CARD_MARKERS = [
+  "赞助",
+  "赞助商",
   "赞助商广告",
+  "广告主",
+  "付费宣传",
   "Sponsored",
   "sponsored",
+  "Sponsor",
+  "sponsor",
   "Promoted",
   "promoted",
+  "Advertisement",
+  "advertisement",
   "ad_badge.eml-fe",
   "inline_injection_entrypoint_layout.eml",
   "in_feed_ad",
   "googleads",
   "doubleclick.net",
   "pagead",
+  "adurl",
+  "adview",
+  "ad_cpn",
+  "ad_type",
 ];
 
 function readVarint(bytes, offset) {
@@ -745,7 +763,7 @@ function isLikelyFeedAdCard(payload) {
   // Feed ad cards are usually tens of KB. The full feed response is much
   // larger, while a single label/string is tiny. Keep this intentionally
   // narrow so a bad marker cannot erase the whole home/search feed again.
-  if (payload.length < 800 || payload.length > 180000) return false;
+  if (payload.length < 500 || payload.length > 260000) return false;
   if (!bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
   return isLikelyNestedMessage(payload);
 }
@@ -761,13 +779,12 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
       continue;
     }
 
-    if (isLikelyFeedAdCard(field.payload)) {
-      changed = true;
-      continue;
-    }
-
     try {
       const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
+      if (isLikelyFeedAdCard(payload)) {
+        changed = true;
+        continue;
+      }
       if (payload !== field.payload) {
         out.push({ raw: encodeLengthField(field.fieldNo, payload) });
         changed = true;
