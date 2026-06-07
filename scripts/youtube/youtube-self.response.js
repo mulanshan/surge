@@ -2,13 +2,12 @@
  * Self-written YouTube cleaner for Surge.
  *
  * Behavior:
- * - JSON responses (Web/desktop YouTube): conservative player/next ad-field
- *   removal, plus optional player capability enhancement for picture-in-picture
+ * - JSON responses (Web/desktop YouTube): conservative ad-field removal,
+ *   plus optional player capability enhancement for picture-in-picture
  *   and background playback.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
- *   schema-light wire editing for player, next, and get_watch responses:
- *   remove known ad fields, remove obvious next-ad message fragments, and
- *   inject background/PiP capability fields.
+ *   schema-light wire editing for player/get_watch/account settings, plus
+ *   guarded feed-card cleanup for browse/search/next surfaces.
  *
  * Does not include any third-party source code.
  */
@@ -150,8 +149,8 @@ function cleanJson(text, endpoint) {
   // inject PiP + background playback capability on either.
   if (endpoint === "player" || endpoint === "get_watch") {
     enhanceJsonPlayer(payload);
-    walkJson(payload);
   }
+  walkJson(payload);
   return JSON.stringify(payload);
 }
 
@@ -963,10 +962,18 @@ function cleanProtobuf(bytes, endpoint) {
   feedAdCardsRemoved = 0;
   nextAdFieldsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
-  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(bytes, 8);
+  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(cleanFeedAdCardsProtobuf(bytes, 6), 8);
   if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
+  }
+  if (
+    endpoint === "browse" ||
+    endpoint === "search" ||
+    endpoint === "guide" ||
+    endpoint === "reel/reel_watch_sequence"
+  ) {
+    return cleanFeedAdCardsProtobuf(bytes, 6);
   }
   return bytes;
 }
