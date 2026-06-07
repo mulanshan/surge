@@ -125,6 +125,29 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 - 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
 - 对部分 YouTube 广告统计和初始化请求返回空响应
 
+## YouTube Self Fast
+
+文件：[modules/youtube-self-fast.sgmodule](modules/youtube-self-fast.sgmodule)
+
+安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-fast.sgmodule
+```
+
+说明：
+
+这是速度优先版。它只对 `youtubei.googleapis.com` 的 `player/get_watch` 播放核心接口执行自写脚本，并只 MITM `youtubei.googleapis.com` 和 `*.googlevideo.com`。相比 `YouTube Self`，它不处理 `browse/next/search/guide/account/get_setting/reel`，因此 YouTube 首屏、信息流、搜索页的响应脚本负担更低，打开速度通常会更接近第三方精简模块。
+
+取舍：
+
+- 保留 YouTube 播放接口已知广告字段清理
+- 保留后台播放、画中画能力增强
+- 保留 QUIC/HTTP3 拒绝和 `googlevideo.com/initplayback` 广告初始化空响应
+- 不清理首页/搜索/Shorts 信息流广告卡片
+- 不补设置页后台播放入口
+- 不 MITM `www.youtube.com`、`s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
+
 ## YouTube Self Local
 
 文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
