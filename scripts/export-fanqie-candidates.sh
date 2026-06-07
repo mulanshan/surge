@@ -141,7 +141,7 @@ TOPIC_RE = re.compile(
     re.I,
 )
 HIGH_CONF_RE = re.compile(
-    r"(^|[.-])(ads?|ad-sign|applog|rtlog|timon|vcs|pangolin|pglstat|iegadp|"
+    r"(^|[.-])(ads?[0-9]*|ad-sign|applog|rtlog|timon|vcs|pangolin|pglstat|iegadp|"
     r"ugsdk|bdurl|toutiaocloud|mon[0-9]+-misc)([.-]|$)",
     re.I,
 )
