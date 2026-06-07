@@ -248,9 +248,15 @@ const AD_MARKERS = [
   "pagead",
   "googleads",
   "googleadservices",
+  "googleadservices.com",
   "doubleclick.net",
+  "doubleclick",
   "ytcs",
   "activeview",
+  "aclk",
+  "adclick",
+  "ad_click",
+  "clickserve",
   "adformat",
   "adcontext",
   "adhost",
@@ -293,13 +299,22 @@ const FEED_AD_CARD_MARKERS = [
   "inline_injection_entrypoint_layout.eml",
   "in_feed_ad",
   "googleads",
+  "googleadservices",
+  "googleadservices.com",
   "doubleclick.net",
+  "doubleclick",
   "pagead",
+  "aclk",
+  "adclick",
+  "ad_click",
+  "clickserve",
   "adurl",
   "adview",
   "ad_cpn",
   "ad_type",
 ];
+
+let feedAdCardsRemoved = 0;
 
 function readVarint(bytes, offset) {
   let value = 0;
@@ -768,11 +783,21 @@ function isLikelyNestedMessage(bytes) {
 
 function isLikelyFeedAdCard(payload) {
   // Feed ad cards are usually tens of KB. The full feed response is much
-  // larger, while a single label/string is tiny. Keep this intentionally
-  // narrow so a bad marker cannot erase the whole home/search feed again.
-  if (payload.length < 500 || payload.length > 260000) return false;
+  // larger, while a single label/string is tiny. Keep this guarded so a bad
+  // marker cannot erase the whole home/search feed again.
+  if (payload.length < 300 || payload.length > 900000) return false;
   if (!bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
-  return isLikelyNestedMessage(payload);
+  try {
+    const fields = parseFields(payload);
+    const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
+    if (lengthFields === 0) return false;
+    // Large section/container messages can contain one nested ad. Prefer
+    // removing the smaller child card instead of an entire shelf/response.
+    if (payload.length > 260000 && lengthFields > 50) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function cleanFeedAdCardsProtobuf(bytes, depth) {
@@ -787,8 +812,15 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
     }
 
     try {
+      if (isLikelyFeedAdCard(field.payload)) {
+        feedAdCardsRemoved += 1;
+        changed = true;
+        continue;
+      }
+
       const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
       if (isLikelyFeedAdCard(payload)) {
+        feedAdCardsRemoved += 1;
         changed = true;
         continue;
       }
@@ -839,6 +871,7 @@ function cleanAdMarkedNestedProtobuf(bytes, depth) {
 }
 
 function cleanProtobuf(bytes, endpoint) {
+  feedAdCardsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
   if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
@@ -864,7 +897,8 @@ try {
     const input = bodyBytes(originalBody);
     const output = cleanProtobuf(input, endpoint);
     if (output.length !== input.length || output !== input) {
-      logbook(`protobuf ${endpoint} ${input.length} -> ${output.length}`);
+      const removed = feedAdCardsRemoved ? ` removed=${feedAdCardsRemoved}` : "";
+      logbook(`protobuf ${endpoint} ${input.length} -> ${output.length}${removed}`);
       // Surge exposes binary response bodies as $response.body when
       // binary-body-mode is enabled, and accepts a Uint8Array in body.
       $done({ body: output });
