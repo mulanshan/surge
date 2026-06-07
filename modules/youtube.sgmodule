@@ -1,26 +1,19 @@
 #!name=YouTube Self
-#!desc=兼容旧链接的 YouTube 统一版：等同 modules/youtube-self.sgmodule，建议新安装统一使用 youtube-self.sgmodule。
+#!desc=兼容旧链接的 YouTube 救援版：不修改 YouTube 响应体，优先恢复正常视频可见。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n兼容入口：此文件保留给已经安装 youtube.sgmodule 的设备。新设备请统一使用 modules/youtube-self.sgmodule。
+#!arguments-desc=- 调试参数：[true, false]\n\n兼容救援入口：暂时不运行响应脚本，不修改 browse/next/search/player/get_watch。
 #!date=2026-04-28
 
 [Rule]
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
-[Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|get_watch)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
-
 [Map Local]
-^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
-^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, *.googlevideo.com, www.youtube.com, www.googleadservices.com
+hostname = %APPEND% www.googleadservices.com
