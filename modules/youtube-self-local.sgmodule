@@ -1,11 +1,11 @@
 #!name=YouTube Self Local
-#!desc=自有可审计 YouTube 统一本地版：兼顾打开速度、首页广告削弱、后台播放与画中画。
+#!desc=自有可审计 YouTube 保守本地版：优先保证正常视频可见，只处理播放相关接口。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n本地脚本版：只处理 youtubei.googleapis.com 的 browse/next/player/get_watch，script-path 使用 scripts/youtube/youtube-self.response.js。
+#!arguments-desc=- 调试参数：[true, false]\n\n保守本地脚本版：只处理 youtubei.googleapis.com 的 player/get_watch/account/get_setting，script-path 使用 scripts/youtube/youtube-self.response.js。browse/next/search 首页、推荐、搜索和下一页接口全部原样放行。
 #!date=2026-06-07
 
 [Rule]
@@ -14,10 +14,9 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|get_watch)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
+youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(player|get_watch|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
-^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
 ^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
