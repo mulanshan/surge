@@ -5,7 +5,7 @@
 - `modules/`：各类模块、增强、去广告能力，可直接在 Surge 模块里订阅。
 - `rules/`：分流用规则集，不自带策略，在主配置里通过 `RULE-SET` 指定策略组。
 
-原 `mulanshan/surge-rules` 里的分流规则已迁入本仓库。旧仓库可继续保留作兼容入口；新配置建议统一使用 `mulanshan/surge`。
+原 `mulanshan/surge-rules` 里的分流规则已迁入本仓库；旧仓库已停止使用。新配置统一使用 `mulanshan/surge`。
 
 ## 模块与去广告
 
