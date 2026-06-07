@@ -1,0 +1,17 @@
+# Docker / OCI image pulls
+#
+# Covers Docker Hub, Docker Registry, image layer CDN, GitHub Container
+# Registry, and GitHub package container blob hosts.
+# Use this ruleset for pulling container images through a proxy policy.
+
+DOMAIN,auth.docker.io
+DOMAIN,registry-1.docker.io
+DOMAIN,index.docker.io
+DOMAIN,registry.hub.docker.com
+DOMAIN,hub.docker.com
+DOMAIN-SUFFIX,docker.io
+DOMAIN-SUFFIX,docker.com
+DOMAIN,production.cloudflare.docker.com
+DOMAIN-SUFFIX,cloudflarestorage.com
+DOMAIN,ghcr.io
+DOMAIN,pkg-containers.githubusercontent.com

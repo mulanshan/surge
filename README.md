@@ -99,6 +99,23 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.
 
 覆盖 The Movie Database 网站、API 和图片资源域名。
 
+### Docker / OCI 镜像拉取
+
+文件：[rule/Surge/docker-oci.list](rule/Surge/docker-oci.list)
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/docker-oci.list,自动,extended-matching,no-resolve
+```
+
+分流对象：
+
+- Docker Hub 认证、索引、仓库和网页入口：`auth.docker.io`、`registry-1.docker.io`、`index.docker.io`、`registry.hub.docker.com`、`hub.docker.com`
+- Docker 官方域名族：`docker.io`、`docker.com`
+- Docker 镜像层下载 CDN：`production.cloudflare.docker.com`、`cloudflarestorage.com`
+- GitHub Container Registry 和包容器下载域名：`ghcr.io`、`pkg-containers.githubusercontent.com`
+
+适合在拉取 Docker / OCI 镜像时走可访问 Docker Hub 和 GHCR 的策略组。当前本机 Surge 配置使用 `自动` 策略。
+
 ### 番茄小说回国分流
 
 文件：[rule/Surge/fanqie-novel-cn.list](rule/Surge/fanqie-novel-cn.list)
