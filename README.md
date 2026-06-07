@@ -106,7 +106,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 说明：
 
-这是当前推荐的公开仓库安装版。模块和脚本都从自己的公开仓库加载，不包含第三方代码。
+这是当前唯一推荐的公开仓库安装地址。模块和脚本都从自己的公开仓库加载，不包含第三方代码。以后 YouTube 规则只维护这个主入口，旧的 Fast/iOS/实验模块文件保留为兼容和调试用途。
 
 安全边界：
 
@@ -118,35 +118,18 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 功能范围：
 
-- YouTube `player/get_watch` 已知广告字段清理
+- YouTube `browse` 首页信息流广告削弱
+- YouTube `player/get_watch` 已知播放广告字段清理
 - 后台播放、画中画能力增强
-- 设置页后台播放入口补全
-- 首页/搜索中明确广告卡片的保守清理
 - 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
-- 对部分 YouTube 广告统计和初始化请求返回空响应
+- 对 `googlevideo.com/initplayback` 广告初始化请求返回空响应
 
-## YouTube Self Fast
+速度边界：
 
-文件：[modules/youtube-self-fast.sgmodule](modules/youtube-self-fast.sgmodule)
-
-安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-fast.sgmodule
-```
-
-说明：
-
-这是速度优先版。它只对 `youtubei.googleapis.com` 的 `player/get_watch` 播放核心接口执行自写脚本，并只 MITM `youtubei.googleapis.com` 和 `*.googlevideo.com`。相比 `YouTube Self`，它不处理 `browse/next/search/guide/account/get_setting/reel`，因此 YouTube 首屏、信息流、搜索页的响应脚本负担更低，打开速度通常会更接近第三方精简模块。
-
-取舍：
-
-- 保留 YouTube 播放接口已知广告字段清理
-- 保留后台播放、画中画能力增强
-- 保留 QUIC/HTTP3 拒绝和 `googlevideo.com/initplayback` 广告初始化空响应
-- 不清理首页/搜索/Shorts 信息流广告卡片
-- 不补设置页后台播放入口
+- 只对 `youtubei.googleapis.com` 的 `browse/player/get_watch` 执行响应脚本
+- 不处理 `next/search/guide/account/get_setting/reel`，减少首屏脚本负担
 - 不 MITM `www.youtube.com`、`s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
+- 已安装 `youtube-self-fast.sgmodule` 的设备可以继续更新，但新安装统一使用 `youtube-self.sgmodule`
 
 ## YouTube Self Local
 
@@ -174,11 +157,7 @@ script-path=scripts/youtube/youtube-self.response.js
 
 文件：[modules/youtube-enhance.sgmodule](modules/youtube-enhance.sgmodule)
 
-安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-enhance.sgmodule
-```
+说明：历史第三方固定副本，保留作对照；新安装统一使用 `YouTube Self`。
 
 功能范围：
 
@@ -197,7 +176,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-enhance.s
 
 安全说明：
 
-这个模块保留为历史第三方固定副本，不再作为首选。现在建议优先使用上面的 `YouTube Self Local`；只有在自写版失效、且你愿意接受第三方脚本审计成本时，再临时启用这一版。
+这个模块保留为历史第三方固定副本，不再作为首选。现在建议优先使用上面的 `YouTube Self`；只有在自写版失效、且你愿意接受第三方脚本审计成本时，再临时启用这一版。
 
 YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所以这个模块需要启用 MITM，并且会执行响应脚本。`*.googlevideo.com` 用于配合 `[Map Local]` 处理部分播放初始化广告请求；这是更完整但权限更大的配置。脚本只引用本仓库固定副本，不继续引用不受控的第三方 raw 地址。
 
@@ -218,11 +197,7 @@ YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所�
 
 文件：[modules/youtube-safe-lite.sgmodule](modules/youtube-safe-lite.sgmodule)
 
-安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-safe-lite.sgmodule
-```
+说明：历史最小权限版本，保留作调试对照；新安装统一使用 `YouTube Self`。
 
 功能范围：
 
@@ -240,12 +215,6 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-safe-lite
 
 文件：[modules/youtube-readable-enhance.sgmodule](modules/youtube-readable-enhance.sgmodule)
 
-安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-readable-enhance.sgmodule
-```
-
 说明：
 
 这是完全自写的可读脚本版本，脚本在 [scripts/youtube/youtube-readable.response.js](scripts/youtube/youtube-readable.response.js)。它处理 JSON 形态的 YouTube `youtubei` 响应，可以清理常见广告字段、屏蔽部分入口、增加字幕翻译轨道和播放能力字段。它不包含第三方脚本，也不解析 protobuf，因此不能完整替代面向 iOS/YouTube Music App 的深度增强模块。
@@ -253,12 +222,6 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-readable-
 ## YouTube Self Enhance
 
 文件：[modules/youtube-self-enhance.sgmodule](modules/youtube-self-enhance.sgmodule)
-
-安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enhance.sgmodule
-```
 
 说明：
 
@@ -271,11 +234,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enha
 
 注意：如果仓库保持私有，`raw.githubusercontent.com` 安装地址不能被 Surge 客户端直接拉取。需要将仓库公开、使用可访问的镜像地址，或改成你自己的带鉴权分发方式。
 
-iOS 兼容安装地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-ios.sgmodule
-```
+iOS 兼容远程版保留在 [modules/youtube-ios.sgmodule](modules/youtube-ios.sgmodule)，仅用于历史兼容和调试。新安装统一使用 `YouTube Self` 主入口。
 
 iCloud 本地同步版：
 

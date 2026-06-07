@@ -1,42 +1,18 @@
-#!name=YouTube Self Enhance
-#!desc=完全自写可审计 YouTube 增强：JSON 去广告 + player protobuf 去广告、后台播放、画中画。不含第三方脚本。
+#!name=YouTube Self
+#!desc=兼容旧链接的 YouTube 统一版：等同 modules/youtube-self.sgmodule，建议新安装统一使用 youtube-self.sgmodule。
 #!author=mulanshan
 #!category=Enhance
 #!date=2026-04-28
 
 [Rule]
-AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT-NO-DROP
-AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT-NO-DROP
-AND,((DOMAIN,www.youtube.com),(PROTOCOL,UDP)),REJECT-NO-DROP
-
-# Drop noisy YouTube telemetry/log endpoints. Saves bandwidth, no
-# functional impact. Comment out if anything misbehaves.
-URL-REGEX,^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/log_event,REJECT
-URL-REGEX,^https:\/\/www\.youtube\.com\/youtubei\/v1\/log_event,REJECT
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
-^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/api\/stats\/ads data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=adhost data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=adpromoted data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/atr\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/googleads\.g\.doubleclick\.net\/ytcs\/adview data-type=text data="" status-code=204
-^https?:\/\/www\.google(?:\.com|\.com\.hk)\/pagead\/ data-type=text data="" status-code=204
-^https?:\/\/www\.google(?:\.com|\.com\.hk)\/ads\/on-device\/ data-type=text data="" status-code=204
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|guide|account\/get_setting(?:_values)?|reel\/reel_watch_sequence),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js
+youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|player|get_watch)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":false}"
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, googleads.g.doubleclick.net, *.googlevideo.com, www.google.com, www.google.com.hk
+hostname = %APPEND% youtubei.googleapis.com, *.googlevideo.com
