@@ -2,12 +2,13 @@
  * Self-written YouTube cleaner for Surge.
  *
  * Behavior:
- * - JSON responses (Web/desktop YouTube): conservative player-only ad-field
+ * - JSON responses (Web/desktop YouTube): conservative player/next ad-field
  *   removal, plus optional player capability enhancement for picture-in-picture
  *   and background playback.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
- *   schema-light wire editing for the YouTube player response only:
- *   remove known ad fields and inject background/PiP capability fields.
+ *   schema-light wire editing for player, next, and get_watch responses:
+ *   remove known ad fields, remove obvious next-ad message fragments, and
+ *   inject background/PiP capability fields.
  *
  * Does not include any third-party source code.
  */
@@ -314,7 +315,43 @@ const FEED_AD_CARD_MARKERS = [
   "ad_type",
 ];
 
+const NEXT_AD_STRONG_MARKERS = [
+  "pagead",
+  "googleads",
+  "googleadservices",
+  "googleadservices.com",
+  "doubleclick.net",
+  "doubleclick",
+  "activeview",
+  "adclick",
+  "ad_click",
+  "clickserve",
+  "adformat",
+  "adcontext",
+  "adhost",
+  "adpromoted",
+  "is_ad",
+  "ad_cpn",
+  "adurl",
+  "adview",
+  "ad_type",
+  "google_ad",
+  "googlevideo_ad",
+  "break_type",
+  "adPlacement",
+  "adSlots",
+  "WATCH_NEXT_ADS_STATE",
+  "ad_badge.eml-fe",
+  "ad_avatar.eml-fe",
+  "ad_button.eml-fe",
+  "ad_details_line.eml-fe",
+  "ad_icon_text.eml-fe",
+  "ad_rating.eml-fe",
+  "inline_injection_entrypoint_layout.eml",
+];
+
 let feedAdCardsRemoved = 0;
+let nextAdFieldsRemoved = 0;
 
 function readVarint(bytes, offset) {
   let value = 0;
@@ -504,6 +541,12 @@ function cleanWatchContentProtobuf(bytes) {
     if (field.fieldNo === WATCH_CONTENT_FIELDS.player && field.wireType === WIRE_LENGTH && field.payload) {
       const payload = cleanPlayerProtobuf(field.payload);
       out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.player, payload) });
+      changed = true;
+      continue;
+    }
+    if (field.fieldNo === WATCH_CONTENT_FIELDS.next && field.wireType === WIRE_LENGTH && field.payload) {
+      const payload = cleanNextAdFragmentsProtobuf(field.payload, 8);
+      out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.next, payload) });
       changed = true;
       continue;
     }
@@ -766,6 +809,58 @@ function bytesContainAnyMarker(bytes, markers) {
   return markers.some((marker) => text.includes(marker));
 }
 
+function isLikelyNextAdFragment(payload) {
+  if (payload.length < 180 || payload.length > 220000) return false;
+  if (!bytesContainAnyMarker(payload, NEXT_AD_STRONG_MARKERS)) return false;
+
+  try {
+    const fields = parseFields(payload);
+    const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
+    if (lengthFields === 0) return payload.length < 6000;
+    if (payload.length > 90000 && lengthFields > 35) return false;
+    return true;
+  } catch {
+    return payload.length < 6000;
+  }
+}
+
+function cleanNextAdFragmentsProtobuf(bytes, depth) {
+  if (depth <= 0) return bytes;
+
+  let changed = false;
+  const out = [];
+  for (const field of parseFields(bytes)) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+      out.push(field);
+      continue;
+    }
+
+    try {
+      const payload = cleanNextAdFragmentsProtobuf(field.payload, depth - 1);
+      if (isLikelyNextAdFragment(payload)) {
+        nextAdFieldsRemoved += 1;
+        changed = true;
+        continue;
+      }
+      if (payload !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+        changed = true;
+      } else {
+        out.push(field);
+      }
+    } catch {
+      if (isLikelyNextAdFragment(field.payload)) {
+        nextAdFieldsRemoved += 1;
+        changed = true;
+      } else {
+        out.push(field);
+      }
+    }
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
 function isLikelyNestedMessage(bytes) {
   try {
     const fields = parseFields(bytes);
@@ -866,7 +961,9 @@ function cleanAdMarkedNestedProtobuf(bytes, depth) {
 
 function cleanProtobuf(bytes, endpoint) {
   feedAdCardsRemoved = 0;
+  nextAdFieldsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
+  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(bytes, 8);
   if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
@@ -889,7 +986,9 @@ try {
     const input = bodyBytes(originalBody);
     const output = cleanProtobuf(input, endpoint);
     if (output.length !== input.length || output !== input) {
-      const removed = feedAdCardsRemoved ? ` removed=${feedAdCardsRemoved}` : "";
+      const removed = feedAdCardsRemoved || nextAdFieldsRemoved
+        ? ` removed=${feedAdCardsRemoved + nextAdFieldsRemoved}`
+        : "";
       logbook(`protobuf ${endpoint} ${input.length} -> ${output.length}${removed}`);
       // Surge exposes binary response bodies as $response.body when
       // binary-body-mode is enabled, and accepts a Uint8Array in body.

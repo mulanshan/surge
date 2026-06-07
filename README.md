@@ -121,8 +121,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 功能范围：
 
-- 只处理 `youtubei.googleapis.com` 的 `player`、`get_watch`、`account/get_setting`、`account/get_setting_values`
-- 不处理 `browse`、`next`、`search`，避免首页、推荐、搜索和正常视频列表被误伤
+- 只处理 `youtubei.googleapis.com` 的 `player`、`next`、`get_watch`、`account/get_setting`、`account/get_setting_values`
+- 不处理 `browse`、`search`，避免首页、搜索和正常视频列表被误伤
 - 不 MITM `*.googlevideo.com`
 - 不拒绝 `googlevideo.com` UDP/QUIC
 - 对 `www.youtube.com/pagead`、`pcs/activeview`、广告型 `ptracking` 和 `www.googleadservices.com` 广告跳转链路返回空响应
