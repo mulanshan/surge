@@ -1,18 +1,25 @@
 #!name=YouTube Self Local
-#!desc=自有可审计 YouTube 救援本地版：不修改 YouTube 响应体，不拦截视频链路，优先恢复正常视频可见。
+#!desc=自有可审计 YouTube 播放测试本地版：只处理播放接口，首页/推荐/搜索和视频流原样放行。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n救援本地版：暂时不运行响应脚本，不修改 browse/next/search/player/get_watch，也不拒绝 googlevideo/youtubei UDP，避免正常视频内容和播放链路被影响。
+#!arguments-desc=- 调试参数：[true, false]\n\n播放测试本地版：只处理 youtubei.googleapis.com 的 player/get_watch/account/get_setting，script-path 使用 scripts/youtube/youtube-self.response.js。browse/next/search 首页、推荐、搜索和 googlevideo 视频流全部原样放行。
 #!date=2026-06-07
+
+[Rule]
+# 禁用核心 YouTube API 的 QUIC/HTTP3，避免播放 API 走 UDP 绕过 HTTPS 处理。
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+[Script]
+youtube.self.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(player|get_watch|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 ^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
-^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% www.youtube.com, www.googleadservices.com
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, www.googleadservices.com
