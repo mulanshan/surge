@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Locate the YouTube Self Enhance module that Surge Mac actually loaded,
-# print its first 30 lines, and confirm it matches the latest GitHub copy.
+# Locate the YouTube Self Local module copies and confirm the iCloud local
+# module matches the repository copy.
 set -uo pipefail
+cd "$(dirname "$0")/.."
+
+REPO_MODULE="modules/youtube-self-local.sgmodule"
+ICLOUD_MODULE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/modules/youtube-self-local.sgmodule"
 
 echo ">>> Searching Surge sandbox for sgmodule files…"
 HITS=$(find \
@@ -19,14 +23,23 @@ fi
 echo "$HITS" | while IFS= read -r f; do
   echo
   echo "=== $f ==="
-  if grep -q "YouTube Self Enhance" "$f" 2>/dev/null; then
-    echo "    [match] this file is YouTube Self Enhance"
+  if grep -q "YouTube Self Local" "$f" 2>/dev/null; then
+    echo "    [match] this file is YouTube Self Local"
   fi
   head -40 "$f"
 done
 
 echo
-echo ">>> Latest GitHub copy says:"
-curl -fsSL --max-time 10 \
-  "https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self-enhance.sgmodule" \
-  | head -40
+echo ">>> Repository module:"
+head -40 "$REPO_MODULE"
+
+echo
+echo ">>> iCloud local module:"
+if [ -f "$ICLOUD_MODULE" ]; then
+  head -40 "$ICLOUD_MODULE"
+  echo
+  echo ">>> SHA-256 comparison:"
+  shasum -a 256 "$REPO_MODULE" "$ICLOUD_MODULE"
+else
+  echo "    Missing: $ICLOUD_MODULE"
+fi

@@ -17,7 +17,13 @@ Mac 上的 Surge iCloud 容器：
 /Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents
 ```
 
-本地模块：
+推荐本地模块：
+
+```text
+modules/youtube-self-local.sgmodule
+```
+
+兼容旧本地模块：
 
 ```text
 modules/youtube-ios-local.sgmodule
@@ -45,12 +51,12 @@ Surge iOS 当前没有“从文件导入本地模块”的入口时，使用：
 模块 -> 新建本地模块
 ```
 
-将 `modules/youtube-ios-local.sgmodule` 的完整内容粘贴进去并保存。
+将 `modules/youtube-self-local.sgmodule` 的完整内容粘贴进去并保存。
 
 安装后：
 
 - 关闭旧的第三方 `Youtube (Music) Enhance`
-- 启用 `YouTube Self Enhance iOS Local`
+- 启用 `YouTube Self Local`
 - 重载配置
 - 确认脚本资源 ready
 
@@ -166,7 +172,7 @@ Block QUIC traffic due to MITM host matched
 
 ```text
 scripts/youtube/youtube-self.response.js
-modules/youtube-ios-local.sgmodule
+modules/youtube-self-local.sgmodule
 ```
 
 2. 语法检查：
@@ -250,7 +256,7 @@ doubleclick
 如果本地脚本未生效：
 
 - 检查 `external-resource list` 中脚本是否 `local=true` 且 `ready=true`。
-- 检查生效配置里是否有 `FROM-MODULE:YouTube Self Enhance iOS Local`。
+- 检查生效配置里是否有 `FROM-MODULE:YouTube Self Local`。
 - 检查 `[Script]` 是否为 `youtube.self.response`，且 `script-path=scripts/youtube/youtube-self.response.js`。
 - 运行 `external-resource update <key>` 后再 `reload`。
 - 重开 YouTube。

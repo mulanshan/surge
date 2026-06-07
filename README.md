@@ -94,6 +94,37 @@ scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-2026
 - 新域名先进入候选或观察，不直接整域拦截
 - `bytegecko`、`douyinpic`、`ecombdimg`、`ydycdn` 等 CDN/图片/动态资源域名默认观察，确认和广告强相关后再精确单域拦截
 
+## YouTube Self Local
+
+文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
+
+说明：
+
+这是当前推荐的自有本地版。模块本体可以在 Surge 里新建本地模块后粘贴；脚本从 Surge 本地 Documents 目录读取：
+
+```ini
+script-path=scripts/youtube/youtube-self.response.js
+```
+
+功能范围：
+
+- YouTube `player/get_watch` 已知广告字段清理
+- 后台播放、画中画能力增强
+- 设置页后台播放入口补全
+- 首页/搜索中明确广告卡片的保守清理
+- 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
+- 对部分 YouTube 广告统计和初始化请求返回空响应
+
+安全边界：
+
+- 不使用第三方脚本
+- 不使用远程 `script-path`
+- 不发起外部请求
+- 不上传请求、响应、账号、cookie 或 token
+- 不 MITM `www.google.com` / `www.google.com.hk` 这类更泛的 Google 主机名
+
+安装时把 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js) 同步到 Surge Documents 的同名路径。iOS 私有仓库/本地调试流程见 [docs/youtube-ios-local-debug.md](docs/youtube-ios-local-debug.md)。
+
 ## Youtube (Music) Enhance
 
 文件：[modules/youtube-enhance.sgmodule](modules/youtube-enhance.sgmodule)
@@ -120,6 +151,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-enhance.s
 - 本仓库固定副本：[scripts/youtube/youtube.response.js](scripts/youtube/youtube.response.js)
 
 安全说明：
+
+这个模块保留为历史第三方固定副本，不再作为首选。现在建议优先使用上面的 `YouTube Self Local`；只有在自写版失效、且你愿意接受第三方脚本审计成本时，再临时启用这一版。
 
 YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所以这个模块需要启用 MITM，并且会执行响应脚本。`*.googlevideo.com` 用于配合 `[Map Local]` 处理部分播放初始化广告请求；这是更完整但权限更大的配置。脚本只引用本仓库固定副本，不继续引用不受控的第三方 raw 地址。
 
@@ -201,7 +234,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-ios.sgmod
 
 iCloud 本地同步版：
 
-- 文件：[modules/youtube-ios-local.sgmodule](modules/youtube-ios-local.sgmodule)
+- 推荐文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
+- 兼容旧文件：[modules/youtube-ios-local.sgmodule](modules/youtube-ios-local.sgmodule)
 - 调试与制作流程：[docs/youtube-ios-local-debug.md](docs/youtube-ios-local-debug.md)
 
 这个版本用于私有仓库场景。模块本体在 iOS 上通过“新建本地模块”粘贴安装，脚本通过 Surge iCloud Documents 同步并以相对路径加载：
