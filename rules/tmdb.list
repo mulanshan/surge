@@ -1,0 +1,11 @@
+# The Movie Database / TMDB
+#
+# Covers:
+# - Website: www.themoviedb.org
+# - API: api.themoviedb.org
+# - Media resources: media.themoviedb.org
+# - Images: image.tmdb.org, images.tmdb.org
+# - Short/legacy domain: tmdb.org
+
+DOMAIN-SUFFIX,themoviedb.org
+DOMAIN-SUFFIX,tmdb.org

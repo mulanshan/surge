@@ -1,0 +1,11 @@
+# Douban / 豆瓣
+#
+# Covers:
+# - Desktop web: www.douban.com, movie.douban.com, book.douban.com, music.douban.com
+# - Mobile web: m.douban.com
+# - App/API paths under douban.com, including Frodo app entry
+# - Image/static resources commonly served from doubanio.com
+
+DOMAIN-SUFFIX,douban.com
+DOMAIN-SUFFIX,doubanio.com
+DOMAIN-SUFFIX,douban.fm
