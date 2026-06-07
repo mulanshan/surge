@@ -1,6 +1,6 @@
 # Fanqie Novel adblock ruleset for Surge RULE-SET usage.
 # Usage:
-# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list,REJECT,extended-matching
 DOMAIN,log3-applog.fqnovel.com
 DOMAIN,log3-applog-lq.fqnovel.com
 DOMAIN,log5-applog.fqnovel.com

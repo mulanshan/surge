@@ -2,8 +2,8 @@
 # Fanqie Novel routing ruleset for returning app traffic to a China policy.
 # Usage:
 # Place the adblock ruleset first, then this routing ruleset.
-# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/fanqie-novel-adblock.list,REJECT,extended-matching
-# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rules/%E7%95%AA%E8%8C%84%E5%B0%8F%E8%AF%B4.list,China,extended-matching
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list,REJECT,extended-matching
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-cn.list,China,extended-matching
 #
 # Replace "China" with your China-return policy group. If you are in mainland
 # China and do not need a proxy, use DIRECT instead.

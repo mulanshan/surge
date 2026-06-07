@@ -19,7 +19,7 @@ INPUT_JSON=""
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/export-fanqie-candidates.sh [options]
+  rule/Surge/scripts/export-fanqie-candidates.sh [options]
 
 Options:
   -i, --input FILE      Re-process an existing Surge dump request JSON.
@@ -352,7 +352,7 @@ with summary_path.open("w", encoding="utf-8") as f:
 
 candidates = [item["host"] for item in items if item["class"] == "candidate-reject"]
 with candidate_path.open("w", encoding="utf-8") as f:
-    f.write("# Review before merging into rules/fanqie-novel-adblock.list\n")
+    f.write("# Review before merging into rule/Surge/fanqie-novel-adblock.list\n")
     f.write("# Generated from: " + str(raw_path) + "\n")
     for host in candidates:
         f.write(f"DOMAIN,{host}\n")
