@@ -94,17 +94,27 @@ scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-2026
 - 新域名先进入候选或观察，不直接整域拦截
 - `bytegecko`、`douyinpic`、`ecombdimg`、`ydycdn` 等 CDN/图片/动态资源域名默认观察，确认和广告强相关后再精确单域拦截
 
-## YouTube Self Local
+## YouTube Self
 
-文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
+文件：[modules/youtube-self.sgmodule](modules/youtube-self.sgmodule)
+
+安装地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmodule
+```
 
 说明：
 
-这是当前推荐的自有本地版。模块本体可以在 Surge 里新建本地模块后粘贴；脚本从 Surge 本地 Documents 目录读取：
+这是当前推荐的公开仓库安装版。模块和脚本都从自己的公开仓库加载，不包含第三方代码。
 
-```ini
-script-path=scripts/youtube/youtube-self.response.js
-```
+安全边界：
+
+- 不使用第三方脚本
+- 只从 `mulanshan/surge` 加载 `scripts/youtube/youtube-self.response.js`
+- 脚本不发起外部请求
+- 不上传请求、响应、账号、cookie 或 token
+- 不 MITM `www.google.com` / `www.google.com.hk` 这类更泛的 Google 主机名
 
 功能范围：
 
@@ -114,6 +124,18 @@ script-path=scripts/youtube/youtube-self.response.js
 - 首页/搜索中明确广告卡片的保守清理
 - 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
 - 对部分 YouTube 广告统计和初始化请求返回空响应
+
+## YouTube Self Local
+
+文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
+
+说明：
+
+这是不依赖 GitHub raw 的本地版。模块本体可以在 Surge 里新建本地模块后粘贴；脚本从 Surge 本地 Documents 目录读取：
+
+```ini
+script-path=scripts/youtube/youtube-self.response.js
+```
 
 安全边界：
 
