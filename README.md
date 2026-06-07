@@ -108,6 +108,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 这是当前唯一推荐的公开仓库安装地址。模块和脚本都从自己的公开仓库加载，不包含第三方代码。以后 YouTube 规则只维护这个主入口，旧的 Fast/iOS/实验模块文件保留为兼容和调试用途。
 
+当前主入口是救援版：不运行响应脚本，不修改 YouTube `browse/next/search/player/get_watch` 响应体，也不拒绝 `googlevideo.com` / `youtubei.googleapis.com` 的 UDP/QUIC 主业务链路。它只保留页面广告追踪 URL 的空响应规则，优先保证正常视频列表和播放可见。
+
 安全边界：
 
 - 不使用第三方脚本
@@ -118,17 +120,14 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 功能范围：
 
-- YouTube `browse` 首页信息流广告削弱
-- YouTube `player/get_watch` 已知播放广告字段清理
-- 后台播放、画中画能力增强
-- 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
-- 对 `googlevideo.com/initplayback` 广告初始化请求返回空响应
+- 不修改 YouTube 响应体
+- 不拒绝 `googlevideo.com` / `youtubei.googleapis.com` UDP/QUIC
 - 对 `www.youtube.com/pagead`、`pcs/activeview`、广告型 `ptracking` 和 `www.googleadservices.com` 广告跳转链路返回空响应
 
 速度边界：
 
-- 只对 `youtubei.googleapis.com` 的 `browse/next/player/get_watch` 执行响应脚本
-- 不处理 `search/guide/account/get_setting/reel`，减少首屏脚本负担
+- 不执行 YouTube 响应脚本
+- 不处理 `search/guide/account/get_setting/reel`
 - 只额外 MITM `www.youtube.com` 与 `www.googleadservices.com` 用于页面广告空响应；不 MITM `s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
 - 已安装 `youtube-self-fast.sgmodule` 的设备可以继续更新，但新安装统一使用 `youtube-self.sgmodule`
 
@@ -226,12 +225,12 @@ YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所�
 
 说明：
 
-这是完全自写实验版，脚本在 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js)。它包含 JSON 响应增强和 protobuf 通用广告字段清理。iOS 兼容模块会处理 `player/get_watch` 的已知 player 字段，清理 `adPlacements`、`adSlots`、`pageadViewthroughconversion`，并注入后台播放和画中画能力字段。它还会处理 `account/get_setting`，向设置响应中补入后台播放入口和开关项。脚本命中记录会写入 Surge 普通日志；在支持 Logbook 的 Surge 版本中，也会同步写入日志簿，便于远程查看脚本输入、输出和运行细节。
+这是旧兼容入口，现在与主入口一样是救援版：不运行响应脚本，不修改 YouTube 响应体，不拒绝视频链路，只保留页面广告追踪 URL 的空响应规则。新安装统一使用上面的 `YouTube Self` 主入口。
 
 调试方式：
 
 - 通过 Surge Mac Dashboard 连接 iOS 远程实例，可以查看 Logbook 中的脚本运行细节。
-- 当前 `surge-cli` 可读取远程 `dump request`、`dump active`、`dump event`，但尚不能通过 `dump logbook` 直接导出 Logbook；脚本是否命中可先看请求备注中的 `Modified by script youtube.self.response` 和响应脚本记录。
+- 当前 `surge-cli` 可读取远程 `dump request`、`dump active`、`dump event`，但尚不能通过 `dump logbook` 直接导出 Logbook。当前救援版没有响应脚本，正常情况下 `/v1/scripting` 不应出现 `youtube.self.response`。
 
 注意：如果仓库保持私有，`raw.githubusercontent.com` 安装地址不能被 Surge 客户端直接拉取。需要将仓库公开、使用可访问的镜像地址，或改成你自己的带鉴权分发方式。
 

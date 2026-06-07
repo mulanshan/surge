@@ -1,15 +1,14 @@
 #!name=YouTube Self
-#!desc=兼容旧链接的 YouTube 救援版：不修改 YouTube 响应体，优先恢复正常视频可见。
+#!desc=兼容旧链接的 YouTube 救援版：不修改 YouTube 响应体，不拦截视频链路，优先恢复正常视频可见。
 #!author=mulanshan
 #!category=Enhance
 #!date=2026-04-28
 
-[Rule]
-AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
-
 [Map Local]
+^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
 ^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% www.googleadservices.com
+hostname = %APPEND% www.youtube.com, www.googleadservices.com

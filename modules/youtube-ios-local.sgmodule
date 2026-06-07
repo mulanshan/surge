@@ -1,19 +1,18 @@
 #!name=YouTube Self iOS Local
-#!desc=兼容旧本地版的 YouTube 救援逻辑：不修改 YouTube 响应体，优先恢复正常视频可见。
+#!desc=兼容旧本地版的 YouTube 救援逻辑：不修改 YouTube 响应体，不拦截视频链路，优先恢复正常视频可见。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n本地同步救援版：暂时不运行响应脚本，不修改 browse/next/search/player/get_watch。
+#!arguments-desc=- 调试参数：[true, false]\n\n本地同步救援版：暂时不运行响应脚本，不修改 browse/next/search/player/get_watch，也不拒绝 googlevideo/youtubei UDP。
 #!date=2026-05-07
 
-[Rule]
-AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
-
 [Map Local]
+^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
 ^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% www.googleadservices.com
+hostname = %APPEND% www.youtube.com, www.googleadservices.com
