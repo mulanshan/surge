@@ -123,12 +123,13 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 - 后台播放、画中画能力增强
 - 拒绝 YouTube QUIC/HTTP3，使请求回落到可处理的 HTTPS
 - 对 `googlevideo.com/initplayback` 广告初始化请求返回空响应
+- 对 `www.youtube.com/pagead`、`pcs/activeview` 和广告型 `ptracking` 页面广告链路返回空响应
 
 速度边界：
 
-- 只对 `youtubei.googleapis.com` 的 `browse/player/get_watch` 执行响应脚本
-- 不处理 `next/search/guide/account/get_setting/reel`，减少首屏脚本负担
-- 不 MITM `www.youtube.com`、`s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
+- 只对 `youtubei.googleapis.com` 的 `browse/next/player/get_watch` 执行响应脚本
+- 不处理 `search/guide/account/get_setting/reel`，减少首屏脚本负担
+- 只额外 MITM `www.youtube.com` 用于页面广告空响应；不 MITM `s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
 - 已安装 `youtube-self-fast.sgmodule` 的设备可以继续更新，但新安装统一使用 `youtube-self.sgmodule`
 
 ## YouTube Self Local

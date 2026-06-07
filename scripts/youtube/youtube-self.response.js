@@ -821,9 +821,7 @@ function cleanProtobuf(bytes, endpoint) {
     return cleanSettingProtobuf(bytes);
   }
   if (endpoint === "browse" || endpoint === "search") return cleanFeedAdCardsProtobuf(bytes, 6);
-  // `next` carries comments, "up next", playlists and episode navigation.
-  // Leave it untouched until we have a stable schema for those containers.
-  if (endpoint === "next") return bytes;
+  if (endpoint === "next") return cleanFeedAdCardsProtobuf(bytes, 6);
   return bytes;
 }
 
