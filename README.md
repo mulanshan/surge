@@ -98,17 +98,18 @@ scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-2026
 
 文件：[modules/youtube-self.sgmodule](modules/youtube-self.sgmodule)
 
-安装地址：
+唯一远程安装地址：
 
 ```text
 https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmodule
 ```
 
-说明：
+这是当前仓库唯一维护的 YouTube 去广告与后台播放模块。仓库里只保留这一个 YouTube 模块和一个响应脚本：
 
-这是当前唯一推荐的公开仓库安装地址。模块和脚本都从自己的公开仓库加载，不包含第三方代码。以后 YouTube 规则只维护这个主入口，旧的 Fast/iOS/实验模块文件保留为兼容和调试用途。
+- 模块：`modules/youtube-self.sgmodule`
+- 脚本：`scripts/youtube/youtube-self.response.js`
 
-当前主入口是救援版：不运行响应脚本，不修改 YouTube `browse/next/search/player/get_watch` 响应体，也不拒绝 `googlevideo.com` / `youtubei.googleapis.com` 的 UDP/QUIC 主业务链路。它只保留页面广告追踪 URL 的空响应规则，优先保证正常视频列表和播放可见。
+安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。
 
 安全边界：
 
@@ -120,130 +121,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/modules/youtube-self.sgmo
 
 功能范围：
 
-- 不修改 YouTube 响应体
-- 不拒绝 `googlevideo.com` / `youtubei.googleapis.com` UDP/QUIC
+- 只处理 `youtubei.googleapis.com` 的 `player`、`get_watch`、`account/get_setting`、`account/get_setting_values`
+- 不处理 `browse`、`next`、`search`，避免首页、推荐、搜索和正常视频列表被误伤
+- 不 MITM `*.googlevideo.com`
+- 不拒绝 `googlevideo.com` UDP/QUIC
 - 对 `www.youtube.com/pagead`、`pcs/activeview`、广告型 `ptracking` 和 `www.googleadservices.com` 广告跳转链路返回空响应
-
-速度边界：
-
-- 不执行 YouTube 响应脚本
-- 不处理 `search/guide/account/get_setting/reel`
-- 只额外 MITM `www.youtube.com` 与 `www.googleadservices.com` 用于页面广告空响应；不 MITM `s.youtube.com`、`googleads.g.doubleclick.net`、`www.google.com`
-- 已安装 `youtube-self-fast.sgmodule` 的设备可以继续更新，但新安装统一使用 `youtube-self.sgmodule`
-
-## YouTube Self Local
-
-文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
-
-说明：
-
-这是不依赖 GitHub raw 的本地版。模块本体可以在 Surge 里新建本地模块后粘贴；脚本从 Surge 本地 Documents 目录读取：
-
-```ini
-script-path=scripts/youtube/youtube-self.response.js
-```
-
-安全边界：
-
-- 不使用第三方脚本
-- 不使用远程 `script-path`
-- 不发起外部请求
-- 不上传请求、响应、账号、cookie 或 token
-- 不 MITM `www.google.com` / `www.google.com.hk` 这类更泛的 Google 主机名
-
-安装时把 [scripts/youtube/youtube-self.response.js](scripts/youtube/youtube-self.response.js) 同步到 Surge Documents 的同名路径。iOS 私有仓库/本地调试流程见 [docs/youtube-ios-local-debug.md](docs/youtube-ios-local-debug.md)。
-
-## Youtube (Music) Enhance
-
-文件：[modules/youtube-enhance.sgmodule](modules/youtube-enhance.sgmodule)
-
-说明：历史第三方固定副本，保留作对照；新安装统一使用 `YouTube Self`。
-
-功能范围：
-
-- YouTube 视频广告请求清理
-- 后台播放、画中画能力增强
-- 可选字幕翻译增强
-- 可选隐藏上传、沉浸式入口、Shorts 入口
-- 拒绝 YouTube 相关 UDP/QUIC 连接，使流量回落到可处理的 HTTPS
-- 对 `googlevideo.com/initplayback` 的广告初始化请求返回空响应
-
-脚本来源：
-
-- 上游文件：`Maasea/sgmodule/Script/Youtube/youtube.response.js`
-- 上游 blob SHA：`ee08380ee9bb7889f653022d7a3229f8d8b6ea5b`
-- 本仓库固定副本：[scripts/youtube/youtube.response.js](scripts/youtube/youtube.response.js)
-
-安全说明：
-
-这个模块保留为历史第三方固定副本，不再作为首选。现在建议优先使用上面的 `YouTube Self`；只有在自写版失效、且你愿意接受第三方脚本审计成本时，再临时启用这一版。
-
-YouTube 增强必须处理 `youtubei.googleapis.com` 的 HTTPS 响应体，所以这个模块需要启用 MITM，并且会执行响应脚本。`*.googlevideo.com` 用于配合 `[Map Local]` 处理部分播放初始化广告请求；这是更完整但权限更大的配置。脚本只引用本仓库固定副本，不继续引用不受控的第三方 raw 地址。
-
-默认参数：
-
-```json
-{
-  "lyricLang": "off",
-  "captionLang": "off",
-  "blockUpload": true,
-  "blockImmersive": true,
-  "blockShorts": false,
-  "debug": false
-}
-```
-
-## YouTube Safe Lite
-
-文件：[modules/youtube-safe-lite.sgmodule](modules/youtube-safe-lite.sgmodule)
-
-说明：历史最小权限版本，保留作调试对照；新安装统一使用 `YouTube Self`。
-
-功能范围：
-
-- 拒绝 YouTube 相关 UDP/QUIC 连接，使流量回落到 TCP/HTTPS
-- 对 `googlevideo.com/initplayback` 的部分广告初始化请求返回空响应
-- 不执行任何 JavaScript
-- 不 MITM `youtubei.googleapis.com`
-- 不修改 YouTube protobuf API 响应
-
-说明：
-
-这是完全自写、最小权限的安全版。它的目标是减少可通过网络层识别的广告请求，而不是完整替代 `Youtube (Music) Enhance`。后台播放、画中画、字幕增强、信息流广告清理等功能都依赖解析并修改 YouTube protobuf 响应，安全版不会做这些高风险操作。
-
-## YouTube Readable Enhance
-
-文件：[modules/youtube-readable-enhance.sgmodule](modules/youtube-readable-enhance.sgmodule)
-
-说明：
-
-这是完全自写的可读脚本版本，脚本在 [scripts/youtube/youtube-readable.response.js](scripts/youtube/youtube-readable.response.js)。它处理 JSON 形态的 YouTube `youtubei` 响应，可以清理常见广告字段、屏蔽部分入口、增加字幕翻译轨道和播放能力字段。它不包含第三方脚本，也不解析 protobuf，因此不能完整替代面向 iOS/YouTube Music App 的深度增强模块。
-
-## YouTube Self Enhance
-
-文件：[modules/youtube-self-enhance.sgmodule](modules/youtube-self-enhance.sgmodule)
-
-说明：
-
-这是旧兼容入口，现在与主入口一样是救援版：不运行响应脚本，不修改 YouTube 响应体，不拒绝视频链路，只保留页面广告追踪 URL 的空响应规则。新安装统一使用上面的 `YouTube Self` 主入口。
-
-调试方式：
-
-- 通过 Surge Mac Dashboard 连接 iOS 远程实例，可以查看 Logbook 中的脚本运行细节。
-- 当前 `surge-cli` 可读取远程 `dump request`、`dump active`、`dump event`，但尚不能通过 `dump logbook` 直接导出 Logbook。当前救援版没有响应脚本，正常情况下 `/v1/scripting` 不应出现 `youtube.self.response`。
-
-注意：如果仓库保持私有，`raw.githubusercontent.com` 安装地址不能被 Surge 客户端直接拉取。需要将仓库公开、使用可访问的镜像地址，或改成你自己的带鉴权分发方式。
-
-iOS 兼容远程版保留在 [modules/youtube-ios.sgmodule](modules/youtube-ios.sgmodule)，仅用于历史兼容和调试。新安装统一使用 `YouTube Self` 主入口。
-
-iCloud 本地同步版：
-
-- 推荐文件：[modules/youtube-self-local.sgmodule](modules/youtube-self-local.sgmodule)
-- 兼容旧文件：[modules/youtube-ios-local.sgmodule](modules/youtube-ios-local.sgmodule)
-- 调试与制作流程：[docs/youtube-ios-local-debug.md](docs/youtube-ios-local-debug.md)
-
-这个版本用于私有仓库场景。模块本体在 iOS 上通过“新建本地模块”粘贴安装，脚本通过 Surge iCloud Documents 同步并以相对路径加载：
-
-```ini
-script-path=scripts/youtube/youtube-self.response.js
-```

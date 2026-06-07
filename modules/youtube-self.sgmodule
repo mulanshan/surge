@@ -1,11 +1,11 @@
 #!name=YouTube Self
-#!desc=自有可审计 YouTube 播放测试版：只处理播放接口，首页/推荐/搜索和视频流原样放行。不含第三方代码。
+#!desc=自有可审计 YouTube 去广告与后台播放唯一入口：只处理播放接口，首页/推荐/搜索和视频流原样放行。不含第三方代码。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n播放测试入口：只处理 youtubei.googleapis.com 的 player/get_watch/account/get_setting。browse/next/search 首页、推荐、搜索和 googlevideo 视频流全部原样放行，避免正常视频内容和播放链路被误伤。
+#!arguments-desc=- 调试参数：[true, false]\n\n唯一入口：只处理 youtubei.googleapis.com 的 player、get_watch、account/get_setting、account/get_setting_values。browse/next/search 首页、推荐、搜索和 googlevideo 视频流全部原样放行，避免正常视频内容和播放链路被误伤。
 #!date=2026-06-07
 
 [Rule]
