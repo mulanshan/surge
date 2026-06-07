@@ -184,6 +184,7 @@ const WATCH_FIELDS = {
 
 const WATCH_CONTENT_FIELDS = {
   player: 2,
+  next: 3,
 };
 
 const SETTING_FIELDS = {
@@ -489,6 +490,12 @@ function cleanWatchContentProtobuf(bytes) {
       const payload = cleanPlayerProtobuf(field.payload);
       out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.player, payload) });
       changed = true;
+      continue;
+    }
+    if (field.fieldNo === WATCH_CONTENT_FIELDS.next && field.wireType === WIRE_LENGTH && field.payload) {
+      const payload = cleanFeedAdCardsProtobuf(field.payload, 6);
+      out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.next, payload) });
+      changed = changed || payload !== field.payload;
       continue;
     }
     out.push(field);
