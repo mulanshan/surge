@@ -1,0 +1,17 @@
+{
+  "id": "private-tracker",
+  "name": "Private Tracker",
+  "output": "rule/Surge/generated/private-tracker.list",
+  "description": "Private tracker services that should stay DIRECT for PT connectivity.",
+  "suggested_policy": "DIRECT",
+  "suggested_options": [],
+  "unique_rule_count": 248,
+  "sources": [
+    {
+      "name": "blackmatrix7 PrivateTracker",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list",
+      "sha256": "910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f",
+      "rule_count": 248
+    }
+  ]
+}

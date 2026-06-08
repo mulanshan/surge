@@ -1,0 +1,156 @@
+# Managed upstream rules for personal Surge rulesets.
+#
+# The generator mirrors selected upstream rule files into rule/Surge/generated/.
+# Generated rulesets are plain Surge RULE-SET files without policy decisions.
+# Keep personal, hand-curated rules in rule/Surge/*.list and generated mirrors in
+# rule/Surge/generated/*.list so the two maintenance modes stay separate.
+
+version: 1
+generated_dir: rule/Surge/generated
+
+sets:
+  - id: microsoft
+    name: Microsoft
+    description: Microsoft account, SSO, Office, Copilot, and related services. Kept direct in the current profile to avoid split login routes.
+    output: microsoft.list
+    suggested_policy: DIRECT
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: blackmatrix7 Microsoft
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Microsoft/Microsoft.list
+
+  - id: china-direct
+    name: China Direct Base
+    description: Mainland China service baseline for DIRECT routing.
+    output: china-direct.list
+    suggested_policy: DIRECT
+    sources:
+      - name: blackmatrix7 China All No Resolve
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list
+
+  - id: private-tracker
+    name: Private Tracker
+    description: Private tracker services that should stay DIRECT for PT connectivity.
+    output: private-tracker.list
+    suggested_policy: DIRECT
+    sources:
+      - name: blackmatrix7 PrivateTracker
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
+
+  - id: google
+    name: Google
+    description: Google common services. AI-specific Google entries should stay before this ruleset.
+    output: google.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: blackmatrix7 Google
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
+
+  - id: openai
+    name: OpenAI
+    description: OpenAI and ChatGPT service baseline. Personal AI supplements stay in rule/Surge/ai.list.
+    output: openai.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+      - no-resolve
+    sources:
+      - name: blackmatrix7 OpenAI
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list
+
+  - id: gemini
+    name: Gemini
+    description: Google Gemini service baseline.
+    output: gemini.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+      - no-resolve
+    sources:
+      - name: blackmatrix7 Gemini
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Gemini/Gemini.list
+
+  - id: telegram
+    name: Telegram
+    description: Telegram non-IP and IP rules from Sukka ruleset.
+    output: telegram.list
+    suggested_policy: Proxy
+    sources:
+      - name: Sukka Telegram non-IP
+        url: https://ruleset.skk.moe/List/non_ip/telegram.conf
+      - name: Sukka Telegram IP
+        url: https://ruleset.skk.moe/List/ip/telegram.conf
+
+  - id: apple-tv
+    name: Apple TV
+    description: Apple TV service rules kept separate because the current profile routes them to 流媒体.
+    output: apple-tv.list
+    suggested_policy: 流媒体
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: blackmatrix7 AppleTV
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
+
+  - id: youtube
+    name: YouTube
+    description: YouTube service rules kept separate because the current profile routes them to 自动.
+    output: youtube.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+      - no-resolve
+    sources:
+      - name: blackmatrix7 YouTube
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
+
+  - id: streaming
+    name: Streaming Common
+    description: Common streaming services currently routed to 自动 in the main profile.
+    output: streaming.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: blackmatrix7 Bahamut
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
+      - name: blackmatrix7 Disney
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Disney/Disney.list
+      - name: blackmatrix7 HBOUSA
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list
+      - name: blackmatrix7 PrimeVideo
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
+      - name: Sukka Streaming non-IP
+        url: https://ruleset.skk.moe/List/non_ip/stream.conf
+
+  - id: netflix
+    name: Netflix
+    description: Netflix kept separate because the current profile routes it to 绿云 instead of the general streaming group.
+    output: netflix.list
+    suggested_policy: 绿云
+    sources:
+      - name: blackmatrix7 Netflix
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
+
+  - id: paypal
+    name: PayPal
+    description: PayPal service rules.
+    output: paypal.list
+    suggested_policy: 自动
+    sources:
+      - name: blackmatrix7 PayPal
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list
+
+  - id: global
+    name: Global Common
+    description: Broad global services fallback. Keep this late in the rule order.
+    output: global.list
+    suggested_policy: Proxy
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: Sukka Global non-IP
+        url: https://ruleset.skk.moe/List/non_ip/global.conf

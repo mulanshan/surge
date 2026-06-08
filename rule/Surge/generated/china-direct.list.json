@@ -1,0 +1,17 @@
+{
+  "id": "china-direct",
+  "name": "China Direct Base",
+  "output": "rule/Surge/generated/china-direct.list",
+  "description": "Mainland China service baseline for DIRECT routing.",
+  "suggested_policy": "DIRECT",
+  "suggested_options": [],
+  "unique_rule_count": 3754,
+  "sources": [
+    {
+      "name": "blackmatrix7 China All No Resolve",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list",
+      "sha256": "606f48a84ce44dad9e5210a466d52576cfeb5c12ace8ff45fe2ba47da9316969",
+      "rule_count": 3754
+    }
+  ]
+}

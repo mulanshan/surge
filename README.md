@@ -69,6 +69,32 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqi
 
 规则集不包含策略，使用时在主配置 `[Rule]` 里指定策略组。个人规则应放在广泛的 China、Google、Microsoft、GitHub 等社区规则前面。
 
+### 生成型自有规则集
+
+目录：[rule/Surge/generated](rule/Surge/generated)
+
+这个目录保存从外部成熟规则源解析、去重并重新标注后的自有规则集。来源清单在
+[rule/Surge/sources/managed-rules.yaml](rule/Surge/sources/managed-rules.yaml)，生成脚本是
+[scripts/generate-managed-surge-rules.py](scripts/generate-managed-surge-rules.py)。
+
+重新生成：
+
+```bash
+scripts/generate-managed-surge-rules.py
+```
+
+每个生成文件都会写入：
+
+- 规则用途和建议策略
+- 上游 URL
+- 上游内容 SHA-256
+- 上游规则数量
+- 合并后的唯一规则数量
+
+这样外部规则变动时，可以用 Git diff 查看具体变化，再决定是否接受。当前主配置可逐步把
+`blackmatrix7` / `ruleset.skk.moe` 的 URL 替换为 `mulanshan/surge` 下的 generated URL。示例片段见：
+[rule/Surge/generated/rule-section-managed.conf](rule/Surge/generated/rule-section-managed.conf)。
+
 ### AI / LLM / Coding
 
 文件：[rule/Surge/ai.list](rule/Surge/ai.list)
