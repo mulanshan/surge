@@ -246,7 +246,7 @@ function cleanPayload(payload, endpoint) {
     replaced: 0,
   };
 
-  if (endpoint.includes("valueadded/alimama/splash_screen")) cleanSplash(payload, stats);
+  if (endpoint.includes("valueadded/alimama/splash_screen") || endpoint.includes("aos/alimama/splash_screen")) cleanSplash(payload, stats);
   else if (endpoint.includes("msgbox/pull") || endpoint.includes("message/notice/list")) cleanMessages(payload, stats);
   else if (endpoint.includes("shield/dsp/profile/index/nodefaas")) cleanDspProfile(payload, stats);
   else if (endpoint.includes("shield/search/new_hotword")) cleanHotword(payload, stats);
