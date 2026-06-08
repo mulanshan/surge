@@ -107,25 +107,6 @@ sets:
       - name: blackmatrix7 YouTube
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 
-  - id: streaming
-    name: Streaming Common
-    description: Common streaming services currently routed to 自动 in the main profile.
-    output: streaming.list
-    suggested_policy: 自动
-    suggested_options:
-      - extended-matching
-    sources:
-      - name: blackmatrix7 Bahamut
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
-      - name: blackmatrix7 Disney
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Disney/Disney.list
-      - name: blackmatrix7 HBOUSA
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list
-      - name: blackmatrix7 PrimeVideo
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
-      - name: Sukka Streaming non-IP
-        url: https://ruleset.skk.moe/List/non_ip/stream.conf
-
   - id: netflix
     name: Netflix
     description: Netflix kept separate because the current profile routes it to 绿云 instead of the general streaming group.
@@ -134,6 +115,53 @@ sets:
     sources:
       - name: blackmatrix7 Netflix
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
+
+  - id: bahamut
+    name: Bahamut
+    description: Bahamut kept separate because the current profile routes it to 流媒体.
+    output: bahamut.list
+    suggested_policy: 流媒体
+    sources:
+      - name: blackmatrix7 Bahamut
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
+
+  - id: disney
+    name: Disney
+    description: Disney kept separate because the current profile routes it to 流媒体.
+    output: disney.list
+    suggested_policy: 流媒体
+    sources:
+      - name: blackmatrix7 Disney
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Disney/Disney.list
+
+  - id: hbo-usa
+    name: HBO USA
+    description: HBO USA kept separate because the current profile routes it to 流媒体.
+    output: hbo-usa.list
+    suggested_policy: 流媒体
+    sources:
+      - name: blackmatrix7 HBOUSA
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list
+
+  - id: prime-video
+    name: Prime Video
+    description: Prime Video kept separate because the current profile routes it to 流媒体.
+    output: prime-video.list
+    suggested_policy: 流媒体
+    sources:
+      - name: blackmatrix7 PrimeVideo
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
+
+  - id: streaming
+    name: Streaming Common
+    description: Common streaming services currently routed to 自动 in the main profile.
+    output: streaming.list
+    suggested_policy: 自动
+    suggested_options:
+      - extended-matching
+    sources:
+      - name: Sukka Streaming non-IP
+        url: https://ruleset.skk.moe/List/non_ip/stream.conf
 
   - id: paypal
     name: PayPal

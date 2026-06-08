@@ -20,7 +20,11 @@ scripts/generate-managed-surge-rules.py
 | telegram | `telegram.list` | `Proxy` | 30 |
 | apple-tv | `apple-tv.list` | `流媒体` | 9 |
 | youtube | `youtube.list` | `自动` | 190 |
-| streaming | `streaming.list` | `自动` | 504 |
 | netflix | `netflix.list` | `绿云` | 1157 |
+| bahamut | `bahamut.list` | `流媒体` | 8 |
+| disney | `disney.list` | `流媒体` | 173 |
+| hbo-usa | `hbo-usa.list` | `流媒体` | 11 |
+| prime-video | `prime-video.list` | `流媒体` | 18 |
+| streaming | `streaming.list` | `自动` | 321 |
 | paypal | `paypal.list` | `自动` | 248 |
 | global | `global.list` | `Proxy` | 1260 |
