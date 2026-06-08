@@ -33,6 +33,39 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - 脚本不发起外部请求
 - 不上传请求、响应、账号、cookie 或 token
 
+### 高德地图 Self
+
+文件：[rewrite/Surge/amap-self.sgmodule](rewrite/Surge/amap-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.sgmodule
+```
+
+这是自有可审计的高德地图去广告模块。仓库里只保留这一个高德模块和一个响应脚本：
+
+- 模块：`rewrite/Surge/amap-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/amap/amap-self.response.js`
+
+第一版功能范围：
+
+- 清理开屏广告接口 `ws/valueadded/alimama/splash_screen`
+- 清理消息盒子与通知列表 `ws/msgbox/pull`、`ws/message/notice/list`
+- 清理首页广告卡片 `ws/faas/amap-navigation/main-page`
+- 清理搜索热词广告配置 `ws/shield/search/new_hotword`
+- 清理 DSP/推荐广告配置 `ws/shield/dsp/profile/index/nodefaas`
+- 对明确广告/归因接口使用 Map Local 返回空响应
+
+安全边界：
+
+- 不使用第三方脚本
+- 只从 `mulanshan/surge` 加载 `rewrite/Surge/scripts/amap/amap-self.response.js`
+- 脚本不发起外部请求
+- 不上传请求、响应、账号、cookie 或 token
+- 不整域拒绝 `amap.com`
+- 不拦截天气、路线规划、导航、搜索主业务和账号接口
+
 ### 番茄小说去广告
 
 文件：[rewrite/Surge/fanqie-novel-adblock.sgmodule](rewrite/Surge/fanqie-novel-adblock.sgmodule)

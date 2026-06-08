@@ -1,0 +1,22 @@
+#!name=高德地图 Self
+#!desc=自有可审计高德地图去广告模块：清理开屏、消息盒子、首页推荐、搜索热词和部分广告接口。不含第三方脚本。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=高德地图
+#!openUrl=https://apps.apple.com/app/id461703208
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n第一版采用保守清理：开屏广告、消息盒子、首页广告卡片、搜索热词广告配置和明显广告接口。天气、导航主业务、账号、路线规划等接口不整域拦截，后续按抓包证据逐步扩展。
+#!date=2026-06-08
+
+[Script]
+amap.self.response = type=http-response,pattern=^https?:\/\/(?:[^\/]+\.)?amap\.com\/ws\/(?:valueadded\/alimama\/splash_screen|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/amap/amap-self.response.js?v=20260608,argument="{\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+# 明显广告/归因接口，返回空对象或空响应即可；避免对天气、导航、搜索主业务做整接口拦截。
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/ws\/asa\/ads_attribution(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/ws\/shield\/scene\/recommend(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/ws\/boss\/order_web\/\w{8}_information(?:\?.*)?$ data-type=text data="" status-code=204
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/uploadimg\/\w+\.gif(?:\?.*)?$ data-type=text data="" status-code=204
+
+[MITM]
+hostname = %APPEND% *.amap.com
