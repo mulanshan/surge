@@ -7,7 +7,7 @@
  *   and background playback.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
  *   schema-light wire editing for player/get_watch/account settings, plus
- *   guarded feed-card cleanup for browse/search/next surfaces.
+ *   guarded cleanup for next ad fragments.
  *
  * Does not include any third-party source code.
  */
@@ -1002,7 +1002,7 @@ function cleanProtobuf(bytes, endpoint) {
     endpoint === "guide" ||
     endpoint === "reel/reel_watch_sequence"
   ) {
-    return cleanFeedSurfaceProtobuf(bytes);
+    return bytes;
   }
   return bytes;
 }
