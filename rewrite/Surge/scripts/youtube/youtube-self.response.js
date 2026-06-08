@@ -314,6 +314,25 @@ const FEED_AD_CARD_MARKERS = [
   "ad_type",
 ];
 
+const FEED_AD_STRONG_CARD_MARKERS = [
+  "赞助",
+  "赞助商",
+  "赞助商广告",
+  "广告主",
+  "付费宣传",
+  "Sponsored",
+  "sponsored",
+  "Sponsor",
+  "sponsor",
+  "Promoted",
+  "promoted",
+  "Advertisement",
+  "advertisement",
+  "ad_badge.eml-fe",
+  "inline_injection_entrypoint_layout.eml",
+  "in_feed_ad",
+];
+
 const NEXT_AD_STRONG_MARKERS = [
   "pagead",
   "googleads",
@@ -873,15 +892,20 @@ function isLikelyFeedAdCard(payload) {
   // Feed ad cards are usually tens of KB. The full feed response is much
   // larger, while a single label/string is tiny. Keep this guarded so a bad
   // marker cannot erase the whole home/search feed again.
-  if (payload.length < 300 || payload.length > 900000) return false;
-  if (!bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
+  if (payload.length < 300 || payload.length > 120000) return false;
+  const hasStrongMarker = bytesContainAnyMarker(payload, FEED_AD_STRONG_CARD_MARKERS);
+  if (!hasStrongMarker && !bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
     // Large section/container messages can contain one nested ad. Prefer
     // removing the smaller child card instead of an entire shelf/response.
-    if (payload.length > 260000 && lengthFields > 50) return false;
+    if (payload.length > 70000 && lengthFields > 18) return false;
+    // Generic tracking markers such as pagead/googleads can appear inside
+    // normal feed containers. Without an ad-card UI marker, only remove very
+    // small fragments.
+    if (!hasStrongMarker && (payload.length > 12000 || lengthFields > 6)) return false;
     return true;
   } catch {
     return false;
@@ -907,11 +931,6 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
       }
 
       const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
-      if (isLikelyFeedAdCard(payload)) {
-        feedAdCardsRemoved += 1;
-        changed = true;
-        continue;
-      }
       if (payload !== field.payload) {
         out.push({ raw: encodeLengthField(field.fieldNo, payload) });
         changed = true;
@@ -924,6 +943,16 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
   }
 
   return changed ? rebuildFields(out) : bytes;
+}
+
+function cleanFeedSurfaceProtobuf(bytes) {
+  const output = cleanFeedAdCardsProtobuf(bytes, 6);
+  if (bytes.length > 20000 && output.length < bytes.length * 0.55) {
+    debug(`feed-safety-passthrough ${bytes.length} -> ${output.length}`);
+    feedAdCardsRemoved = 0;
+    return bytes;
+  }
+  return output;
 }
 
 function cleanAdMarkedNestedProtobuf(bytes, depth) {
@@ -973,7 +1002,7 @@ function cleanProtobuf(bytes, endpoint) {
     endpoint === "guide" ||
     endpoint === "reel/reel_watch_sequence"
   ) {
-    return cleanFeedAdCardsProtobuf(bytes, 6);
+    return cleanFeedSurfaceProtobuf(bytes);
   }
   return bytes;
 }
