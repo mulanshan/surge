@@ -112,6 +112,9 @@ AI 规则按两层保存：
 建议这两条都放在 Google、Microsoft、GitHub 等大规则前面。这样 OpenAI/GPT 的命中不会被通用
 AI、Google 或 global 规则抢走，其他 AI 服务也只有一个自有规则入口。
 
+旧路径 `rule/Surge/generated/gemini.list` 只作为兼容文件保留，避免 Apple TV 等设备在 iCloud profile
+同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口仍然是 `rule/Surge/ai.list`。
+
 ### Amazon / Resolve 规则选择
 
 Amazon 社区规则常见两版：`Amazon.list` 和 `Amazon_Resolve.list`。两者内容基本相同，区别在于
