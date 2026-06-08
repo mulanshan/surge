@@ -1,0 +1,37 @@
+{
+  "id": "apple",
+  "name": "Apple",
+  "output": "rule/Surge/generated/apple.list",
+  "description": "Apple system, iCloud, CloudKit, App Store, Maps, media, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing.",
+  "suggested_policy": "DIRECT",
+  "suggested_options": [
+    "extended-matching"
+  ],
+  "unique_rule_count": 81,
+  "sources": [
+    {
+      "name": "blackmatrix7 Apple",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list",
+      "sha256": "66495b5296338f41ea8e05076134c3b7cd2306f564418b0dfdf13311b393827d",
+      "rule_count": 56
+    },
+    {
+      "name": "Sukka Apple domains",
+      "url": "https://ruleset.skk.moe/List/non_ip/apple_services.conf",
+      "sha256": "dce6a342012ed82111daa1acabedd75d61b2c5030390b6158839aaba764f53e7",
+      "rule_count": 25
+    },
+    {
+      "name": "Sukka Apple China domains",
+      "url": "https://ruleset.skk.moe/List/non_ip/apple_cn.conf",
+      "sha256": "8896423cf6c8efb2c5b90ce3b3cada9d8e1d21613dd963ff67dcfb54494c6fc0",
+      "rule_count": 9
+    },
+    {
+      "name": "Sukka Apple IP",
+      "url": "https://ruleset.skk.moe/List/ip/apple_services.conf",
+      "sha256": "6528a16c50ffe5f64cb6078bf3dd95d902138177d5d5e37fcdcaaf39f941fe27",
+      "rule_count": 10
+    }
+  ]
+}

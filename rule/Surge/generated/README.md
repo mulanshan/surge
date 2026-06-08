@@ -14,6 +14,7 @@ scripts/generate-managed-surge-rules.py
 | microsoft | `microsoft.list` | `DIRECT` | 671 |
 | china-direct | `china-direct.list` | `DIRECT` | 3754 |
 | private-tracker | `private-tracker.list` | `DIRECT` | 248 |
+| apple | `apple.list` | `DIRECT` | 81 |
 | google | `google.list` | `自动` | 698 |
 | openai | `openai.list` | `自动` | 35 |
 | telegram | `telegram.list` | `Proxy` | 30 |

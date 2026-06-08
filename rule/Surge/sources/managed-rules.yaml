@@ -38,6 +38,24 @@ sets:
       - name: blackmatrix7 PrivateTracker
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
 
+  - id: apple
+    name: Apple
+    description: Apple system, iCloud, CloudKit, App Store, Maps, media, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing.
+    output: apple.list
+    suggested_policy: DIRECT
+    suggested_options:
+      - extended-matching
+    include_process_name: true
+    sources:
+      - name: blackmatrix7 Apple
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
+      - name: Sukka Apple domains
+        url: https://ruleset.skk.moe/List/non_ip/apple_services.conf
+      - name: Sukka Apple China domains
+        url: https://ruleset.skk.moe/List/non_ip/apple_cn.conf
+      - name: Sukka Apple IP
+        url: https://ruleset.skk.moe/List/ip/apple_services.conf
+
   - id: google
     name: Google
     description: Google common services. AI-specific Google entries should stay before this ruleset.

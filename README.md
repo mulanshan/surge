@@ -148,6 +148,18 @@ AI、Google 或 global 规则抢走，其他 AI 服务也只有一个自有规�
 旧路径 `rule/Surge/generated/gemini.list` 只作为兼容文件保留，避免 Apple TV 等设备在 iCloud profile
 同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口仍然是 `rule/Surge/ai.list`。
 
+### Apple 系统服务
+
+文件：[rule/Surge/generated/apple.list](rule/Surge/generated/apple.list)
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/apple.list,DIRECT,extended-matching
+```
+
+这个自有规则集从 blackmatrix7 Apple、Sukka Apple domains、Sukka Apple China domains 和 Sukka Apple
+IP 规则合并生成，覆盖 iCloud、CloudKit、App Store、Maps、Apple 媒体服务、中国区 Apple 域名和 Apple
+IP 段。建议放在 Google、Microsoft、GitHub、global 这些大规则前面，并使用 `DIRECT`，避免系统服务被兜底代理规则抢走。
+
 ### Amazon / Resolve 规则选择
 
 Amazon 社区规则常见两版：`Amazon.list` 和 `Amazon_Resolve.list`。两者内容基本相同，区别在于

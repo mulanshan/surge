@@ -54,6 +54,7 @@ class RuleSet:
     output: str
     suggested_policy: str
     suggested_options: list[str]
+    include_process_name: bool
     sources: list[Source]
 
 
@@ -155,6 +156,7 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
                 output=item["output"],
                 suggested_policy=item["suggested_policy"],
                 suggested_options=list(item.get("suggested_options", [])),
+                include_process_name=bool(item.get("include_process_name", False)),
                 sources=sources,
             )
         )
@@ -173,7 +175,7 @@ def fetch_text(url: str, timeout: int) -> bytes:
         return response.read()
 
 
-def normalize_rule_line(line: str) -> str | None:
+def normalize_rule_line(line: str, *, include_process_name: bool = False) -> str | None:
     stripped = line.strip()
     if not stripped:
         return None
@@ -183,6 +185,12 @@ def normalize_rule_line(line: str) -> str | None:
         return stripped
 
     rule_type = stripped.split(",", 1)[0].strip().upper()
+    if rule_type == "PROCESS-NAME" and include_process_name:
+        parts = [part.strip() for part in stripped.split(",")]
+        if len(parts) < 2 or not parts[1]:
+            return None
+        parts[0] = rule_type
+        return ",".join(parts)
     if rule_type not in ALLOWED_RULES:
         return None
     parts = [part.strip() for part in stripped.split(",")]
@@ -203,11 +211,12 @@ def rule_sort_key(line: str) -> tuple[int, str]:
         "DOMAIN-SUFFIX": 1,
         "DOMAIN-KEYWORD": 2,
         "DOMAIN-WILDCARD": 3,
-        "USER-AGENT": 4,
-        "IP-CIDR": 5,
-        "IP-CIDR6": 6,
-        "IP-ASN": 7,
-        "GEOIP": 8,
+        "PROCESS-NAME": 4,
+        "USER-AGENT": 5,
+        "IP-CIDR": 6,
+        "IP-CIDR6": 7,
+        "IP-ASN": 8,
+        "GEOIP": 9,
     }
     return (order.get(rule_type, 99), line)
 
@@ -226,7 +235,7 @@ def generate_one(rule_set: RuleSet, output_dir: Path, timeout: int) -> dict[str,
         text = raw.decode("utf-8-sig", errors="replace")
         rules: set[str] = set()
         for line in text.splitlines():
-            normalized = normalize_rule_line(line)
+            normalized = normalize_rule_line(line, include_process_name=rule_set.include_process_name)
             if normalized:
                 rules.add(normalized)
                 entries.setdefault(normalized, set()).add(source.name)
