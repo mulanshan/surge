@@ -100,10 +100,28 @@ scripts/generate-managed-surge-rules.py
 文件：[rule/Surge/ai.list](rule/Surge/ai.list)
 
 ```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/openai.list,Ai,extended-matching,no-resolve
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/ai.list,Ai,extended-matching,no-resolve
 ```
 
-用于补充 AI、LLM、AI 编程、模型服务和 AI 搜索域名。建议放在 Google、Microsoft、GitHub 等大规则前。
+AI 规则按两层保存：
+
+- `rule/Surge/generated/openai.list`：OpenAI / ChatGPT / GPT 专用，单独保留，方便以后按日志独立调整。
+- `rule/Surge/ai.list`：非 OpenAI 的 AI 服务合并入口，包括 Gemini、Claude、Cursor、Windsurf、Perplexity、OpenRouter、Hugging Face、xAI/Grok 等。
+
+建议这两条都放在 Google、Microsoft、GitHub 等大规则前面。这样 OpenAI/GPT 的命中不会被通用
+AI、Google 或 global 规则抢走，其他 AI 服务也只有一个自有规则入口。
+
+### Amazon / Resolve 规则选择
+
+Amazon 社区规则常见两版：`Amazon.list` 和 `Amazon_Resolve.list`。两者内容基本相同，区别在于
+IP-CIDR 规则是否带 `no-resolve`。
+
+- `Amazon.list`：IP-CIDR 带 `no-resolve`，更适合作为默认选择，避免为了匹配 Amazon/AWS IP 段额外解析域名。
+- `Amazon_Resolve.list`：IP-CIDR 不带 `no-resolve`，匹配更激进，但 AWS IP 范围很大，容易把跑在 AWS 上的非 Amazon 业务也卷入。
+
+本仓库原则：默认采用带 `no-resolve` 的规则方式；只有日志证明某服务必须靠 IP 段强匹配时，才单独评估
+Resolve 版。当前主配置没有引用完整 Amazon 规则，只保留更细的 `generated/prime-video.list`。
 
 ### 豆瓣
 

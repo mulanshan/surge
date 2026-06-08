@@ -16,7 +16,6 @@ scripts/generate-managed-surge-rules.py
 | private-tracker | `private-tracker.list` | `DIRECT` | 248 |
 | google | `google.list` | `自动` | 698 |
 | openai | `openai.list` | `自动` | 35 |
-| gemini | `gemini.list` | `自动` | 13 |
 | telegram | `telegram.list` | `Proxy` | 30 |
 | apple-tv | `apple-tv.list` | `流媒体` | 9 |
 | youtube | `youtube.list` | `自动` | 190 |

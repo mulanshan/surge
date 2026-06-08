@@ -51,7 +51,7 @@ sets:
 
   - id: openai
     name: OpenAI
-    description: OpenAI and ChatGPT service baseline. Personal AI supplements stay in rule/Surge/ai.list.
+    description: OpenAI, ChatGPT, and GPT service baseline. Non-OpenAI AI services stay in rule/Surge/ai.list.
     output: openai.list
     suggested_policy: 自动
     suggested_options:
@@ -60,18 +60,6 @@ sets:
     sources:
       - name: blackmatrix7 OpenAI
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list
-
-  - id: gemini
-    name: Gemini
-    description: Google Gemini service baseline.
-    output: gemini.list
-    suggested_policy: 自动
-    suggested_options:
-      - extended-matching
-      - no-resolve
-    sources:
-      - name: blackmatrix7 Gemini
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Gemini/Gemini.list
 
   - id: telegram
     name: Telegram

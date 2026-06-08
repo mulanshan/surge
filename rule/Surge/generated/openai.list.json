@@ -2,7 +2,7 @@
   "id": "openai",
   "name": "OpenAI",
   "output": "rule/Surge/generated/openai.list",
-  "description": "OpenAI and ChatGPT service baseline. Personal AI supplements stay in rule/Surge/ai.list.",
+  "description": "OpenAI, ChatGPT, and GPT service baseline. Non-OpenAI AI services stay in rule/Surge/ai.list.",
   "suggested_policy": "自动",
   "suggested_options": [
     "extended-matching",

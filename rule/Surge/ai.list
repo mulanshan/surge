@@ -1,7 +1,22 @@
-# AI / LLM / Coding supplements
+# AI / LLM / Coding
 #
-# Put blackmatrix7 Gemini/OpenAI/Claude/Copilot before this ruleset.
-# This file only keeps AI domains not covered by those upstream rules.
+# Non-OpenAI AI services live here. Keep OpenAI / ChatGPT / GPT rules in
+# rule/Surge/generated/openai.list so GPT traffic can be tuned independently.
+
+# Google Gemini / AI Studio baseline
+DOMAIN,ai.google.dev
+DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,makersuite.google.com
+DOMAIN-SUFFIX,apis.google.com
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
+DOMAIN-KEYWORD,colab
+DOMAIN-KEYWORD,developerprofiles
+DOMAIN-KEYWORD,generativelanguage
 
 # Claude supplements
 DOMAIN-SUFFIX,claudeusercontent.com
