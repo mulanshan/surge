@@ -85,8 +85,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 
 - 拦截明确广告、统计、归因和崩溃/行为采集域名
 - 拦截真机日志已出现的腾讯广告 SDK、火山 APM 和扫描全能王数据上报域名
-- 清理启动弹窗、运营活动、广告配置、推荐广告和营销位 JSON 容器
-- 对明显广告/统计路径使用 Map Local 返回空响应
+- 清理启动弹窗、运营活动、广告配置、页面运营位、新功能弹窗、推荐广告和营销位 JSON 容器
+- 对明显广告/统计路径和真机出现的 `upload_ad_record` 使用 Map Local 返回空响应
 - 保留账号、云同步、OCR、PDF 转换、购买校验和主业务接口
 
 安全边界：

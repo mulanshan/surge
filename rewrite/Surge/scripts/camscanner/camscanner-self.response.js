@@ -99,7 +99,49 @@ const MEMBERSHIP_MARKERS = [
   "wallet",
 ];
 
-const AD_KEY_MARKERS = [
+const AD_VALUE_TOKENS = new Set([
+  "ad",
+  "ads",
+  "advert",
+  "advertise",
+  "advertisement",
+  "banner",
+  "campaign",
+  "commercial",
+  "interstitial",
+  "marketing",
+  "popup",
+  "promotion",
+  "splash",
+]);
+
+const AD_VALUE_SUBSTRINGS = [
+  "advert",
+  "interstitial",
+  "popup",
+  "splash",
+  "广告",
+  "开屏",
+  "弹窗",
+  "推广",
+  "营销",
+];
+
+const SAFE_KEYS = new Set([
+  "address",
+  "admin",
+  "advanced",
+  "advantage",
+  "advisor",
+  "badge",
+  "download",
+  "metadata",
+  "recommend_name",
+  "upload",
+  "upload_time",
+]);
+
+const AD_KEY_TOKENS = new Set([
   "ad",
   "ads",
   "advert",
@@ -110,6 +152,7 @@ const AD_KEY_MARKERS = [
   "commercial",
   "displayad",
   "float",
+  "funcpopup",
   "interstitial",
   "market",
   "marketing",
@@ -123,31 +166,24 @@ const AD_KEY_MARKERS = [
   "splash",
   "startup",
   "tracking",
-];
+]);
 
-const AD_VALUE_MARKERS = [
-  "ad",
-  "ads",
+const AD_KEY_SUBSTRINGS = [
+  "adid",
+  "adslot",
   "advert",
-  "banner",
-  "campaign",
-  "commercial",
-  "marketing",
+  "displayad",
+  "display_ad",
+  "func_popup",
+  "funcpopup",
+  "interstitial",
+  "new_func_popup",
   "popup",
-  "promotion",
+  "popwindow",
+  "recommend_ad",
+  "recommendad",
   "splash",
 ];
-
-const SAFE_KEYS = new Set([
-  "address",
-  "admin",
-  "advanced",
-  "advantage",
-  "advisor",
-  "badge",
-  "metadata",
-  "recommend_name",
-]);
 
 function endpointLooksSensitive(endpoint) {
   const lower = String(endpoint || "").toLowerCase();
@@ -159,10 +195,29 @@ function keyLooksSensitive(key) {
   return MEMBERSHIP_MARKERS.some((marker) => lower.includes(marker));
 }
 
+function keyTokens(key) {
+  return String(key || "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+function textTokens(text) {
+  return String(text || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
 function keyLooksLikeAd(key) {
   const lower = String(key || "").toLowerCase();
   if (!lower || SAFE_KEYS.has(lower) || keyLooksSensitive(lower)) return false;
-  return AD_KEY_MARKERS.some((marker) => lower.includes(marker));
+  const tokens = keyTokens(key);
+  return (
+    tokens.some((token) => AD_KEY_TOKENS.has(token)) ||
+    AD_KEY_SUBSTRINGS.some((marker) => lower.includes(marker))
+  );
 }
 
 function valueLooksLikeAd(value) {
@@ -185,7 +240,11 @@ function valueLooksLikeAd(value) {
     .map(textOf)
     .join(" ")
     .toLowerCase();
-  return AD_VALUE_MARKERS.some((marker) => joined.includes(marker));
+  const tokens = textTokens(joined);
+  return (
+    tokens.some((token) => AD_VALUE_TOKENS.has(token)) ||
+    AD_VALUE_SUBSTRINGS.some((marker) => joined.includes(marker))
+  );
 }
 
 function neutralValue(value) {

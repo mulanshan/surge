@@ -38,11 +38,12 @@ DOMAIN-SUFFIX,app-measurement.com,REJECT
 DOMAIN-SUFFIX,adjust.com,REJECT
 
 [Script]
-camscanner.self.response = type=http-response,pattern=^https?:\/\/open\.camscanner\.com\/sync\/get_ad_(?:data|control|cfg)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/camscanner/camscanner-self.response.js?v=20260609-2,argument="{\"debug\":{{{启用调试模式}}}}"
+camscanner.self.response = type=http-response,pattern=^https?:\/\/open\.camscanner\.com\/sync\/(?:get_ad_(?:data|control|cfg)|get_page_cfg(?:_v2)?|get_new_func_popup_cfg)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/camscanner/camscanner-self.response.js?v=20260609-3,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 # 明显广告/统计/活动接口，优先返回空对象，避免触发客户端重试。购买、账号、云同步和 OCR/PDF 接口不在此范围内。
 ^https?:\/\/open\.camscanner\.com\/sync\/get_ad_(?:data|control|cfg)(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/open\.camscanner\.com\/sync\/upload_ad_record(?:\?.*)?$ data-type=text data="{}" status-code=200
 ^https?:\/\/(?:apm-collector-uc|sentry)\.intsig\.net\/ data-type=text data="" status-code=204
 
 # Google / 第三方广告统计。不会触碰 Apple StoreKit 收据校验。
