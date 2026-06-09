@@ -76,12 +76,20 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-self.sgmodule
 ```
 
+正式稳定版：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/camscanner-self-v1.0.0/rewrite/Surge/camscanner-self.sgmodule
+```
+
 这是自有可审计的扫描全能王 / CamScanner 去广告模块。仓库里只保留这一个扫描全能王模块和一个响应脚本：
 
 - 模块：`rewrite/Surge/camscanner-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 
-第一版功能范围：
+当前正式版：`camscanner-self-v1.0.0`，基于 iPhone 真机测试通过的 `753c2cb` 后续固化版本。以后扫描全能王模块更新都以这个版本为基线，先在 `main` 验证，再按需发布新的稳定 tag。
+
+正式版功能范围：
 
 - 拦截明确广告、统计、归因和崩溃/行为采集域名
 - 拦截真机日志已出现的腾讯广告 SDK、火山 APM 和扫描全能王数据上报域名
