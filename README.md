@@ -33,6 +33,36 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - 脚本不发起外部请求
 - 不上传请求、响应、账号、cookie 或 token
 
+### Instagram Self
+
+文件：[rewrite/Surge/instagram-self.sgmodule](rewrite/Surge/instagram-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-self.sgmodule
+```
+
+这是自有可审计的 Instagram 去广告模块。仓库里只保留这一个 Instagram 模块和一个响应脚本：
+
+- 模块：`rewrite/Surge/instagram-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
+
+当前功能范围：
+
+- 清理 feed、popular、explore、Reels、story tray 和 web feed 响应中的明确广告对象
+- 保留登录、私信、上传、账号、媒体 CDN 和正常内容流
+- 不使用第三方脚本
+- 不上传请求、响应、账号、cookie 或 token
+- 不整域拒绝 `instagram.com`
+- 只借鉴公开社区的覆盖思路，不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
+
+社区参考结论：
+
+- blackmatrix7 / ios_rule_script 的 Instagram 规则主要是分流域名覆盖：`instagram.com`、`cdninstagram.com`、`instagr.am` 和 `DOMAIN-KEYWORD,instagram`
+- 公开搜索到的大合集通常是全平台去广告或全量 MITM 配置，不是 Instagram 专用自维护脚本
+- 当前模块因此只借鉴域名覆盖和响应清理方向，具体脚本逻辑全部自写
+
 ### 高德地图 Self
 
 文件：[rewrite/Surge/amap-self.sgmodule](rewrite/Surge/amap-self.sgmodule)

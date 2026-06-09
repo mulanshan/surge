@@ -1,0 +1,16 @@
+#!name=Instagram Self
+#!desc=自有可审计 Instagram 去广告模块：清理 feed、探索页、Reels 和 story tray 中的明确广告对象，不改登录、私信、上传和主业务接口。不含第三方脚本。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=Instagram
+#!openUrl=https://apps.apple.com/us/app/instagram/id389801252
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n范围：只处理 Instagram / Meta App 的 feed、explore、reels、story tray 和 web feed 响应中的明确广告对象。保留登录、私信、上传、账号、媒体 CDN 和正常内容流；不修改会员/订阅/账号状态类接口。
+#!system=ios
+#!date=2026-06-09
+
+[Script]
+instagram.self.response = type=http-response,pattern=^https?:\/\/(?:i|www)\.instagram\.com\/(?:api\/v1\/(?:feed\/(?:timeline|popular|reels_tray|reels_media|user\/[^\/]+|tag\/[^\/]+)|discover\/.*)|graphql\/query\/)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/instagram/instagram-self.response.js,argument="{\"debug\":{{{启用调试模式}}}}"
+
+[MITM]
+hostname = %APPEND% instagram.com, *.instagram.com, *.cdninstagram.com, *.i.instagram.com
