@@ -95,7 +95,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 - 只从 `mulanshan/surge` 加载 `rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 - 脚本不发起外部请求
 - 不上传请求、响应、账号、cookie 或 token
-- 不整域拒绝 `intsig.net` 或 `camscanner.com`
+- 不整域拒绝或 MITM `intsig.net`、`camscanner.com`
 - 不修改 `purchase/cs/query_property` 等会员、订阅、订单、额度、收据接口
 
 ### 番茄小说去广告

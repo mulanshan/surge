@@ -22,6 +22,8 @@ DOMAIN,stats.intsig.net,REJECT
 DOMAIN,event.intsig.net,REJECT
 DOMAIN,events.intsig.net,REJECT
 DOMAIN,crash.intsig.net,REJECT
+DOMAIN,apm-collector-uc.intsig.net,REJECT
+DOMAIN,sentry.intsig.net,REJECT
 DOMAIN,data.camscanner.com,REJECT
 
 # 常见第三方广告/归因/统计 SDK。只拦广告和上报域，避免影响 App Store / Apple 购买校验。
@@ -36,13 +38,12 @@ DOMAIN-SUFFIX,app-measurement.com,REJECT
 DOMAIN-SUFFIX,adjust.com,REJECT
 
 [Script]
-camscanner.self.response = type=http-response,pattern=^https?:\/\/(?:[^\/]+\.)?(?:intsig\.net|camscanner\.com)\/(?!(?:purchase\/cs\/query_property|.+\/purchase\/cs\/query_property)(?:\?|$)).*(?:ad|ads|advert|banner|campaign|commercial|config|market|marketing|notice|operate|operation|popup|promotion|recommend|splash|startup)(?:[^\/?]*)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/camscanner/camscanner-self.response.js?v=20260609,argument="{\"debug\":{{{启用调试模式}}}}"
+camscanner.self.response = type=http-response,pattern=^https?:\/\/open\.camscanner\.com\/sync\/get_ad_(?:data|control|cfg)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/camscanner/camscanner-self.response.js?v=20260609-2,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 # 明显广告/统计/活动接口，优先返回空对象，避免触发客户端重试。购买、账号、云同步和 OCR/PDF 接口不在此范围内。
-^https?:\/\/(?:[^\/]+\.)?(?:intsig\.net|camscanner\.com)\/(?:ad|ads|advert|advertise|advertisement)(?:\/|\?|$) data-type=text data="{}" status-code=200
-^https?:\/\/(?:[^\/]+\.)?(?:intsig\.net|camscanner\.com)\/.*\/(?:ad|ads|advert|banner|splash|popup)(?:\/|\?|$) data-type=text data="{}" status-code=200
-^https?:\/\/(?:[^\/]+\.)?(?:intsig\.net|camscanner\.com)\/.*(?:log|stat|track|trace|event|analytics|monitor|collect)(?:\/|\?|$) data-type=text data="" status-code=204
+^https?:\/\/open\.camscanner\.com\/sync\/get_ad_(?:data|control|cfg)(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:apm-collector-uc|sentry)\.intsig\.net\/ data-type=text data="" status-code=204
 
 # Google / 第三方广告统计。不会触碰 Apple StoreKit 收据校验。
 ^https?:\/\/(?:googleads\.g\.doubleclick\.net|www\.googleadservices\.com|pagead2\.googlesyndication\.com)\/ data-type=text data="" status-code=204
@@ -51,4 +52,4 @@ camscanner.self.response = type=http-response,pattern=^https?:\/\/(?:[^\/]+\.)?(
 ^https?:\/\/(?:app-measurement\.com|(?:[^\/]+\.)?appsflyer\.com|(?:[^\/]+\.)?adjust\.com)\/ data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% *.intsig.net, *.camscanner.com, googleads.g.doubleclick.net, www.googleadservices.com, pagead2.googlesyndication.com, a.gdt.qq.com, sdk.e.qq.com, apmplus.volces.com, app-measurement.com, *.appsflyer.com, *.adjust.com
+hostname = %APPEND% open.camscanner.com, apm-collector-uc.intsig.net, sentry.intsig.net, googleads.g.doubleclick.net, www.googleadservices.com, pagead2.googlesyndication.com, a.gdt.qq.com, sdk.e.qq.com, apmplus.volces.com, app-measurement.com, *.appsflyer.com, *.adjust.com
