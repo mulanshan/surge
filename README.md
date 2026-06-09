@@ -66,6 +66,38 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 - 不整域拒绝 `amap.com`
 - 不拦截天气、路线规划、导航、搜索主业务和账号接口
 
+### 扫描全能王 Self
+
+文件：[rewrite/Surge/camscanner-self.sgmodule](rewrite/Surge/camscanner-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-self.sgmodule
+```
+
+这是自有可审计的扫描全能王 / CamScanner 去广告模块。仓库里只保留这一个扫描全能王模块和一个响应脚本：
+
+- 模块：`rewrite/Surge/camscanner-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
+
+第一版功能范围：
+
+- 拦截明确广告、统计、归因和崩溃/行为采集域名
+- 拦截真机日志已出现的腾讯广告 SDK、火山 APM 和扫描全能王数据上报域名
+- 清理启动弹窗、运营活动、广告配置、推荐广告和营销位 JSON 容器
+- 对明显广告/统计路径使用 Map Local 返回空响应
+- 保留账号、云同步、OCR、PDF 转换、购买校验和主业务接口
+
+安全边界：
+
+- 不使用第三方脚本
+- 只从 `mulanshan/surge` 加载 `rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
+- 脚本不发起外部请求
+- 不上传请求、响应、账号、cookie 或 token
+- 不整域拒绝 `intsig.net` 或 `camscanner.com`
+- 不修改 `purchase/cs/query_property` 等会员、订阅、订单、额度、收据接口
+
 ### 番茄小说去广告
 
 文件：[rewrite/Surge/fanqie-novel-adblock.sgmodule](rewrite/Surge/fanqie-novel-adblock.sgmodule)
@@ -258,3 +290,21 @@ rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-re
 - 已被 `rule/Surge/fanqie-novel-adblock.list` 拦截的域名保持在生产规则里
 - 新域名先进入候选或观察，不直接整域拦截
 - `bytegecko`、`douyinpic`、`ecombdimg`、`ydycdn` 等 CDN/图片/动态资源域名默认观察，确认和广告强相关后再精确单域拦截
+
+扫描全能王也有独立的候选导出脚本：
+
+```bash
+rule/Surge/scripts/export-camscanner-candidates.sh
+```
+
+也可以复盘之前保存的 `dump request` JSON：
+
+```bash
+rule/Surge/scripts/export-camscanner-candidates.sh --input /private/tmp/ios-surge-requests.json
+```
+
+输出会写入 `reports/camscanner/`，该目录已忽略，不会误提交到公开仓库。开发原则：
+
+- `purchase`、`receipt`、`order`、`payment`、`subscription`、`vip`、`premium`、`property`、`quota`、`account` 等购买/账号敏感路径一律跳过
+- 新域名先进入候选或观察，不直接整域拦截 `intsig.net`、`camscanner.com`
+- 静态资源、云同步、OCR、PDF 转换和文档接口默认观察，确认和广告强相关后再精确处理
