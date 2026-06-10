@@ -283,6 +283,7 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/docke
 ### 番茄小说回国分流
 
 文件：[rule/Surge/fanqie-novel-cn.list](rule/Surge/fanqie-novel-cn.list)
+Loon 文件：[rule/Loon/fanqie-novel-cn.list](rule/Loon/fanqie-novel-cn.list)
 
 ```ini
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list,REJECT,extended-matching
@@ -290,6 +291,12 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqi
 ```
 
 如果人在中国大陆、不需要代理回国，第二行策略可以用 `DIRECT`。两条规则的顺序不要反过来，否则广告/日志域名会先被回国分流而不是拒绝。
+
+Loon 引用时不要加 Surge 的 `extended-matching` 参数，策略名按自己的配置替换，例如：
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Loon/fanqie-novel-cn.list,回国
+```
 
 命名为“番茄小说”的中文规则集地址仍然保留：
 

@@ -1,0 +1,52 @@
+# NAME: Fanqie Novel CN
+# Loon-compatible routing ruleset for returning Fanqie Novel traffic to a
+# China exit policy.
+#
+# Loon usage:
+# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Loon/fanqie-novel-cn.list,回国
+#
+# Replace "回国" with your Loon China-return policy group name.
+
+# Fanqie core business and reading resources.
+DOMAIN-SUFFIX,fqnovel.com
+DOMAIN-SUFFIX,fanqienovel.com
+DOMAIN-SUFFIX,fqnovelpic.com
+DOMAIN-SUFFIX,fqnovelvod.com
+
+# Dynamic resources and CDN hosts observed from iOS traffic logs.
+DOMAIN-SUFFIX,bytegecko.com
+DOMAIN-SUFFIX,ydycdn.com
+DOMAIN-SUFFIX,manlaxycloud.com
+
+# ByteDance / Fanqie auxiliary resources observed from iOS traffic logs.
+DOMAIN,gecko5-lq.zijieapi.com
+DOMAIN,ma.zijieapi.com
+DOMAIN,saveu5-normal-lq.zijieapi.com
+DOMAIN,p11.douyinpic.com
+DOMAIN,p3.douyinpic.com
+DOMAIN,p26-item.ecombdimg.com
+DOMAIN,p3-aio.ecombdimg.com
+
+# Embedded commerce/live entrypoints seen during app navigation and global
+# proxy testing. Keep ad/log domains in a reject ruleset before this file if
+# you also maintain ad blocking.
+DOMAIN,ec3-core-lq.ecombdapi.com
+DOMAIN,ec5-core-lq.ecombdapi.com
+DOMAIN,ecom3-normal-lq.ecombdapi.com
+DOMAIN,ecom5-normal-lq.ecombdapi.com
+DOMAIN,isaas5-normal-lq.ecombdapi.com
+DOMAIN,content-open.douyin.com
+DOMAIN,webcast5-open-lq.douyin.com
+
+# Exact snssdk / ByteDance auxiliary hosts seen during global-proxy testing.
+# Avoid broad DOMAIN-SUFFIX,snssdk.com or bytedance.com because those families
+# also carry unrelated app and ad traffic.
+DOMAIN,aweme.snssdk.com
+DOMAIN,tp-pay.snssdk.com
+DOMAIN,vas.snssdk.com
+DOMAIN,pitaya.bytedance.com
+DOMAIN,vc-brain.ndcpp.com
+
+# Observed ad/telemetry endpoint. If you also use an adblock ruleset, place it
+# before this routing ruleset so this domain is rejected instead of routed.
+DOMAIN,dig.bdurl.net
