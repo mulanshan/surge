@@ -43,25 +43,26 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-self.sgmodule
 ```
 
-这是自有可审计的 Instagram 去广告模块。仓库里只保留这一个 Instagram 模块和一个响应脚本：
+这是自有可审计的 Instagram 模块。2026-06-10 真机日志确认 iOS Instagram 主链路存在证书钉扎，广域 MITM 会导致 App 打不开或卡住；当前模块先切换为安全版，不启用 Instagram MITM/响应改写，优先保证正常联网。
 
 - 模块：`rewrite/Surge/instagram-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
 
 当前功能范围：
 
-- 清理 feed、popular、explore、Reels、story tray 和 web feed 响应中的明确广告对象
+- 不追加 `instagram.com`、`*.instagram.com`、`*.cdninstagram.com`、`*.i.instagram.com` 到 MITM
+- 不挂载响应脚本，避免触发 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com` 等证书钉扎失败
 - 保留登录、私信、上传、账号、媒体 CDN 和正常内容流
 - 不使用第三方脚本
 - 不上传请求、响应、账号、cookie 或 token
 - 不整域拒绝 `instagram.com`
-- 只借鉴公开社区的覆盖思路，不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
+- 后续只在真机日志证明某个非钉扎广告端点安全后，再单点加入规则
 
 社区参考结论：
 
 - blackmatrix7 / ios_rule_script 的 Instagram 规则主要是分流域名覆盖：`instagram.com`、`cdninstagram.com`、`instagr.am` 和 `DOMAIN-KEYWORD,instagram`
 - 公开搜索到的大合集通常是全平台去广告或全量 MITM 配置，不是 Instagram 专用自维护脚本
-- 当前模块因此只借鉴域名覆盖和响应清理方向，具体脚本逻辑全部自写
+- 当前模块不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
 
 ### 高德地图 Self
 
