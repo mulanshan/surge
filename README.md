@@ -52,11 +52,12 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 
 - 不追加 `instagram.com`、`*.instagram.com`、`*.cdninstagram.com`、`*.i.instagram.com` 到 MITM
 - 不挂载响应脚本，避免触发 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com` 等证书钉扎失败
+- 拦截真机日志出现的 `netseer-ipaddr-assoc` 辅助探测域名
 - 保留登录、私信、上传、账号、媒体 CDN 和正常内容流
 - 不使用第三方脚本
 - 不上传请求、响应、账号、cookie 或 token
 - 不整域拒绝 `instagram.com`
-- 后续只在真机日志证明某个非钉扎广告端点安全后，再单点加入规则
+- 后续只在真机日志证明某个非钉扎广告/追踪端点安全后，再单点加入规则
 
 社区参考结论：
 

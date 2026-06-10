@@ -11,3 +11,9 @@
 
 # Instagram iOS uses certificate pinning on the main API and gateway hosts.
 # Keep this module inert until a non-pinned, ad-only endpoint is verified in live logs.
+
+[Rule]
+# Live iPhone logs showed this fbcdn.net auxiliary association host carrying no
+# content payload. Keep the first pass narrow and do not reject Instagram API,
+# gateway, graph, or CDN media hosts.
+DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT
