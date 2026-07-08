@@ -1,0 +1,17 @@
+{
+  "id": "paypal",
+  "name": "PayPal",
+  "output": "rule/Surge/generated/paypal.list",
+  "description": "PayPal service rules.",
+  "suggested_policy": "自动",
+  "suggested_options": [],
+  "unique_rule_count": 248,
+  "sources": [
+    {
+      "name": "blackmatrix7 PayPal",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list",
+      "sha256": "4ffb6f94d2f1eff835c24b533c3d1d6e0c5a4cfbc32740fa9c32315ae218fd18",
+      "rule_count": 248
+    }
+  ]
+}

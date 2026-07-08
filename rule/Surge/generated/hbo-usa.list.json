@@ -1,0 +1,17 @@
+{
+  "id": "hbo-usa",
+  "name": "HBO USA",
+  "output": "rule/Surge/generated/hbo-usa.list",
+  "description": "HBO USA kept separate because the current profile routes it to 流媒体.",
+  "suggested_policy": "流媒体",
+  "suggested_options": [],
+  "unique_rule_count": 11,
+  "sources": [
+    {
+      "name": "blackmatrix7 HBOUSA",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list",
+      "sha256": "9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256",
+      "rule_count": 11
+    }
+  ]
+}

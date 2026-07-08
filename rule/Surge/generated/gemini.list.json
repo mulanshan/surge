@@ -1,0 +1,22 @@
+{
+  "id": "gemini",
+  "name": "Gemini",
+  "output": "rule/Surge/generated/gemini.list",
+  "description": "Deprecated compatibility path. Current maintained non-OpenAI AI rules live in rule/Surge/ai.list.",
+  "suggested_policy": "自动",
+  "suggested_options": [
+    "extended-matching",
+    "no-resolve"
+  ],
+  "unique_rule_count": 13,
+  "deprecated": true,
+  "replacement": "rule/Surge/ai.list",
+  "sources": [
+    {
+      "name": "blackmatrix7 Gemini",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Gemini/Gemini.list",
+      "sha256": "db8f69154426dca76792ab80b3ad6b0e2d078ebe0e52e76faec1724245a4ec49",
+      "rule_count": 13
+    }
+  ]
+}

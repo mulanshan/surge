@@ -1,0 +1,19 @@
+{
+  "id": "apple-tv",
+  "name": "Apple TV",
+  "output": "rule/Surge/generated/apple-tv.list",
+  "description": "Apple TV service rules kept separate because the current profile routes them to 流媒体.",
+  "suggested_policy": "流媒体",
+  "suggested_options": [
+    "extended-matching"
+  ],
+  "unique_rule_count": 9,
+  "sources": [
+    {
+      "name": "blackmatrix7 AppleTV",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list",
+      "sha256": "1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd",
+      "rule_count": 9
+    }
+  ]
+}

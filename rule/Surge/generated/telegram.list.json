@@ -1,0 +1,23 @@
+{
+  "id": "telegram",
+  "name": "Telegram",
+  "output": "rule/Surge/generated/telegram.list",
+  "description": "Telegram non-IP and IP rules from Sukka ruleset.",
+  "suggested_policy": "Proxy",
+  "suggested_options": [],
+  "unique_rule_count": 30,
+  "sources": [
+    {
+      "name": "Sukka Telegram non-IP",
+      "url": "https://ruleset.skk.moe/List/non_ip/telegram.conf",
+      "sha256": "ab9988f4305564ba6a577b392bd4e6c62dbd286ef1828e95e2fbe082f38e1b25",
+      "rule_count": 14
+    },
+    {
+      "name": "Sukka Telegram IP",
+      "url": "https://ruleset.skk.moe/List/ip/telegram.conf",
+      "sha256": "2edcf986ebe3631d4829d3e202e6500432e5e97feade50f9778aa2e96a0fcc05",
+      "rule_count": 16
+    }
+  ]
+}

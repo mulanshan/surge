@@ -1,0 +1,19 @@
+#!name=Instagram Self
+#!desc=自有可审计 Instagram 安全版：iOS App 存在证书钉扎，当前不启用 MITM/响应改写，避免破坏正常打开。不含第三方脚本。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=Instagram
+#!openUrl=https://apps.apple.com/us/app/instagram/id389801252
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n安全版说明：iOS Instagram 的 i.instagram.com、gateway.instagram.com、cdninstagram.com 等主链路会触发证书钉扎。此版本不追加 Instagram MITM hostname，也不挂载响应脚本，优先保证 App 正常联网。后续只在真机日志证明某个非钉扎广告端点安全后，再单点加入规则。
+#!system=ios
+#!date=2026-06-10
+
+# Instagram iOS uses certificate pinning on the main API and gateway hosts.
+# Keep this module inert until a non-pinned, ad-only endpoint is verified in live logs.
+
+[Rule]
+# Live iPhone logs showed this fbcdn.net auxiliary association host carrying no
+# content payload. Keep the first pass narrow and do not reject Instagram API,
+# gateway, graph, or CDN media hosts.
+DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT

@@ -1,0 +1,62 @@
+# AI / LLM / Coding
+#
+# Non-OpenAI AI services live here. Keep OpenAI / ChatGPT / GPT rules in
+# rule/Surge/generated/openai.list so GPT traffic can be tuned independently.
+
+# Google Gemini / AI Studio baseline
+DOMAIN,ai.google.dev
+DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,makersuite.google.com
+DOMAIN-SUFFIX,apis.google.com
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
+DOMAIN-KEYWORD,colab
+DOMAIN-KEYWORD,developerprofiles
+DOMAIN-KEYWORD,generativelanguage
+
+# Claude supplements
+DOMAIN-SUFFIX,claudeusercontent.com
+
+# Google AI supplements
+DOMAIN,aistudio.google.com
+DOMAIN,notebooklm.google.com
+
+# AI coding
+DOMAIN-SUFFIX,cursor.sh
+DOMAIN-SUFFIX,cursor.com
+DOMAIN-SUFFIX,cursorapi.com
+DOMAIN-SUFFIX,cursor-cdn.com
+DOMAIN-SUFFIX,anysphere.co
+DOMAIN-SUFFIX,anysphere.inc
+DOMAIN,anysphere-binaries.s3.us-east-1.amazonaws.com
+DOMAIN-SUFFIX,windsurf.com
+DOMAIN-SUFFIX,codeium.com
+DOMAIN-SUFFIX,codeiumdata.com
+DOMAIN,ai.jetbrains.com
+DOMAIN-SUFFIX,v0.dev
+DOMAIN-SUFFIX,aws.dev
+DOMAIN-SUFFIX,kiro.dev
+DOMAIN,q.us-east-1.amazonaws.com
+DOMAIN,q.eu-central-1.amazonaws.com
+DOMAIN,q-fips.us-gov-east-1.amazonaws.com
+DOMAIN,q-fips.us-gov-west-1.amazonaws.com
+
+# AI search / model providers / inference
+DOMAIN-SUFFIX,perplexity.ai
+DOMAIN-SUFFIX,pplx.ai
+DOMAIN-SUFFIX,poe.com
+DOMAIN-SUFFIX,openrouter.ai
+DOMAIN-SUFFIX,mistral.ai
+DOMAIN-SUFFIX,cohere.com
+DOMAIN-SUFFIX,cohere.ai
+DOMAIN-SUFFIX,together.ai
+DOMAIN-SUFFIX,fireworks.ai
+DOMAIN-SUFFIX,replicate.com
+DOMAIN-SUFFIX,huggingface.co
+DOMAIN-SUFFIX,hf.co
+DOMAIN-SUFFIX,x.ai
+DOMAIN-SUFFIX,grok.com

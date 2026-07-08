@@ -1,0 +1,26 @@
+# NAME: Gemini
+# ID: gemini
+# Deprecated compatibility path.
+# Current maintained non-OpenAI AI rules live in rule/Surge/ai.list.
+# Keep this file only so devices with stale profiles do not fail while they
+# still reference rule/Surge/generated/gemini.list.
+# Suggested policy: 自动
+# Sources:
+# - blackmatrix7 Gemini: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Gemini/Gemini.list
+#   sha256: db8f69154426dca76792ab80b3ad6b0e2d078ebe0e52e76faec1724245a4ec49
+#   rules: 13
+# Total unique rules: 13
+
+DOMAIN,ai.google.dev
+DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,makersuite.google.com
+DOMAIN-SUFFIX,apis.google.com
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
+DOMAIN-KEYWORD,colab
+DOMAIN-KEYWORD,developerprofiles
+DOMAIN-KEYWORD,generativelanguage

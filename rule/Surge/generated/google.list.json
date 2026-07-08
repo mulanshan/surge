@@ -1,0 +1,19 @@
+{
+  "id": "google",
+  "name": "Google",
+  "output": "rule/Surge/generated/google.list",
+  "description": "Google common services. AI-specific Google entries should stay before this ruleset.",
+  "suggested_policy": "自动",
+  "suggested_options": [
+    "extended-matching"
+  ],
+  "unique_rule_count": 698,
+  "sources": [
+    {
+      "name": "blackmatrix7 Google",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list",
+      "sha256": "4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f",
+      "rule_count": 698
+    }
+  ]
+}

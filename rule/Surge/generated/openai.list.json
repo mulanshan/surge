@@ -1,0 +1,20 @@
+{
+  "id": "openai",
+  "name": "OpenAI",
+  "output": "rule/Surge/generated/openai.list",
+  "description": "OpenAI, ChatGPT, and GPT service baseline. Non-OpenAI AI services stay in rule/Surge/ai.list.",
+  "suggested_policy": "自动",
+  "suggested_options": [
+    "extended-matching",
+    "no-resolve"
+  ],
+  "unique_rule_count": 35,
+  "sources": [
+    {
+      "name": "blackmatrix7 OpenAI",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list",
+      "sha256": "6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b",
+      "rule_count": 35
+    }
+  ]
+}

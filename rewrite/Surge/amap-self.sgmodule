@@ -1,0 +1,31 @@
+#!name=高德地图 Self
+#!desc=自有可审计高德地图去广告模块：清理开屏、消息盒子、首页推荐、搜索热词和部分广告接口。不含第三方脚本。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=高德地图
+#!openUrl=https://apps.apple.com/app/id461703208
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n采用保守清理：开屏广告、消息盒子、首页广告卡片、搜索热词广告配置、明显广告/归因接口和高频统计采集接口。地图瓦片、定位、导航、路线规划、搜索主业务、账号和素材资源不拦截。
+#!date=2026-06-08
+
+[Rule]
+# adashx 是高德/友盟统计域，真实抓包里可能以 TCP 形态出现，Map Local 不一定能接住。
+DOMAIN,adashx.ut.amap.com,REJECT
+
+[Script]
+amap.self.response = type=http-response,pattern=^https?:\/\/(?:[^\/]+\.)?amap\.com\/+ws\/(?:(?:valueadded|aos)\/alimama\/splash_screen(?:_rt)?|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/amap/amap-self.response.js?v=20260608-rt,argument="{\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+# 明显广告/归因接口，返回空对象或空响应即可；避免对天气、导航、搜索主业务做整接口拦截。
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/+ws\/asa\/ads_attribution(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/+ws\/shield\/scene\/recommend(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/+ws\/boss\/order_web\/\w{8}_information(?:\?.*)?$ data-type=text data="" status-code=204
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/uploadimg\/\w+\.gif(?:\?.*)?$ data-type=text data="" status-code=204
+
+# 启动和页面统计采集。真实请求来自 iPhone 高德地图 2026-06-08 抓包。
+^https?:\/\/awaken\.amap\.com\/+ws\/h5_log(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/(?:[^\/]+\.)?amap\.com\/+ws\/shield\/(?:alc\/collect|amapstream\/upload)(?:\?.*)?$ data-type=text data="{}" status-code=200
+^https?:\/\/adashx\.ut\.amap\.com\/ data-type=text data="" status-code=204
+
+[MITM]
+hostname = %APPEND% *.amap.com, awaken.amap.com, adashx.ut.amap.com

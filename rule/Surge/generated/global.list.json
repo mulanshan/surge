@@ -1,0 +1,19 @@
+{
+  "id": "global",
+  "name": "Global Common",
+  "output": "rule/Surge/generated/global.list",
+  "description": "Broad global services fallback. Keep this late in the rule order.",
+  "suggested_policy": "Proxy",
+  "suggested_options": [
+    "extended-matching"
+  ],
+  "unique_rule_count": 1265,
+  "sources": [
+    {
+      "name": "Sukka Global non-IP",
+      "url": "https://ruleset.skk.moe/List/non_ip/global.conf",
+      "sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
+      "rule_count": 1265
+    }
+  ]
+}

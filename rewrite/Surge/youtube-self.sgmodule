@@ -1,0 +1,42 @@
+#!name=YouTube Self
+#!desc=自有可审计 YouTube 去广告与后台播放唯一入口：处理播放与下一屏广告，首页/频道/搜索信息流原样保留。不含第三方代码。
+#!author=mulanshan
+#!category=Enhance
+#!tag=YouTube
+#!openUrl=https://apps.apple.com/app/id544007664
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n唯一入口：处理 youtubei.googleapis.com / www.youtube.com 的 player、get_watch、next、account/get_setting、account/get_setting_values。browse/search/guide/reel 信息流原样放行，避免标题、说明、频道页列表等正常元数据被误删；保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
+#!date=2026-06-08
+
+[Rule]
+# 禁用 YouTube QUIC/HTTP3，避免播放初始化与核心 API 走 UDP 绕过 HTTPS 处理。
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,www.youtube.com), (PROTOCOL,UDP)),REJECT
+
+[Script]
+youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/youtube/youtube-self.response.js,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/api\/stats\/ads data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adcontext data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adformat data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*is_ad=1 data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adcontext data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adformat data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*is_ad=1 data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adcontext data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adformat data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*is_ad=1 data-type=text data="" status-code=204
+^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
+^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/atr\?.*is_ad=1 data-type=text data="" status-code=204
+^https?:\/\/googleads\.g\.doubleclick\.net\/ytcs\/adview data-type=text data="" status-code=204
+^https?:\/\/www\.google(?:\.com|\.com\.hk)\/pagead\/ data-type=text data="" status-code=204
+^https?:\/\/www\.google(?:\.com|\.com\.hk)\/ads\/on-device\/ data-type=text data="" status-code=204
+
+[MITM]
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, www.googleadservices.com, googleads.g.doubleclick.net, *.googlevideo.com, www.google.com, www.google.com.hk

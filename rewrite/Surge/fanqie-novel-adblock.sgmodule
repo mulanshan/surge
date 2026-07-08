@@ -1,0 +1,63 @@
+#!name=番茄小说去广告
+#!desc=番茄小说广告、统计与广告 SDK 请求拦截。规则保守，不整域拒绝 fqnovel/snssdk 主业务域。
+#!system=ios
+
+[Rule]
+# 番茄小说日志、广告、监控。模块规则会插入主配置 Rule 顶部，策略仅使用 Surge 内置 REJECT。
+DOMAIN,log3-applog.fqnovel.com,REJECT
+DOMAIN,log3-applog-lq.fqnovel.com,REJECT
+DOMAIN,log5-applog.fqnovel.com,REJECT
+DOMAIN,log5-applog-lq.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog-lq.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog-lq.fqnovel.com,REJECT
+DOMAIN,mon11-misc-lq.fqnovel.com,REJECT
+DOMAIN,mon11-misc.fqnovel.com,REJECT
+DOMAIN,mon3-misc.fqnovel.com,REJECT
+
+# 字节广告、统计、监控、埋点
+DOMAIN,ads3-normal.zijieapi.com,REJECT
+DOMAIN,ads5-normal.zijieapi.com,REJECT
+DOMAIN,ads3-normal-lq.zijieapi.com,REJECT
+DOMAIN,ads5-normal-lq.zijieapi.com,REJECT
+DOMAIN,ads3-normal-hl.zijieapi.com,REJECT
+DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
+DOMAIN,abtest3-misc.zijieapi.com,REJECT
+DOMAIN,ma.zijieapi.com,REJECT
+DOMAIN,timon.zijieapi.com,REJECT
+DOMAIN,vcs.zijieapi.com,REJECT
+DOMAIN,feedback-c.zijieapi.com,REJECT
+DOMAIN,mon.toutiaocloud.com,REJECT
+DOMAIN,mon.toutiaocloud.net,REJECT
+
+# 穿山甲 / 广告素材
+DOMAIN,p3-ad-sign.byteimg.com,REJECT
+DOMAIN,p6-ad-sign.byteimg.com,REJECT
+DOMAIN,p9-ad-sign.byteimg.com,REJECT
+DOMAIN,api.iegadp.qq.com,REJECT
+DOMAIN,dig.bdurl.net,REJECT
+DOMAIN,zlink.ugsdk.cn,REJECT
+
+# 活动与动态组件。只拦广告或活动外壳，避免整域拒绝 fqnovel.com/fanqienovel.com。
+DOMAIN,activity-ag.awemeughun.com,REJECT
+DOMAIN,gecko3.zijieapi.com,REJECT
+DOMAIN,gecko5.zijieapi.com,REJECT
+DOMAIN,lf-normal-gr-sourcecdn.bytegecko.com,REJECT
+DOMAIN,lf-webcast-gr-sourcecdn.bytegecko.com,REJECT
+DOMAIN,minigame3-normal.zijieapi.com,REJECT
+DOMAIN,minigame5-normal.zijieapi.com,REJECT
+DOMAIN,webcast-open.douyin.com,REJECT
+DOMAIN,p11-webcast-sign.douyinpic.com,REJECT
+DOMAIN,p3-webcast-sign.douyinpic.com,REJECT
+DOMAIN,p3-developer.bytemaimg.com,REJECT
+
+[URL Rewrite]
+# 穿山甲广告 SDK 与广告素材。HTTPS URL Rewrite 需要 MITM hostname 命中。
+^https?:\/\/sf3-be-pack\.pglstatp-toutiao\.com\/obj\/ad-app-package\/ _ reject
+^https?:\/\/sf3-fe-tos\.pglstatp-toutiao\.com\/obj\/ad-pattern\/ _ reject
+^https?:\/\/lf\d?-cdn-tos\.bytescm\.com\/obj\/static\/ad\/ _ reject
+^https?:\/\/(?:api-access\.pangolin-sdk-toutiao(?:-b|-b1|-p)?\.com|is\.snssdk\.com)\/api\/ad\/union\/sdk\/(?:get_ads|settings|stats)(?:\/|\?)? _ reject
+
+[MITM]
+hostname = %APPEND% sf3-be-pack.pglstatp-toutiao.com, sf3-fe-tos.pglstatp-toutiao.com, lf-cdn-tos.bytescm.com, lf3-cdn-tos.bytescm.com, lf6-cdn-tos.bytescm.com, lf9-cdn-tos.bytescm.com, api-access.pangolin-sdk-toutiao.com, api-access.pangolin-sdk-toutiao-b.com, api-access.pangolin-sdk-toutiao-b1.com, api-access.pangolin-sdk-toutiao-p.com, is.snssdk.com

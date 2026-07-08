@@ -1,0 +1,17 @@
+{
+  "id": "netflix",
+  "name": "Netflix",
+  "output": "rule/Surge/generated/netflix.list",
+  "description": "Netflix kept separate because the current profile routes it to 绿云 instead of the general streaming group.",
+  "suggested_policy": "绿云",
+  "suggested_options": [],
+  "unique_rule_count": 1157,
+  "sources": [
+    {
+      "name": "blackmatrix7 Netflix",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list",
+      "sha256": "aa03f015949e8f6f981d90a7d8b1acf7e88472ee48601632bd964b0bb740f8aa",
+      "rule_count": 1157
+    }
+  ]
+}
