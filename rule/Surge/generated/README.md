@@ -27,4 +27,4 @@ scripts/generate-managed-surge-rules.py
 | prime-video | `prime-video.list` | `流媒体` | 18 |
 | streaming | `streaming.list` | `自动` | 321 |
 | paypal | `paypal.list` | `自动` | 248 |
-| global | `global.list` | `Proxy` | 1260 |
+| global | `global.list` | `Proxy` | 1265 |

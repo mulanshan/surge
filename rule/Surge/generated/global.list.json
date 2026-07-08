@@ -7,13 +7,13 @@
   "suggested_options": [
     "extended-matching"
   ],
-  "unique_rule_count": 1260,
+  "unique_rule_count": 1265,
   "sources": [
     {
       "name": "Sukka Global non-IP",
       "url": "https://ruleset.skk.moe/List/non_ip/global.conf",
-      "sha256": "ca9b6416214da8a56ae66244a32540acf4783cf45f34c5aae9948c11384a6244",
-      "rule_count": 1260
+      "sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
+      "rule_count": 1265
     }
   ]
 }

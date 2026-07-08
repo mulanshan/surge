@@ -290,6 +290,25 @@ def generate_one(rule_set: RuleSet, output_dir: Path, timeout: int) -> dict[str,
     return metadata
 
 
+def load_metadata(metadata_path: Path) -> dict[str, Any]:
+    return json.loads(metadata_path.read_text(encoding="utf-8"))
+
+
+def read_index_metadata(
+    output_dir: Path,
+    rule_sets: list[RuleSet],
+    generated: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    generated_by_id = {item["id"]: item for item in generated}
+    items: list[dict[str, Any]] = []
+    for rule_set in rule_sets:
+        if rule_set.rule_id in generated_by_id:
+            items.append(generated_by_id[rule_set.rule_id])
+            continue
+        items.append(load_metadata(output_dir / f"{rule_set.output}.json"))
+    return items
+
+
 def write_index(output_dir: Path, generated: list[dict[str, Any]]) -> None:
     lines = [
         "# Generated Surge Rules",
@@ -320,10 +339,11 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=30)
     args = parser.parse_args()
 
-    generated_dir, sets = load_manifest(args.manifest)
+    generated_dir, all_sets = load_manifest(args.manifest)
+    sets = all_sets
     if args.only:
         wanted = set(args.only)
-        sets = [rule_set for rule_set in sets if rule_set.rule_id in wanted]
+        sets = [rule_set for rule_set in all_sets if rule_set.rule_id in wanted]
         missing = wanted - {rule_set.rule_id for rule_set in sets}
         if missing:
             print(f"Unknown ruleset id(s): {', '.join(sorted(missing))}", file=sys.stderr)
@@ -333,7 +353,11 @@ def main() -> int:
     for rule_set in sets:
         print(f"Generating {rule_set.rule_id} -> {rule_set.output}")
         generated.append(generate_one(rule_set, generated_dir, timeout=args.timeout))
-    write_index(generated_dir, generated)
+    if args.only:
+        index_items = read_index_metadata(generated_dir, all_sets, generated)
+    else:
+        index_items = generated
+    write_index(generated_dir, index_items)
     print(f"Wrote {len(generated)} rulesets to {generated_dir.relative_to(ROOT)}")
     return 0
 

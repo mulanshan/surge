@@ -7,6 +7,18 @@
 
 原 `mulanshan/surge-rules` 里的分流规则已迁入本仓库；旧仓库已停止使用。新配置统一使用 `mulanshan/surge`。
 
+## 公开分发同步
+
+本仓库是私有源码仓库，公开订阅地址由 `mulanshan/surge` 提供。修改模块或脚本后，提交并推送到 `surge-src/main`，GitHub Actions 会自动运行 `scripts/export-public-distribution.sh`，只同步公开 allowlist：
+
+- `rewrite/Surge/*.sgmodule`
+- `rewrite/Surge/scripts/...`
+- `rule/Surge/*.list`
+- `rule/Surge/*.conf`
+- `rule/Surge/generated/*`
+
+`reports/`、`rule/Surge/sources/`、`rule/Surge/scripts/`、`local-surge-control/` 和顶层维护脚本不会进入公开仓库。手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 地址，不需要重装模块；需要立即刷新时，在 Surge 里更新外部资源或重新加载配置。
+
 ## rewrite / Surge
 
 ### YouTube Self
@@ -64,6 +76,30 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 - blackmatrix7 / ios_rule_script 的 Instagram 规则主要是分流域名覆盖：`instagram.com`、`cdninstagram.com`、`instagr.am` 和 `DOMAIN-KEYWORD,instagram`
 - 公开搜索到的大合集通常是全平台去广告或全量 MITM 配置，不是 Instagram 专用自维护脚本
 - 当前模块不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
+
+### Instagram Feed Self（实验版）
+
+文件：[rewrite/Surge/instagram-feed-self.sgmodule](rewrite/Surge/instagram-feed-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-feed-self.sgmodule
+```
+
+这是按 YouTube Self 的结构做的 web-feed 实验版，只给 `www.instagram.com` 的 `feed / discover / graphql` 入口挂载一个响应脚本：
+
+- 模块：`rewrite/Surge/instagram-feed-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
+
+当前范围：
+
+- 仅 MITM `www.instagram.com`
+- 仅处理 `www.instagram.com/api/v1/feed/`、`www.instagram.com/api/v1/discover/` 和 `www.instagram.com/graphql/query/`
+- 不碰 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com`
+- 不碰媒体 CDN、登录、私信和账号链路
+
+这个实验版是为了先验证 web feed 的广告清理思路；native iOS App 主链路仍然保留在上面的安全版里。
 
 ### 高德地图 Self
 

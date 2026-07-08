@@ -1,0 +1,4 @@
+interface:
+  display_name: "Local Surge Control"
+  short_description: "Control Mac Surge and connect to iOS/tvOS Surge endpoints."
+  default_prompt: "Use this skill to inspect or control local Mac Surge and remote iPhone/Apple TV Surge instances over External Controller or HTTPS HTTP API."

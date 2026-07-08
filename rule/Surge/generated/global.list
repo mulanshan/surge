@@ -6,9 +6,9 @@
 # Suggested policy: Proxy
 # Sources:
 # - Sukka Global non-IP: https://ruleset.skk.moe/List/non_ip/global.conf
-#   sha256: ca9b6416214da8a56ae66244a32540acf4783cf45f34c5aae9948c11384a6244
-#   rules: 1260
-# Total unique rules: 1260
+#   sha256: a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578
+#   rules: 1265
+# Total unique rules: 1265
 
 DOMAIN,ccmdl.adobe.com
 DOMAIN,community.oneplus.com
@@ -87,6 +87,7 @@ DOMAIN-SUFFIX,anyporn.com
 DOMAIN-SUFFIX,anysex.com
 DOMAIN-SUFFIX,ao3.org
 DOMAIN-SUFFIX,aol.com
+DOMAIN-SUFFIX,ap.org
 DOMAIN-SUFFIX,apernet.io
 DOMAIN-SUFFIX,apibay.org
 DOMAIN-SUFFIX,apk-dl.com
@@ -229,6 +230,7 @@ DOMAIN-SUFFIX,cloudflarestorage.com
 DOMAIN-SUFFIX,cloudflaretunnel.com
 DOMAIN-SUFFIX,cloudfront.net
 DOMAIN-SUFFIX,cloudfunctions.net
+DOMAIN-SUFFIX,cloudns.net
 DOMAIN-SUFFIX,clubhouse.com
 DOMAIN-SUFFIX,clubhouseapi.com
 DOMAIN-SUFFIX,cnbc.com
@@ -257,6 +259,7 @@ DOMAIN-SUFFIX,cosplay-jav.com
 DOMAIN-SUFFIX,costco.com
 DOMAIN-SUFFIX,coveralls.io
 DOMAIN-SUFFIX,cpuid.com
+DOMAIN-SUFFIX,cr
 DOMAIN-SUFFIX,crashlytics.com
 DOMAIN-SUFFIX,creaders.net
 DOMAIN-SUFFIX,creativelab5.com
@@ -283,6 +286,7 @@ DOMAIN-SUFFIX,deepl.com
 DOMAIN-SUFFIX,deepmind.com
 DOMAIN-SUFFIX,deezer.com
 DOMAIN-SUFFIX,deno.com
+DOMAIN-SUFFIX,desec.io
 DOMAIN-SUFFIX,desmos.com
 DOMAIN-SUFFIX,detnews.com
 DOMAIN-SUFFIX,deviantart.com
@@ -377,6 +381,7 @@ DOMAIN-SUFFIX,firefox.com
 DOMAIN-SUFFIX,fish.audio
 DOMAIN-SUFFIX,fixupx.com
 DOMAIN-SUFFIX,fixvx.com
+DOMAIN-SUFFIX,flathub.org
 DOMAIN-SUFFIX,flickr.com
 DOMAIN-SUFFIX,flightradar24.com
 DOMAIN-SUFFIX,flipboard.com

@@ -1,3 +1,5 @@
 captures/
 captures-redacted/
 reports/
+__pycache__/
+*.pyc
