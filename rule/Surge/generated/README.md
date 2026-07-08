@@ -1,13 +1,9 @@
 # Generated Surge Rules
 
-These files are generated mirrors of selected upstream rulesets.
-Each `.list` file is a Surge RULE-SET file without policy decisions.
+这些文件是公开分发版规则集。每个 `.list` 文件都是不带策略组决策的 Surge
+`RULE-SET` 文件，具体策略由主配置中的 `RULE-SET,...,<policy>` 决定。
 
-Regenerate:
-
-```bash
-scripts/generate-managed-surge-rules.py
-```
+生成脚本和上游源清单保存在私有维护仓库中，不在公开分发仓库发布。
 
 | ID | File | Suggested policy | Unique rules |
 | --- | --- | --- | ---: |
