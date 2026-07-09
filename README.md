@@ -7,17 +7,11 @@
 
 原 `mulanshan/surge-rules` 里的分流规则已迁入本仓库；旧仓库已停止使用。新配置统一使用 `mulanshan/surge`。
 
-## 公开分发同步
+## 公开使用
 
-本仓库是私有源码仓库，公开订阅地址由 `mulanshan/surge` 提供。修改模块或脚本后，提交并推送到 `surge-src/main`，GitHub Actions 会自动运行 `scripts/export-public-distribution.sh`，只同步公开 allowlist：
+本仓库直接作为公开 Surge 模块和规则仓库使用。修改模块、脚本或规则后，提交并推送到 `mulanshan/surge/main`，手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 地址，不需要重装模块。
 
-- `rewrite/Surge/*.sgmodule`
-- `rewrite/Surge/scripts/...`
-- `rule/Surge/*.list`
-- `rule/Surge/*.conf`
-- `rule/Surge/generated/*`
-
-`reports/`、`rule/Surge/sources/`、`rule/Surge/scripts/`、`local-surge-control/` 和顶层维护脚本不会进入公开仓库。手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 地址，不需要重装模块；需要立即刷新时，在 Surge 里更新外部资源或重新加载配置。
+需要立即刷新时，在 Surge 里更新外部资源或重新加载配置。抓包、请求导出和本地分析报告默认写入 `reports/`、`rule/Surge/reports/` 或临时目录，这些路径已加入 `.gitignore`，避免误把日志和请求内容提交到公开仓库。
 
 ## rewrite / Surge
 

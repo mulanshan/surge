@@ -1,5 +1,10 @@
 captures/
 captures-redacted/
 reports/
+rule/Surge/reports/
+*.requests.json
+*.summary.tsv
+*.har
+*.log
 __pycache__/
 *.pyc
