@@ -426,6 +426,12 @@ const NEXT_AD_STRONG_MARKERS = [
   "ad_icon_text.eml-fe",
   "ad_rating.eml-fe",
   "inline_injection_entrypoint_layout.eml",
+  "playerAd",
+  "player_ads",
+  "adBreakService",
+  "adBreakHeartbeatParams",
+  "instream",
+  "instream_content",
 ];
 
 let feedAdCardsRemoved = 0;
@@ -577,12 +583,34 @@ function cleanPlaybackTracking(payload) {
 function cleanPlayerProtobuf(bytes) {
   let sawPlayability = false;
   let changed = false;
+  let removed = 0;
   const out = [];
 
   for (const field of parseFields(bytes)) {
-    if (field.fieldNo === PLAYER_FIELDS.adPlacements || field.fieldNo === PLAYER_FIELDS.adSlots) {
+    // Known player ad containers observed on iOS.
+    if (
+      field.fieldNo === PLAYER_FIELDS.adPlacements ||
+      field.fieldNo === PLAYER_FIELDS.adSlots
+    ) {
+      removed += 1;
       changed = true;
       continue;
+    }
+
+    // Drop any length field that is compact/medium and clearly ad-marked.
+    if (
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      field.payload.length >= 80 &&
+      field.payload.length <= 250000 &&
+      bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)
+    ) {
+      // Keep very large structural blobs unless they are obviously ad-only.
+      if (field.payload.length <= 120000 || isLikelyNextAdFragment(field.payload)) {
+        removed += 1;
+        changed = true;
+        continue;
+      }
     }
 
     if (field.fieldNo === PLAYER_FIELDS.playabilityStatus && field.wireType === WIRE_LENGTH && field.payload) {
@@ -600,6 +628,20 @@ function cleanPlayerProtobuf(bytes) {
       continue;
     }
 
+    // Recurse one level into unknown length fields to strip nested ad slots.
+    if (field.wireType === WIRE_LENGTH && field.payload && field.payload.length > 0 && field.payload.length < 800000) {
+      try {
+        const nested = cleanNextAdFragmentsProtobuf(field.payload, 4);
+        if (nested !== field.payload) {
+          out.push({ raw: encodeLengthField(field.fieldNo, nested) });
+          changed = true;
+          continue;
+        }
+      } catch {
+        // ignore and keep original
+      }
+    }
+
     out.push(field);
   }
 
@@ -608,6 +650,7 @@ function cleanPlayerProtobuf(bytes) {
     changed = true;
   }
 
+  if (removed) nextAdFieldsRemoved += removed;
   return changed ? rebuildFields(out) : bytes;
 }
 
@@ -623,10 +666,28 @@ function cleanWatchContentProtobuf(bytes) {
       continue;
     }
     if (field.fieldNo === WATCH_CONTENT_FIELDS.next && field.wireType === WIRE_LENGTH && field.payload) {
-      const payload = cleanNextAdFragmentsProtobuf(field.payload, 8);
+      const payload = cleanNextAdFragmentsProtobuf(field.payload, 10);
       out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.next, payload) });
       changed = true;
       continue;
+    }
+    // Some iOS get_watch blobs nest ads outside classic player/next fields.
+    if (field.wireType === WIRE_LENGTH && field.payload && field.payload.length >= 120 && field.payload.length <= 300000) {
+      if (isLikelyNextAdFragment(field.payload) || bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)) {
+        nextAdFieldsRemoved += 1;
+        changed = true;
+        continue;
+      }
+      try {
+        const nested = cleanNextAdFragmentsProtobuf(field.payload, 5);
+        if (nested !== field.payload) {
+          out.push({ raw: encodeLengthField(field.fieldNo, nested) });
+          changed = true;
+          continue;
+        }
+      } catch {
+        // keep
+      }
     }
     out.push(field);
   }
