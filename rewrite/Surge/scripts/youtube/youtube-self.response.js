@@ -948,66 +948,33 @@ function isLikelyNestedMessage(bytes) {
   }
 }
 
-function isLikelyFeedAdCard(payload) {
-  // Conservative homepage-safe matcher.
-  // Prefer missing an ad over blanking the entire iOS home feed again.
-  if (payload.length < 400 || payload.length > 90000) return false;
-
-  const hasExactSponsorBadge = bytesContainAnyMarker(payload, [
-    "赞助商广告",
-    "付费宣传",
-    "Paid promotion",
-    "paid promotion",
-  ]);
-  // Avoid bare "Sponsored"/"sponsor" alone: those strings appear in non-ad UI.
-  const hasEnglishSponsorBadge = bytesContainAnyMarker(payload, [
-    "Sponsored",
-    "sponsored by",
-  ]);
-  const hasCta = bytesContainAnyMarker(payload, [
-    "访问网站",
-    "Visit site",
-    "Visit website",
-    "VISIT_SITE",
-    "Shop now",
-    "Learn more",
-    "立即购买",
-    "了解详情",
-    "Install",
-    "安装",
-  ]);
-  const hasAdUi = bytesContainAnyMarker(payload, [
-    "ad_badge.eml-fe",
-    "ad_button.eml-fe",
-    "ad_details_line.eml-fe",
-    "inline_injection_entrypoint_layout.eml",
-    "in_feed_ad",
-    "promotedSparklesWebRenderer",
-    "promotedVideoRenderer",
-    "displayAdRenderer",
-    "adSlotRenderer",
-    "inFeedAdLayoutRenderer",
-  ]);
-
-  // Require a clear sponsor badge, or ad-UI marker + CTA.
-  const strong =
-    hasExactSponsorBadge ||
-    (hasEnglishSponsorBadge && hasCta) ||
-    (hasAdUi && (hasCta || hasExactSponsorBadge || hasEnglishSponsorBadge));
-  if (!strong) return false;
+function isExactSponsorBadgeCard(payload) {
+  // Target the homepage "赞助商广告" card specifically.
+  // Choose the leaf-most/small card that still carries the badge text.
+  if (!payload || payload.length < 500 || payload.length > 180000) return false;
+  if (!bytesContainAnyMarker(payload, ["赞助商广告"])) return false;
 
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
-    // Giant containers can embed one ad; never delete the whole shelf.
-    if (payload.length > 60000 && lengthFields > 18) return false;
-    if (payload.length > 30000 && lengthFields > 28) return false;
+    // Giant shelves/sections can include the badge somewhere inside; skip those
+    // so we only remove the actual ad card node.
+    if (payload.length > 100000 && lengthFields > 20) return false;
+    if (payload.length > 140000) return false;
     return true;
   } catch {
-    // Only drop compact exact Chinese sponsor cards if parse fails.
-    return hasExactSponsorBadge && payload.length <= 40000;
+    return payload.length <= 50000;
   }
+}
+
+function payloadHasExactSponsorBadge(payload) {
+  return !!(payload && bytesContainAnyMarker(payload, ["赞助商广告"]));
+}
+
+function isLikelyFeedAdCard(payload) {
+  // Keep generic path very narrow; homepage relies on exact sponsor badge cards.
+  return isExactSponsorBadgeCard(payload);
 }
 
 
@@ -1023,19 +990,22 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
     }
 
     try {
-      if (isLikelyFeedAdCard(field.payload)) {
+      // Recurse first so we remove the smallest/deepest sponsor card, not a big parent.
+      const nested = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
+      if (nested !== field.payload) {
+        out.push({ raw: encodeLengthField(field.fieldNo, nested) });
+        changed = true;
+        continue;
+      }
+
+      // No deeper removal: if this node itself is a compact sponsor card, drop it.
+      if (isExactSponsorBadgeCard(field.payload)) {
         feedAdCardsRemoved += 1;
         changed = true;
         continue;
       }
 
-      const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
-      if (payload !== field.payload) {
-        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
-        changed = true;
-      } else {
-        out.push(field);
-      }
+      out.push(field);
     } catch {
       out.push(field);
     }
@@ -1046,29 +1016,43 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 
 function cleanFeedSurfaceProtobuf(bytes) {
   feedAdCardsRemoved = 0;
-  const output = cleanFeedAdCardsProtobuf(bytes, 7);
+  const badgePresent = payloadHasExactSponsorBadge(bytes);
+  const output = cleanFeedAdCardsProtobuf(bytes, 12);
+  const ratio = output.length / Math.max(bytes.length, 1);
+
   if (feedAdCardsRemoved === 0) {
+    logbook(
+      `browse-scan badge=${badgePresent ? 1 : 0} removed=0 bytes=${bytes.length}`
+    );
     return bytes;
   }
 
-  const ratio = output.length / Math.max(bytes.length, 1);
-  // Homepage blanking usually comes from over-deletion of structural cards.
-  // Keep this very conservative: few cards, small size delta only.
-  if (feedAdCardsRemoved > 6) {
-    logbook(`feed-safety-passthrough removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`);
+  // Hard safety against homepage blanking.
+  if (feedAdCardsRemoved > 3) {
+    logbook(
+      `feed-safety-passthrough removed=${feedAdCardsRemoved} badge=1 ${bytes.length} -> ${output.length}`
+    );
     feedAdCardsRemoved = 0;
     return bytes;
   }
-  if (bytes.length > 50000 && ratio < 0.93) {
-    logbook(`feed-safety-passthrough ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`);
+  if (bytes.length > 80000 && ratio < 0.90) {
+    logbook(
+      `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
+    );
     feedAdCardsRemoved = 0;
     return bytes;
   }
   if (bytes.length > 20000 && ratio < 0.80) {
-    logbook(`feed-safety-passthrough ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`);
+    logbook(
+      `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
+    );
     feedAdCardsRemoved = 0;
     return bytes;
   }
+
+  logbook(
+    `browse-scan badge=1 removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
+  );
   return output;
 }
 
