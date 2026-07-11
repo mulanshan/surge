@@ -991,43 +991,71 @@ function isExactSponsorBadgeCard(payload) {
   }
 }
 
-// Screenshot-proven homepage ad card: CTA pair "观看" + "访问网站".
-// Require both, and keep size in a card-like range so normal videos are kept.
+// Live iOS logs showed homepage browse payloads with:
+// hits=watch_cn|learn_cn|ad_ui  (often no plain "赞助商广告" / "访问网站" text)
+// Match compact cards that combine a watch CTA + ad UI / learn-more commercial CTA.
 function isScreenshotStyleCtaAdCard(payload) {
-  if (!payload || payload.length < 1200 || payload.length > 120000) return false;
-  const hasVisit = bytesContainAnyMarker(payload, ["访问网站", "Visit site", "Visit website", "VISIT_SITE"]);
-  const hasWatch = bytesContainAnyMarker(payload, ["观看", "Watch"]);
-  if (!hasVisit || !hasWatch) return false;
+  if (!payload || payload.length < 1000 || payload.length > 100000) return false;
 
-  // Prefer cards that also look commercial.
-  const commercial = bytesContainAnyMarker(payload, [
-    "赞助商广告",
-    "赞助商",
-    "Sponsored",
-    "sponsored",
-    "Aikido",
+  const hasWatch = bytesContainAnyMarker(payload, ["观看", "Watch"]);
+  const hasLearn = bytesContainAnyMarker(payload, [
+    "了解详情",
+    "立即购买",
+    "Learn more",
+    "Shop now",
+    "Install",
+    "安装",
+    "访问网站",
+    "Visit site",
+    "Visit website",
+    "VISIT_SITE",
+  ]);
+  const hasAdUi = bytesContainAnyMarker(payload, [
     "ad_badge.eml-fe",
     "ad_button.eml-fe",
+    "ad_details_line.eml-fe",
+    "ad_icon_text.eml-fe",
     "inline_injection_entrypoint_layout.eml",
     "in_feed_ad",
     "promotedVideoRenderer",
+    "promotedSparklesWebRenderer",
     "displayAdRenderer",
+    "adSlotRenderer",
+    "inFeedAdLayoutRenderer",
   ]);
-  // If both CTAs exist without commercial hint, still allow only for mid-size cards.
+  const hasSponsorText = bytesContainAnyMarker(payload, [
+    "赞助商广告",
+    "赞助商",
+    "付费宣传",
+    "Sponsored",
+    "sponsored",
+  ]);
+
+  // Require ad UI (or explicit sponsor text) plus at least one commercial CTA.
+  // "观看" alone is common on normal videos, so never use it by itself.
+  if (!(hasAdUi || hasSponsorText)) return false;
+  if (!(hasLearn || hasSponsorText)) return false;
+
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields < 2) return false;
-    if (payload.length > 90000 && lengthFields > 22) return false;
-    if (!commercial && (payload.length < 2500 || payload.length > 60000)) return false;
+    // Avoid giant shelves/sections.
+    if (payload.length > 80000 && lengthFields > 20) return false;
+    if (payload.length > 60000 && lengthFields > 28) return false;
+    // Prefer true card sizes.
+    if (payload.length < 1200) return false;
     return true;
   } catch {
-    return commercial && payload.length <= 60000;
+    return (hasAdUi || hasSponsorText) && payload.length <= 50000;
   }
 }
 
 function isLikelyFeedAdCard(payload) {
-  return isExactSponsorBadgeCard(payload) || isScreenshotStyleCtaAdCard(payload);
+  return (
+    isExactSponsorBadgeCard(payload) ||
+    isScreenshotStyleCtaAdCard(payload)
+  );
 }
 
 function cleanFeedAdCardsProtobuf(bytes, depth) {
