@@ -358,6 +358,9 @@ const FEED_AD_STRONG_CARD_MARKERS = [
   "赞助商广告",
   "广告主",
   "付费宣传",
+  "付费推广",
+  "推广内容",
+  "包含付费推广",
   "Sponsored",
   "sponsored",
   "Sponsor",
@@ -366,9 +369,28 @@ const FEED_AD_STRONG_CARD_MARKERS = [
   "promoted",
   "Advertisement",
   "advertisement",
+  "Paid promotion",
+  "paid promotion",
+  "Includes paid promotion",
   "ad_badge.eml-fe",
+  "ad_avatar.eml-fe",
+  "ad_button.eml-fe",
+  "ad_details_line.eml-fe",
+  "ad_icon_text.eml-fe",
+  "ad_rating.eml-fe",
   "inline_injection_entrypoint_layout.eml",
   "in_feed_ad",
+  "promotedSparklesWebRenderer",
+  "promotedVideoRenderer",
+  "displayAdRenderer",
+  "adSlotRenderer",
+  "inFeedAdLayoutRenderer",
+  "brandedContent",
+  "VISIT_SITE",
+  "visit_website",
+  "Visit site",
+  "Visit website",
+  "访问网站",
 ];
 
 const NEXT_AD_STRONG_MARKERS = [
@@ -930,54 +952,80 @@ function isLikelyFeedAdCard(payload) {
   // Feed ad cards are usually a few KB to tens of KB. The full feed response is
   // much larger, while a single label/string is tiny. Keep this guarded so a bad
   // marker cannot erase the whole home/search feed again.
-  if (payload.length < 240 || payload.length > 160000) return false;
+  if (payload.length < 180 || payload.length > 260000) return false;
+
   const hasStrongMarker = bytesContainAnyMarker(payload, FEED_AD_STRONG_CARD_MARKERS);
   const hasWeakMarker = bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS);
-  // Screenshot-proven home promoted cards often pair a sponsor label with a
-  // website CTA. Treat that pair as a strong signal even if other markers are
-  // sparse.
   const hasSponsorLabel = bytesContainAnyMarker(payload, [
     "赞助商广告",
     "赞助商",
+    "赞助",
     "付费宣传",
+    "付费推广",
+    "推广内容",
     "Sponsored",
     "sponsored",
     "Paid promotion",
+    "paid promotion",
   ]);
   const hasCta = bytesContainAnyMarker(payload, [
     "访问网站",
     "观看",
     "Visit site",
     "Visit website",
+    "VISIT_SITE",
+    "visit_website",
     "Shop now",
     "Learn more",
     "立即购买",
     "了解详情",
     "Install",
     "安装",
+    "打开",
+    "Open",
   ]);
   const hasSponsorCtaPair = hasSponsorLabel && hasCta;
-  if (!hasStrongMarker && !hasWeakMarker && !hasSponsorCtaPair && !hasSponsorLabel) return false;
+
+  // Exact homepage screenshot case: Chinese sponsor label is enough on a
+  // card-sized protobuf message.
+  const hasExactSponsorBadge = bytesContainAnyMarker(payload, ["赞助商广告", "Sponsored", "sponsored"]);
+
+  if (!hasStrongMarker && !hasWeakMarker && !hasSponsorCtaPair && !hasSponsorLabel && !hasExactSponsorBadge) {
+    return false;
+  }
+
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
-    // Large section/container messages can contain one nested ad. Prefer
-    // removing the smaller child card instead of an entire shelf/response.
-    if (payload.length > 90000 && lengthFields > 22) return false;
-    // Generic tracking markers such as pagead/googleads can appear inside
-    // normal feed containers. Without an ad-card UI marker, only remove very
-    // small fragments.
-    if (!hasStrongMarker && !hasSponsorCtaPair && !hasSponsorLabel && (payload.length > 12000 || lengthFields > 6)) {
+
+    // Prefer deleting nested cards over giant shelves/containers.
+    if (payload.length > 140000 && lengthFields > 30 && !hasExactSponsorBadge && !hasSponsorCtaPair) {
       return false;
     }
-    // Sponsor label alone is enough only on medium-sized card-like messages.
-    if (hasSponsorLabel && !hasSponsorCtaPair && !hasStrongMarker && (payload.length < 500 || payload.length > 80000)) {
-      return false;
+
+    // Tracking-only weak markers need to stay small.
+    if (!hasStrongMarker && !hasSponsorCtaPair && !hasSponsorLabel && !hasExactSponsorBadge) {
+      if (payload.length > 12000 || lengthFields > 6) return false;
     }
+
+    // Exact sponsor badge: accept common card sizes even without CTA in same node.
+    if (hasExactSponsorBadge) {
+      if (payload.length < 300) return false;
+      if (payload.length > 220000 && lengthFields > 40) return false;
+      return true;
+    }
+
+    // Sponsor label alone: medium card-like messages.
+    if (hasSponsorLabel && !hasSponsorCtaPair && !hasStrongMarker) {
+      if (payload.length < 400 || payload.length > 120000) return false;
+    }
+
     return true;
   } catch {
-    return false;
+    // If marker text is present but protobuf parse fails, still drop compact
+    // sponsor-looking fragments rather than keeping obvious ads.
+    return hasExactSponsorBadge && payload.length >= 300 && payload.length <= 80000;
   }
 }
 
@@ -1001,13 +1049,31 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 
       const payload = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
       if (payload !== field.payload) {
+        // If a parent still looks like a pure sponsored card after nested cleanup,
+        // drop the whole parent card instead of leaving an empty shell.
+        if (isLikelyFeedAdCard(payload)) {
+          feedAdCardsRemoved += 1;
+          changed = true;
+          continue;
+        }
         out.push({ raw: encodeLengthField(field.fieldNo, payload) });
         changed = true;
       } else {
         out.push(field);
       }
     } catch {
-      out.push(field);
+      // Fallback: drop compact payloads that still carry an exact sponsor badge.
+      if (
+        field.payload &&
+        field.payload.length >= 300 &&
+        field.payload.length <= 80000 &&
+        bytesContainAnyMarker(field.payload, ["赞助商广告", "Sponsored", "sponsored"])
+      ) {
+        feedAdCardsRemoved += 1;
+        changed = true;
+      } else {
+        out.push(field);
+      }
     }
   }
 
@@ -1016,7 +1082,7 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 
 function cleanFeedSurfaceProtobuf(bytes) {
   feedAdCardsRemoved = 0;
-  const output = cleanFeedAdCardsProtobuf(bytes, 6);
+  const output = cleanFeedAdCardsProtobuf(bytes, 10);
   if (feedAdCardsRemoved === 0) {
     return bytes;
   }
@@ -1066,7 +1132,7 @@ function cleanProtobuf(bytes, endpoint) {
   feedAdCardsRemoved = 0;
   nextAdFieldsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
-  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(cleanFeedAdCardsProtobuf(bytes, 6), 8);
+  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(cleanFeedAdCardsProtobuf(bytes, 10), 8);
   if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
