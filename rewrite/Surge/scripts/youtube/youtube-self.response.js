@@ -7,7 +7,7 @@
  *   and background playback.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
  *   schema-light wire editing for player/get_watch/account settings, plus
- *   guarded cleanup for next ad fragments.
+ *   guarded cleanup for next ad fragments and home/search feed ad cards.
  *
  * Does not include any third-party source code.
  */
@@ -894,7 +894,14 @@ function isLikelyFeedAdCard(payload) {
   // marker cannot erase the whole home/search feed again.
   if (payload.length < 300 || payload.length > 120000) return false;
   const hasStrongMarker = bytesContainAnyMarker(payload, FEED_AD_STRONG_CARD_MARKERS);
-  if (!hasStrongMarker && !bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS)) return false;
+  const hasWeakMarker = bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS);
+  // Screenshot-proven home promoted cards often pair a sponsor label with a
+  // website CTA. Treat that pair as a strong signal even if other markers are
+  // sparse.
+  const hasSponsorCtaPair =
+    bytesContainAnyMarker(payload, ["赞助商广告", "赞助商", "Sponsored", "sponsored"]) &&
+    bytesContainAnyMarker(payload, ["访问网站", "Visit site", "Visit website", "Shop now", "立即购买", "了解详情"]);
+  if (!hasStrongMarker && !hasWeakMarker && !hasSponsorCtaPair) return false;
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
@@ -905,7 +912,7 @@ function isLikelyFeedAdCard(payload) {
     // Generic tracking markers such as pagead/googleads can appear inside
     // normal feed containers. Without an ad-card UI marker, only remove very
     // small fragments.
-    if (!hasStrongMarker && (payload.length > 12000 || lengthFields > 6)) return false;
+    if (!hasStrongMarker && !hasSponsorCtaPair && (payload.length > 12000 || lengthFields > 6)) return false;
     return true;
   } catch {
     return false;
@@ -996,12 +1003,12 @@ function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
   }
-  if (
-    endpoint === "browse" ||
-    endpoint === "search" ||
-    endpoint === "guide" ||
-    endpoint === "reel/reel_watch_sequence"
-  ) {
+  // Home/search feeds: only remove guarded ad cards. Keep guide/reel passthrough
+  // because those surfaces previously regressed metadata when rewritten broadly.
+  if (endpoint === "browse" || endpoint === "search") {
+    return cleanFeedSurfaceProtobuf(bytes);
+  }
+  if (endpoint === "guide" || endpoint === "reel/reel_watch_sequence") {
     return bytes;
   }
   return bytes;

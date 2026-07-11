@@ -30,7 +30,14 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - 模块：`rewrite/Surge/youtube-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/youtube/youtube-self.response.js`
 
-安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。
+当前范围：
+
+- 处理 `player` / `get_watch` / `next` 播放链路广告，并尝试后台播放与 PiP
+- 对首页/搜索 `browse` / `search` 做带安全阀的信息流广告卡清理（例如“赞助商广告”卡片）
+- `guide` / `reel` 仍原样放行，避免导航和元数据回归
+- 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
+
+安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。更新后请在 Surge 中更新外部资源或重载模块，确认脚本 query 版本为 `v=20260711-1`。
 
 安全边界：
 
