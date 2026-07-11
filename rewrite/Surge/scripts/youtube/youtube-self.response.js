@@ -948,18 +948,41 @@ function isLikelyNestedMessage(bytes) {
   }
 }
 
+function markerHits(bytes) {
+  const checks = {
+    badge_cn: ["赞助商广告"],
+    sponsor_cn: ["赞助商"],
+    paid_cn: ["付费宣传", "付费推广"],
+    visit_cn: ["访问网站"],
+    watch_cn: ["观看"],
+    learn_cn: ["了解详情", "立即购买"],
+    sponsored_en: ["Sponsored", "sponsored"],
+    visit_en: ["Visit site", "Visit website", "VISIT_SITE"],
+    ad_ui: [
+      "ad_badge.eml-fe",
+      "ad_button.eml-fe",
+      "inline_injection_entrypoint_layout.eml",
+      "in_feed_ad",
+      "promotedVideoRenderer",
+      "displayAdRenderer",
+      "adSlotRenderer",
+    ],
+    brand_sample: ["Aikido", "aikido"],
+  };
+  const hits = [];
+  for (const [name, markers] of Object.entries(checks)) {
+    if (bytesContainAnyMarker(bytes, markers)) hits.push(name);
+  }
+  return hits;
+}
+
 function isExactSponsorBadgeCard(payload) {
-  // Target the homepage "赞助商广告" card specifically.
-  // Choose the leaf-most/small card that still carries the badge text.
   if (!payload || payload.length < 500 || payload.length > 180000) return false;
   if (!bytesContainAnyMarker(payload, ["赞助商广告"])) return false;
-
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
-    // Giant shelves/sections can include the badge somewhere inside; skip those
-    // so we only remove the actual ad card node.
     if (payload.length > 100000 && lengthFields > 20) return false;
     if (payload.length > 140000) return false;
     return true;
@@ -968,15 +991,44 @@ function isExactSponsorBadgeCard(payload) {
   }
 }
 
-function payloadHasExactSponsorBadge(payload) {
-  return !!(payload && bytesContainAnyMarker(payload, ["赞助商广告"]));
+// Screenshot-proven homepage ad card: CTA pair "观看" + "访问网站".
+// Require both, and keep size in a card-like range so normal videos are kept.
+function isScreenshotStyleCtaAdCard(payload) {
+  if (!payload || payload.length < 1200 || payload.length > 120000) return false;
+  const hasVisit = bytesContainAnyMarker(payload, ["访问网站", "Visit site", "Visit website", "VISIT_SITE"]);
+  const hasWatch = bytesContainAnyMarker(payload, ["观看", "Watch"]);
+  if (!hasVisit || !hasWatch) return false;
+
+  // Prefer cards that also look commercial.
+  const commercial = bytesContainAnyMarker(payload, [
+    "赞助商广告",
+    "赞助商",
+    "Sponsored",
+    "sponsored",
+    "Aikido",
+    "ad_badge.eml-fe",
+    "ad_button.eml-fe",
+    "inline_injection_entrypoint_layout.eml",
+    "in_feed_ad",
+    "promotedVideoRenderer",
+    "displayAdRenderer",
+  ]);
+  // If both CTAs exist without commercial hint, still allow only for mid-size cards.
+  try {
+    const fields = parseFields(payload);
+    const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
+    if (lengthFields < 2) return false;
+    if (payload.length > 90000 && lengthFields > 22) return false;
+    if (!commercial && (payload.length < 2500 || payload.length > 60000)) return false;
+    return true;
+  } catch {
+    return commercial && payload.length <= 60000;
+  }
 }
 
 function isLikelyFeedAdCard(payload) {
-  // Keep generic path very narrow; homepage relies on exact sponsor badge cards.
-  return isExactSponsorBadgeCard(payload);
+  return isExactSponsorBadgeCard(payload) || isScreenshotStyleCtaAdCard(payload);
 }
-
 
 function cleanFeedAdCardsProtobuf(bytes, depth) {
   if (depth <= 0) return bytes;
@@ -1016,21 +1068,20 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 
 function cleanFeedSurfaceProtobuf(bytes) {
   feedAdCardsRemoved = 0;
-  const badgePresent = payloadHasExactSponsorBadge(bytes);
+  const hits = markerHits(bytes);
   const output = cleanFeedAdCardsProtobuf(bytes, 12);
   const ratio = output.length / Math.max(bytes.length, 1);
 
   if (feedAdCardsRemoved === 0) {
     logbook(
-      `browse-scan badge=${badgePresent ? 1 : 0} removed=0 bytes=${bytes.length}`
+      `browse-scan hits=${hits.join("|") || "none"} removed=0 bytes=${bytes.length}`
     );
     return bytes;
   }
 
-  // Hard safety against homepage blanking.
   if (feedAdCardsRemoved > 3) {
     logbook(
-      `feed-safety-passthrough removed=${feedAdCardsRemoved} badge=1 ${bytes.length} -> ${output.length}`
+      `feed-safety-passthrough removed=${feedAdCardsRemoved} hits=${hits.join("|") || "none"} ${bytes.length} -> ${output.length}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
@@ -1051,7 +1102,7 @@ function cleanFeedSurfaceProtobuf(bytes) {
   }
 
   logbook(
-    `browse-scan badge=1 removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
+    `browse-scan hits=${hits.join("|") || "none"} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
   );
   return output;
 }
