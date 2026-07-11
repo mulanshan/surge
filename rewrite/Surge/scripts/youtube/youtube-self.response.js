@@ -1015,9 +1015,15 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 }
 
 function cleanFeedSurfaceProtobuf(bytes) {
+  feedAdCardsRemoved = 0;
   const output = cleanFeedAdCardsProtobuf(bytes, 6);
+  if (feedAdCardsRemoved === 0) {
+    return bytes;
+  }
+  // If cleanup deleted more than ~45% of a large feed, assume over-matching and
+  // pass the original surface through unchanged.
   if (bytes.length > 20000 && output.length < bytes.length * 0.55) {
-    debug(`feed-safety-passthrough ${bytes.length} -> ${output.length}`);
+    logbook(`feed-safety-passthrough ${bytes.length} -> ${output.length}`);
     feedAdCardsRemoved = 0;
     return bytes;
   }
@@ -1079,50 +1085,82 @@ function cleanProtobuf(bytes, endpoint) {
 const endpoint = endpointFromUrl($request.url);
 const originalBody = responseBodyRaw();
 
+function describeBodyType(body) {
+  if (body instanceof Uint8Array) return "uint8";
+  if (body instanceof ArrayBuffer) return "arraybuffer";
+  if (typeof body === "string") return "string";
+  if (body == null) return "null";
+  return typeof body;
+}
+
+// Return body in the same shape Surge handed us. Some iOS builds corrupt
+// protobufs when a Uint8Array is substituted for an original byte-string (or
+// vice versa), which shows up as multi-megabyte Content-Length inflation.
+function toResponseBody(bytes, original) {
+  if (original instanceof Uint8Array || original instanceof ArrayBuffer) {
+    return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  }
+  if (typeof original === "string") {
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const chunk = 0x8000;
+    let out = "";
+    for (let i = 0; i < arr.length; i += chunk) {
+      out += String.fromCharCode.apply(null, arr.subarray(i, Math.min(i + chunk, arr.length)));
+    }
+    return out;
+  }
+  return bytes;
+}
+
 try {
+  const inputType = describeBodyType(originalBody);
   if (looksLikeJsonText(originalBody)) {
-    const text = typeof originalBody === "string" ? originalBody : bodyText(originalBody);
-    const output = cleanJson(text, endpoint);
-    // Always log JSON path length-change so hits show in Surge logs and Logbook.
-    logbook(`json ${endpoint} ${text.length} -> ${output.length}`);
+    const textBody = typeof originalBody === "string" ? originalBody : bodyText(originalBody);
+    const output = cleanJson(textBody, endpoint);
+    logbook(`json ${endpoint} type=${inputType} ${textBody.length} -> ${output.length}`);
     $done({ body: output });
   } else {
     const input = bodyBytes(originalBody);
-    const inputType =
-      originalBody instanceof Uint8Array
-        ? "uint8"
-        : originalBody instanceof ArrayBuffer
-          ? "arraybuffer"
-          : typeof originalBody;
-    const output = cleanProtobuf(input, endpoint);
-    // Guard against accidental inflation (e.g. UTF-8 re-encoding of byte-strings).
-    if (output.length > Math.floor(input.length * 1.05) + 64) {
+    let output = cleanProtobuf(input, endpoint);
+    const removedCount = feedAdCardsRemoved + nextAdFieldsRemoved;
+
+    // Hard safety: never ship an inflated protobuf body.
+    if (output.length > input.length + 64) {
       logbook(
         `protobuf-inflation-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
       );
       $done({});
-      // return via $done
-    } else if (output !== input && output.length !== input.length) {
-      const removed = feedAdCardsRemoved || nextAdFieldsRemoved
-        ? ` removed=${feedAdCardsRemoved + nextAdFieldsRemoved}`
-        : "";
-      logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
-      // Surge accepts Uint8Array in body when binary-body-mode is enabled.
-      $done({ body: output });
-    } else if (output !== input) {
-      // Same length but rebuilt/changed bytes.
-      const removed = feedAdCardsRemoved || nextAdFieldsRemoved
-        ? ` removed=${feedAdCardsRemoved + nextAdFieldsRemoved}`
-        : "";
-      logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
-      $done({ body: output });
+    } else if (output.length > Math.floor(input.length * 1.02) + 32) {
+      logbook(
+        `protobuf-growth-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
+      );
+      $done({});
+    } else if (removedCount > 0 || output.length !== input.length) {
+      // Compare bytes only when lengths match and no explicit removals were counted.
+      let changed = removedCount > 0 || output.length !== input.length;
+      if (!changed && output !== input) {
+        for (let i = 0; i < input.length; i += 1) {
+          if (output[i] !== input[i]) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (!changed) {
+        logbook(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
+        $done({});
+      } else {
+        const removed = removedCount ? ` removed=${removedCount}` : "";
+        logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
+        $done({ body: toResponseBody(output, originalBody) });
+      }
     } else {
+      // Length unchanged and no removals: keep original bytes untouched.
       logbook(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
       $done({});
     }
   }
 } catch (error) {
   logbook(`error ${endpoint} ${error && error.message ? error.message : error}`);
-  // On any failure, never return a partial body — let the original through.
   $done({});
 }
