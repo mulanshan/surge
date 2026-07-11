@@ -1190,6 +1190,16 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
       // Recurse first.
       const nested = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
       if (nested !== field.payload) {
+        // If nested deletion emptied/hollowed a card-sized ad container, drop parent.
+        if (
+          field.payload.length >= 8000 &&
+          field.payload.length <= 220000 &&
+          (isLikelyFeedAdCard(field.payload) || scoreSponsorNode(field.payload) >= 8)
+        ) {
+          feedAdCardsRemoved += 1;
+          changed = true;
+          continue;
+        }
         out.push({ raw: encodeLengthField(field.fieldNo, nested) });
         changed = true;
         continue;
@@ -1296,9 +1306,11 @@ function cleanFeedSurfaceProtobuf(bytes) {
 }
 
 function forceRemoveBestSponsorNode(bytes, depth) {
+  // Find the best sponsor-like node, then remove the nearest suitable parent
+  // item/card so the homepage does not leave a blank shell.
   let best = null;
 
-  function walk(nodeBytes, d) {
+  function walk(nodeBytes, d, trail) {
     if (d <= 0 || !nodeBytes || nodeBytes.length === 0) return;
     let fields;
     try {
@@ -1308,23 +1320,51 @@ function forceRemoveBestSponsorNode(bytes, depth) {
     }
     for (const field of fields) {
       if (field.wireType !== WIRE_LENGTH || !field.payload) continue;
+      const path = trail.concat([
+        {
+          size: nodeBytes.length,
+          fieldNo: field.fieldNo,
+          payloadSize: field.payload.length,
+          head: field.payload[0],
+          mid: field.payload[Math.floor(field.payload.length / 2)],
+          tail: field.payload[field.payload.length - 1],
+          score: scoreSponsorNode(field.payload),
+          isLikely: isLikelyFeedAdCard(field.payload),
+        },
+      ]);
       const score = scoreSponsorNode(field.payload);
       if (score >= 8) {
-        if (!best || score > best.score || (score === best.score && field.payload.length < best.size)) {
-          best = {
-            score,
-            size: field.payload.length,
-            head: field.payload[0],
-            mid: field.payload[Math.floor(field.payload.length / 2)],
-            tail: field.payload[field.payload.length - 1],
-          };
+        // Choose a parent item size that looks like a whole feed card.
+        let target = path[path.length - 1];
+        for (let i = path.length - 1; i >= 0; i -= 1) {
+          const cand = path[i];
+          if (cand.payloadSize >= 8000 && cand.payloadSize <= 220000) {
+            target = cand;
+            // Prefer the shallowest still-card-sized ancestor with commercial score.
+            if (cand.score >= 8 || cand.isLikely) break;
+          }
+        }
+        const candidate = {
+          score,
+          size: target.payloadSize,
+          head: target.head,
+          mid: target.mid,
+          tail: target.tail,
+          leafSize: field.payload.length,
+        };
+        if (
+          !best ||
+          candidate.score > best.score ||
+          (candidate.score === best.score && candidate.size < best.size)
+        ) {
+          best = candidate;
         }
       }
-      walk(field.payload, d - 1);
+      walk(field.payload, d - 1, path);
     }
   }
 
-  walk(bytes, depth);
+  walk(bytes, depth, []);
   if (!best) return { removed: 0, bytes };
 
   function sameNode(payload) {
@@ -1333,8 +1373,7 @@ function forceRemoveBestSponsorNode(bytes, depth) {
       payload.length === best.size &&
       payload[0] === best.head &&
       payload[Math.floor(payload.length / 2)] === best.mid &&
-      payload[payload.length - 1] === best.tail &&
-      scoreSponsorNode(payload) === best.score
+      payload[payload.length - 1] === best.tail
     );
   }
 
