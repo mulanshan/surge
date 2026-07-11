@@ -1245,10 +1245,12 @@ function cleanFeedSurfaceProtobuf(bytes) {
     hits.includes("learn_cn");
 
   if (needForce) {
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 4; i += 1) {
       const stillHot =
         payloadHasExactSponsorBadge(current) ||
         bytesContainAnyMarker(current, [
+          "赞助商广告",
+          "赞助商",
           "ad_badge.eml-fe",
           "ad_button.eml-fe",
           "inline_injection_entrypoint_layout.eml",
@@ -1260,18 +1262,20 @@ function cleanFeedSurfaceProtobuf(bytes) {
           "访问网站",
           "Aikido",
         ]);
+      // Keep going until first clear ad markers are gone, or no removable node remains.
       if (!stillHot && (forcedTotal > 0 || feedAdCardsRemoved > 0)) break;
 
       const forced = forceRemoveBestSponsorNode(current, 16);
       if (!forced.removed) break;
 
       const ratio = forced.bytes.length / Math.max(bytes.length, 1);
-      if (ratio < 0.68) {
+      // Allow more aggressive first-item removal; only abort on extreme shrinkage.
+      if (ratio < 0.45) {
         logbook(
           `feed-safety-passthrough forced-ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved + forcedTotal + forced.removed} ${bytes.length} -> ${forced.bytes.length}`
         );
-        feedAdCardsRemoved = 0;
-        return bytes;
+        // Keep whatever we already successfully removed before this extreme step.
+        break;
       }
       current = forced.bytes;
       forcedTotal += forced.removed;
@@ -1284,14 +1288,15 @@ function cleanFeedSurfaceProtobuf(bytes) {
     logbook(`browse-scan hits=${hits.join("|") || "none"} removed=0 bytes=${bytes.length}`);
     return bytes;
   }
-  if (feedAdCardsRemoved > 5) {
+  // Soft safety only: never fully blank large feeds.
+  if (bytes.length > 200000 && ratio < 0.40) {
     logbook(
-      `feed-safety-passthrough removed=${feedAdCardsRemoved} hits=${hits.join("|") || "none"} ${bytes.length} -> ${current.length}`
+      `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${current.length}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
-  if (bytes.length > 80000 && ratio < 0.68) {
+  if (bytes.length > 50000 && ratio < 0.35) {
     logbook(
       `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${current.length}`
     );
@@ -1338,10 +1343,12 @@ function forceRemoveBestSponsorNode(bytes, depth) {
         let target = path[path.length - 1];
         for (let i = path.length - 1; i >= 0; i -= 1) {
           const cand = path[i];
-          if (cand.payloadSize >= 8000 && cand.payloadSize <= 220000) {
+          // Prefer larger card-sized ancestors so blank shells are less likely.
+          if (cand.payloadSize >= 12000 && cand.payloadSize <= 260000) {
             target = cand;
-            // Prefer the shallowest still-card-sized ancestor with commercial score.
             if (cand.score >= 8 || cand.isLikely) break;
+          } else if (cand.payloadSize >= 8000 && cand.payloadSize <= 220000 && target === path[path.length - 1]) {
+            target = cand;
           }
         }
         const candidate = {
