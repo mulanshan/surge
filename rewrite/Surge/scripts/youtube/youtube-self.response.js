@@ -977,25 +977,30 @@ function markerHits(bytes) {
 }
 
 function isExactSponsorBadgeCard(payload) {
-  if (!payload || payload.length < 500 || payload.length > 180000) return false;
-  if (!bytesContainAnyMarker(payload, ["赞助商广告"])) return false;
+  // Live logs proved badge_cn / sponsor_cn / brand_sample exist in browse.
+  // The previous upper size bound was too small, so real cards never matched.
+  if (!payload || payload.length < 400 || payload.length > 350000) return false;
+  const hasBadge = bytesContainAnyMarker(payload, ["赞助商广告"]);
+  const hasSponsor = bytesContainAnyMarker(payload, ["赞助商", "付费宣传", "付费推广"]);
+  const hasBrand = bytesContainAnyMarker(payload, ["Aikido", "aikido"]);
+  if (!hasBadge && !(hasSponsor && hasBrand) && !(hasBadge || (hasSponsor && hasBrand))) {
+    // keep clear condition below
+  }
+  if (!hasBadge && !(hasSponsor && hasBrand)) return false;
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
-    if (payload.length > 100000 && lengthFields > 20) return false;
-    if (payload.length > 140000) return false;
+    // Allow larger cards; only skip extremely wide shelves.
+    if (payload.length > 300000 && lengthFields > 40) return false;
     return true;
   } catch {
-    return payload.length <= 50000;
+    return payload.length <= 200000;
   }
 }
 
-// Live iOS logs showed homepage browse payloads with:
-// hits=watch_cn|learn_cn|ad_ui  (often no plain "赞助商广告" / "访问网站" text)
-// Match compact cards that combine a watch CTA + ad UI / learn-more commercial CTA.
 function isScreenshotStyleCtaAdCard(payload) {
-  if (!payload || payload.length < 1000 || payload.length > 100000) return false;
+  if (!payload || payload.length < 800 || payload.length > 300000) return false;
 
   const hasWatch = bytesContainAnyMarker(payload, ["观看", "Watch"]);
   const hasLearn = bytesContainAnyMarker(payload, [
@@ -1030,32 +1035,48 @@ function isScreenshotStyleCtaAdCard(payload) {
     "Sponsored",
     "sponsored",
   ]);
+  const hasBrand = bytesContainAnyMarker(payload, ["Aikido", "aikido"]);
 
-  // Require ad UI (or explicit sponsor text) plus at least one commercial CTA.
-  // "观看" alone is common on normal videos, so never use it by itself.
-  if (!(hasAdUi || hasSponsorText)) return false;
-  if (!(hasLearn || hasSponsorText)) return false;
+  // Real homepage ad sample had badge/sponsor/ad_ui/brand together.
+  if (hasSponsorText || hasBrand || hasAdUi) {
+    // ok
+  } else {
+    return false;
+  }
+  // Need some commercial signal beyond a lone normal video card.
+  if (!(hasSponsorText || hasBrand || hasLearn || hasAdUi)) return false;
+  // Avoid deleting ordinary videos that only contain "观看".
+  if (!(hasSponsorText || hasBrand || hasAdUi)) return false;
 
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
-    if (lengthFields < 2) return false;
-    // Avoid giant shelves/sections.
-    if (payload.length > 80000 && lengthFields > 20) return false;
-    if (payload.length > 60000 && lengthFields > 28) return false;
-    // Prefer true card sizes.
-    if (payload.length < 1200) return false;
+    if (lengthFields < 1) return false;
+    if (payload.length > 280000 && lengthFields > 50) return false;
     return true;
   } catch {
-    return (hasAdUi || hasSponsorText) && payload.length <= 50000;
+    return payload.length <= 200000;
   }
 }
 
+function scoreSponsorNode(payload) {
+  if (!payload) return -1;
+  let score = 0;
+  if (bytesContainAnyMarker(payload, ["赞助商广告"])) score += 8;
+  if (bytesContainAnyMarker(payload, ["赞助商"])) score += 4;
+  if (bytesContainAnyMarker(payload, ["Aikido", "aikido"])) score += 5;
+  if (bytesContainAnyMarker(payload, ["ad_badge.eml-fe", "ad_button.eml-fe", "inline_injection_entrypoint_layout.eml", "in_feed_ad", "promotedVideoRenderer", "displayAdRenderer", "adSlotRenderer"])) score += 4;
+  if (bytesContainAnyMarker(payload, ["访问网站", "了解详情", "立即购买", "Learn more", "Visit site", "Visit website"])) score += 3;
+  if (bytesContainAnyMarker(payload, ["观看", "Watch"])) score += 1;
+  // Prefer compact cards over giant parents.
+  if (payload.length > 0 && payload.length <= 80000) score += 3;
+  else if (payload.length <= 160000) score += 1;
+  else score -= 2;
+  return score;
+}
+
 function isLikelyFeedAdCard(payload) {
-  return (
-    isExactSponsorBadgeCard(payload) ||
-    isScreenshotStyleCtaAdCard(payload)
-  );
+  return isExactSponsorBadgeCard(payload) || isScreenshotStyleCtaAdCard(payload);
 }
 
 function cleanFeedAdCardsProtobuf(bytes, depth) {
@@ -1063,6 +1084,7 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 
   let changed = false;
   const out = [];
+
   for (const field of parseFields(bytes)) {
     if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
       out.push(field);
@@ -1070,7 +1092,7 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
     }
 
     try {
-      // Recurse first so we remove the smallest/deepest sponsor card, not a big parent.
+      // Always recurse first: remove deepest/best child sponsor card.
       const nested = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
       if (nested !== field.payload) {
         out.push({ raw: encodeLengthField(field.fieldNo, nested) });
@@ -1078,8 +1100,10 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
         continue;
       }
 
-      // No deeper removal: if this node itself is a compact sponsor card, drop it.
-      if (isExactSponsorBadgeCard(field.payload)) {
+      // No child removed. Consider deleting this node if it is a sponsor card.
+      if (isLikelyFeedAdCard(field.payload)) {
+        // If children also look like sponsor cards, prefer leaving parent for
+        // deeper future passes; but since nested made no change, delete here.
         feedAdCardsRemoved += 1;
         changed = true;
         continue;
@@ -1097,31 +1121,49 @@ function cleanFeedAdCardsProtobuf(bytes, depth) {
 function cleanFeedSurfaceProtobuf(bytes) {
   feedAdCardsRemoved = 0;
   const hits = markerHits(bytes);
-  const output = cleanFeedAdCardsProtobuf(bytes, 12);
+  const output = cleanFeedAdCardsProtobuf(bytes, 14);
   const ratio = output.length / Math.max(bytes.length, 1);
 
   if (feedAdCardsRemoved === 0) {
-    logbook(
-      `browse-scan hits=${hits.join("|") || "none"} removed=0 bytes=${bytes.length}`
-    );
+    // Fallback: if top-level scan sees clear homepage ad markers, try one more
+    // aggressive leaf pass with only exact badge/brand predicates by deleting
+    // the highest-score single node path.
+    if (hits.includes("badge_cn") || hits.includes("brand_sample") || (hits.includes("sponsor_cn") && hits.includes("ad_ui"))) {
+      const forced = forceRemoveBestSponsorNode(bytes, 14);
+      if (forced.removed > 0) {
+        const forcedRatio = forced.bytes.length / Math.max(bytes.length, 1);
+        if (forced.removed <= 2 && forcedRatio >= 0.70) {
+          feedAdCardsRemoved = forced.removed;
+          logbook(
+            `browse-scan hits=${hits.join("|") || "none"} removed=${forced.removed} forced=1 ${bytes.length} -> ${forced.bytes.length}`
+          );
+          return forced.bytes;
+        }
+        logbook(
+          `feed-safety-passthrough forced removed=${forced.removed} ratio=${forcedRatio.toFixed(3)} ${bytes.length} -> ${forced.bytes.length}`
+        );
+        return bytes;
+      }
+    }
+    logbook(`browse-scan hits=${hits.join("|") || "none"} removed=0 bytes=${bytes.length}`);
     return bytes;
   }
 
-  if (feedAdCardsRemoved > 3) {
+  if (feedAdCardsRemoved > 4) {
     logbook(
       `feed-safety-passthrough removed=${feedAdCardsRemoved} hits=${hits.join("|") || "none"} ${bytes.length} -> ${output.length}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
-  if (bytes.length > 80000 && ratio < 0.90) {
+  if (bytes.length > 100000 && ratio < 0.72) {
     logbook(
       `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
-  if (bytes.length > 20000 && ratio < 0.80) {
+  if (bytes.length > 20000 && ratio < 0.60) {
     logbook(
       `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
     );
@@ -1133,6 +1175,82 @@ function cleanFeedSurfaceProtobuf(bytes) {
     `browse-scan hits=${hits.join("|") || "none"} removed=${feedAdCardsRemoved} ${bytes.length} -> ${output.length}`
   );
   return output;
+}
+
+function forceRemoveBestSponsorNode(bytes, depth) {
+  let best = null;
+
+  function walk(nodeBytes, d) {
+    if (d <= 0 || !nodeBytes || nodeBytes.length === 0) return;
+    let fields;
+    try {
+      fields = parseFields(nodeBytes);
+    } catch {
+      return;
+    }
+    for (const field of fields) {
+      if (field.wireType !== WIRE_LENGTH || !field.payload) continue;
+      const score = scoreSponsorNode(field.payload);
+      if (score >= 8) {
+        if (!best || score > best.score || (score === best.score && field.payload.length < best.size)) {
+          best = { score, size: field.payload.length, fieldNo: field.fieldNo, payload: field.payload };
+        }
+      }
+      walk(field.payload, d - 1);
+    }
+  }
+
+  walk(bytes, depth);
+  if (!best) return { removed: 0, bytes };
+
+  function removeOnce(nodeBytes, d) {
+    if (d <= 0) return { changed: false, bytes: nodeBytes, removed: 0 };
+    let fields;
+    try {
+      fields = parseFields(nodeBytes);
+    } catch {
+      return { changed: false, bytes: nodeBytes, removed: 0 };
+    }
+    const out = [];
+    let changed = false;
+    let removed = 0;
+    for (const field of fields) {
+      if (changed) {
+        out.push(field);
+        continue;
+      }
+      if (field.wireType !== WIRE_LENGTH || !field.payload) {
+        out.push(field);
+        continue;
+      }
+      // Delete the first node matching the chosen best payload identity by size+score.
+      if (
+        field.payload.length === best.size &&
+        scoreSponsorNode(field.payload) === best.score &&
+        isLikelyFeedAdCard(field.payload)
+      ) {
+        changed = true;
+        removed = 1;
+        continue;
+      }
+      const child = removeOnce(field.payload, d - 1);
+      if (child.changed) {
+        out.push({ raw: encodeLengthField(field.fieldNo, child.bytes) });
+        changed = true;
+        removed = child.removed;
+      } else {
+        out.push(field);
+      }
+    }
+    return {
+      changed,
+      removed,
+      bytes: changed ? rebuildFields(out) : nodeBytes,
+    };
+  }
+
+  const result = removeOnce(bytes, depth);
+  return { removed: result.removed || 0, bytes: result.bytes };
 }
 
 function cleanAdMarkedNestedProtobuf(bytes, depth) {
