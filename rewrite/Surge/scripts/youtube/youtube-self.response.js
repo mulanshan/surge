@@ -8,6 +8,7 @@
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
  *   schema-light wire editing for player/get_watch/account settings, plus
  *   guarded cleanup for next ad fragments and home/search feed ad cards.
+ *   Binary bodies are handled as raw bytes (never UTF-8 re-encoded).
  *
  * Does not include any third-party source code.
  */
@@ -53,18 +54,55 @@ function endpointFromUrl(url) {
   return match ? match[1] : "";
 }
 
+function isTypedBinary(body) {
+  return body instanceof Uint8Array || body instanceof ArrayBuffer;
+}
+
+// Surge may expose binary bodies as Uint8Array (binary-body-mode) or, on some
+// builds, as a byte-string where each character is one raw byte (0..255).
+// Never UTF-8-encode those byte-strings: that inflates protobufs and destroys
+// UTF-8 ad markers such as "赞助商广告".
+function bodyBytes(body) {
+  if (body instanceof Uint8Array) return body;
+  if (body instanceof ArrayBuffer) return new Uint8Array(body);
+  if (typeof body === "string") {
+    const out = new Uint8Array(body.length);
+    for (let i = 0; i < body.length; i += 1) out[i] = body.charCodeAt(i) & 0xff;
+    return out;
+  }
+  return new Uint8Array(0);
+}
+
 function bodyText(body) {
-  if (typeof body === "string") return body;
+  if (typeof body === "string") {
+    // Only treat as real text when it already looks like JSON text.
+    const trimmed = body.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) return body;
+    // Byte-string binary payload: decode as UTF-8 bytes, not JS string semantics.
+    return new TextDecoder().decode(bodyBytes(body));
+  }
   if (body instanceof Uint8Array) return new TextDecoder().decode(body);
   if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
   return "";
 }
 
-function bodyBytes(body) {
-  if (body instanceof Uint8Array) return body;
-  if (body instanceof ArrayBuffer) return new Uint8Array(body);
-  if (typeof body === "string") return new TextEncoder().encode(body);
+function responseBodyRaw() {
+  if ($response.bodyBytes !== undefined && $response.bodyBytes !== null) return $response.bodyBytes;
+  if ($response.body !== undefined && $response.body !== null) return $response.body;
   return new Uint8Array(0);
+}
+
+function looksLikeJsonText(body) {
+  if (typeof body === "string") {
+    const trimmed = body.trim();
+    return trimmed.startsWith("{") || trimmed.startsWith("[");
+  }
+  if (!isTypedBinary(body) && typeof body !== "string") return false;
+  // For binary views, only sniff a small ASCII prefix.
+  const bytes = bodyBytes(body);
+  let i = 0;
+  while (i < bytes.length && (bytes[i] === 0x20 || bytes[i] === 0x0a || bytes[i] === 0x0d || bytes[i] === 0x09)) i += 1;
+  return bytes[i] === 0x7b /* { */ || bytes[i] === 0x5b /* [ */;
 }
 
 // Only delete fields that are unambiguously ads. Keep this list narrow so
@@ -889,30 +927,54 @@ function isLikelyNestedMessage(bytes) {
 }
 
 function isLikelyFeedAdCard(payload) {
-  // Feed ad cards are usually tens of KB. The full feed response is much
-  // larger, while a single label/string is tiny. Keep this guarded so a bad
+  // Feed ad cards are usually a few KB to tens of KB. The full feed response is
+  // much larger, while a single label/string is tiny. Keep this guarded so a bad
   // marker cannot erase the whole home/search feed again.
-  if (payload.length < 300 || payload.length > 120000) return false;
+  if (payload.length < 240 || payload.length > 160000) return false;
   const hasStrongMarker = bytesContainAnyMarker(payload, FEED_AD_STRONG_CARD_MARKERS);
   const hasWeakMarker = bytesContainAnyMarker(payload, FEED_AD_CARD_MARKERS);
   // Screenshot-proven home promoted cards often pair a sponsor label with a
   // website CTA. Treat that pair as a strong signal even if other markers are
   // sparse.
-  const hasSponsorCtaPair =
-    bytesContainAnyMarker(payload, ["赞助商广告", "赞助商", "Sponsored", "sponsored"]) &&
-    bytesContainAnyMarker(payload, ["访问网站", "Visit site", "Visit website", "Shop now", "立即购买", "了解详情"]);
-  if (!hasStrongMarker && !hasWeakMarker && !hasSponsorCtaPair) return false;
+  const hasSponsorLabel = bytesContainAnyMarker(payload, [
+    "赞助商广告",
+    "赞助商",
+    "付费宣传",
+    "Sponsored",
+    "sponsored",
+    "Paid promotion",
+  ]);
+  const hasCta = bytesContainAnyMarker(payload, [
+    "访问网站",
+    "观看",
+    "Visit site",
+    "Visit website",
+    "Shop now",
+    "Learn more",
+    "立即购买",
+    "了解详情",
+    "Install",
+    "安装",
+  ]);
+  const hasSponsorCtaPair = hasSponsorLabel && hasCta;
+  if (!hasStrongMarker && !hasWeakMarker && !hasSponsorCtaPair && !hasSponsorLabel) return false;
   try {
     const fields = parseFields(payload);
     const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
     if (lengthFields === 0) return false;
     // Large section/container messages can contain one nested ad. Prefer
     // removing the smaller child card instead of an entire shelf/response.
-    if (payload.length > 70000 && lengthFields > 18) return false;
+    if (payload.length > 90000 && lengthFields > 22) return false;
     // Generic tracking markers such as pagead/googleads can appear inside
     // normal feed containers. Without an ad-card UI marker, only remove very
     // small fragments.
-    if (!hasStrongMarker && !hasSponsorCtaPair && (payload.length > 12000 || lengthFields > 6)) return false;
+    if (!hasStrongMarker && !hasSponsorCtaPair && !hasSponsorLabel && (payload.length > 12000 || lengthFields > 6)) {
+      return false;
+    }
+    // Sponsor label alone is enough only on medium-sized card-like messages.
+    if (hasSponsorLabel && !hasSponsorCtaPair && !hasStrongMarker && (payload.length < 500 || payload.length > 80000)) {
+      return false;
+    }
     return true;
   } catch {
     return false;
@@ -1015,34 +1077,52 @@ function cleanProtobuf(bytes, endpoint) {
 }
 
 const endpoint = endpointFromUrl($request.url);
-const originalBody = $response.body !== undefined ? $response.body : $response.bodyBytes;
+const originalBody = responseBodyRaw();
 
 try {
-  const text = bodyText(originalBody);
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+  if (looksLikeJsonText(originalBody)) {
+    const text = typeof originalBody === "string" ? originalBody : bodyText(originalBody);
     const output = cleanJson(text, endpoint);
     // Always log JSON path length-change so hits show in Surge logs and Logbook.
     logbook(`json ${endpoint} ${text.length} -> ${output.length}`);
     $done({ body: output });
   } else {
     const input = bodyBytes(originalBody);
+    const inputType =
+      originalBody instanceof Uint8Array
+        ? "uint8"
+        : originalBody instanceof ArrayBuffer
+          ? "arraybuffer"
+          : typeof originalBody;
     const output = cleanProtobuf(input, endpoint);
-    if (output.length !== input.length || output !== input) {
+    // Guard against accidental inflation (e.g. UTF-8 re-encoding of byte-strings).
+    if (output.length > Math.floor(input.length * 1.05) + 64) {
+      logbook(
+        `protobuf-inflation-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
+      );
+      $done({});
+      // return via $done
+    } else if (output !== input && output.length !== input.length) {
       const removed = feedAdCardsRemoved || nextAdFieldsRemoved
         ? ` removed=${feedAdCardsRemoved + nextAdFieldsRemoved}`
         : "";
-      logbook(`protobuf ${endpoint} ${input.length} -> ${output.length}${removed}`);
-      // Surge exposes binary response bodies as $response.body when
-      // binary-body-mode is enabled, and accepts a Uint8Array in body.
+      logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
+      // Surge accepts Uint8Array in body when binary-body-mode is enabled.
+      $done({ body: output });
+    } else if (output !== input) {
+      // Same length but rebuilt/changed bytes.
+      const removed = feedAdCardsRemoved || nextAdFieldsRemoved
+        ? ` removed=${feedAdCardsRemoved + nextAdFieldsRemoved}`
+        : "";
+      logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
       $done({ body: output });
     } else {
-      debug(`protobuf-passthrough ${endpoint} bytes=${input.length}`);
+      logbook(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
       $done({});
     }
   }
 } catch (error) {
-  debug("error", endpoint, error && error.message);
+  logbook(`error ${endpoint} ${error && error.message ? error.message : error}`);
   // On any failure, never return a partial body — let the original through.
   $done({});
 }
