@@ -1369,18 +1369,24 @@ function cleanFeedSurfaceProtobuf(bytes) {
   }
 
   const ratio = output.length / Math.max(bytes.length, 1);
-  // A single rich item should be a small fraction of a multi-card feed. If a
-  // schema change makes this delete most of the response, preserve the feed.
-  if (ratio < 0.70) {
+  const remainingItems = counters.items - counters.removed;
+  // Judge safety by the repeated-item structure, not byte ratio. A single
+  // promoted card can contain most of the response bytes while still being
+  // only 1 of many homepage items. Preserve the response only if cleanup
+  // would empty the item arrays or remove an implausibly large share of them.
+  const tooManyItemsRemoved =
+    remainingItems <= 0 ||
+    counters.removed > Math.max(4, Math.floor(counters.items / 2));
+  if (tooManyItemsRemoved) {
     logbook(
-      `browse-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} ratio=${ratio.toFixed(3)}`
+      `browse-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
 
   logbook(
-    `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} ${bytes.length} -> ${output.length}`
+    `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
   );
   return output;
 }
