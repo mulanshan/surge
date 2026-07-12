@@ -15,7 +15,7 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,www.youtube.com), (PROTOCOL,UDP)),REJECT
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260712-15,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
+youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/cdd02bd3a0a65ebe04f0a6356b80c4a33acffc8a/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260712-15,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
