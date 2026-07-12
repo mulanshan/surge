@@ -666,7 +666,11 @@ function cleanWatchContentProtobuf(bytes) {
       continue;
     }
     if (field.fieldNo === WATCH_CONTENT_FIELDS.next && field.wireType === WIRE_LENGTH && field.payload) {
-      const payload = cleanNextAdFragmentsProtobuf(field.payload, 10);
+      // The watch page recommendation feed uses the same richItemContents
+      // structure as browse/next. Remove the complete sponsored item before
+      // stripping any remaining non-card ad metadata.
+      const structured = cleanFeedSurfaceProtobuf(field.payload, "watch-next");
+      const payload = cleanNextAdFragmentsProtobuf(structured, 10);
       out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.next, payload) });
       changed = true;
       continue;
@@ -1354,7 +1358,7 @@ function cleanKnownFeedItemSections(bytes, depth, counters) {
   return changed ? rebuildFields(out) : bytes;
 }
 
-function cleanFeedSurfaceProtobuf(bytes) {
+function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
   feedAdCardsRemoved = 0;
   const hits = markerHits(bytes);
   const counters = { sections: 0, items: 0, removed: 0 };
@@ -1363,7 +1367,7 @@ function cleanFeedSurfaceProtobuf(bytes) {
 
   if (counters.removed === 0) {
     logbook(
-      `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`
+      `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`
     );
     return bytes;
   }
@@ -1379,14 +1383,14 @@ function cleanFeedSurfaceProtobuf(bytes) {
     counters.removed > Math.max(4, Math.floor(counters.items / 2));
   if (tooManyItemsRemoved) {
     logbook(
-      `browse-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)}`
+      `${surface}-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
 
   logbook(
-    `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
+    `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
   );
   return output;
 }
@@ -1546,7 +1550,10 @@ function cleanProtobuf(bytes, endpoint) {
   feedAdCardsRemoved = 0;
   nextAdFieldsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
-  if (endpoint === "next") return cleanNextAdFragmentsProtobuf(cleanFeedAdCardsProtobuf(bytes, 7), 8);
+  if (endpoint === "next") {
+    const structured = cleanFeedSurfaceProtobuf(bytes, "next");
+    return cleanNextAdFragmentsProtobuf(structured, 8);
+  }
   if (endpoint === "get_watch") return cleanWatchProtobuf(bytes);
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
@@ -1554,7 +1561,7 @@ function cleanProtobuf(bytes, endpoint) {
   // Home/search feeds: only remove guarded ad cards. Keep guide/reel passthrough
   // because those surfaces previously regressed metadata when rewritten broadly.
   if (endpoint === "browse" || endpoint === "search") {
-    return cleanFeedSurfaceProtobuf(bytes);
+    return cleanFeedSurfaceProtobuf(bytes, endpoint);
   }
   if (endpoint === "guide" || endpoint === "reel/reel_watch_sequence") {
     return bytes;
