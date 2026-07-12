@@ -207,6 +207,41 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqi
 
 这个模块采用保守的域名拦截 + URL Rewrite 方式，不整域拒绝 `fqnovel.com`、`fanqienovel.com`、`snssdk.com` 等主业务域。`.sgmodule` 是模块，模块内的 `[Rule]` 需要带策略；`rule/Surge/fanqie-novel-adblock.list` 是规则集，规则集本身不带策略，由主配置里的 `RULE-SET,...,REJECT` 决定策略。
 
+### 京东 Self
+
+文件：[rewrite/Surge/jd-self.sgmodule](rewrite/Surge/jd-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgmodule
+```
+
+这是按 YouTube Self 的单模块、单脚本方式编写的自有京东去广告模块：
+
+- 模块：`rewrite/Surge/jd-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/jd/jd-self.response.js`
+- 社区调研与设计边界：`docs/JD_SELF_RESEARCH.md`
+
+当前范围：
+
+- 处理开屏、启动弹窗、首页/我的页营销卡和浮层
+- 清理搜索框热词、站内推荐和当前 `uniformRecommend`（兼容旧版 `uniformRecommend0/6`）
+- 兼容京东 15.8.50 真机确认的 `/`、`/api`、`/client.action` 三种 API 入口，以及 POST 请求体中的 `functionId`
+- 可关闭 `basicConfig` 中的 socket 诊断上报与 HTTPDNS 开关
+- 可选择是否清理订单列表/物流页中的推广节点
+- 仅拒绝随机 `jddebug.com/diagnose` 请求，不整域拦截京东
+
+安全边界：
+
+- 不使用第三方脚本，只从 `mulanshan/surge` 加载自有脚本
+- 脚本不发起外部请求，不读取 Cookie，不上传请求、响应、账号或 token
+- 未知 `functionId` 立即原样放行，且不解析其响应体
+- 不改登录、购物车、商品、价格、订单主体、支付、退款、地址、物流主体、PLUS、会员、优惠券或钱包状态
+- 不伪造会员、价格、余额、优惠或订单数据
+
+首版以安全优先：识别不到的广告会原样放行，后续应根据当前京东版本的脱敏真机响应逐项补充明确字段，而不是扩大 MITM 或递归删除范围。
+
 ## rule / Surge
 
 规则集不包含策略，使用时在主配置 `[Rule]` 里指定策略组。个人规则应放在广泛的 China、Google、Microsoft、GitHub 等社区规则前面。
