@@ -132,10 +132,7 @@ summary_path = Path(sys.argv[3])
 candidate_path = Path(sys.argv[4])
 report_path = Path(sys.argv[5])
 
-rules_paths = [
-    root / "rewrite" / "Surge" / "basic-adblock.sgmodule",
-    root / "rewrite" / "Surge" / "fanqie-novel-self.sgmodule",
-]
+rules_paths = [root / "rewrite" / "Surge" / "basic-adblock.sgmodule"]
 
 TOPIC_RE = re.compile(
     r"fqnovel|fanqie|snssdk|zijieapi|byteimg|bdurl|applog|bytegecko|pangolin|"

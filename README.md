@@ -194,14 +194,15 @@ AppsFlyer、Adjust 等旧架构全局规则与 MITM，只适合独立使用或�
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblock.sgmodule
 ```
 
-这是以后统一使用的通用去广告入口。主配置 `[Rule]` 不再手工添加去广告 ruleset；模块只负责跨 App、
-用途明确的广告网络，模块规则由 Surge 自动插入主配置规则顶部。
+这是以后统一使用的去广告入口。主配置 `[Rule]` 不再手工添加去广告 ruleset；模块集中维护跨 App
+广告网络和少量日志确认的精确应用规则，模块规则由 Surge 自动插入主配置规则顶部。
 
 当前范围：
 
 - Google 广告：DoubleClick、Google Ad Services、Google Syndication 等
 - 腾讯广告 SDK：GDT / 优量汇的明确广告入口
 - 字节 / 穿山甲：广告 SDK、广告包、广告素材与日志已确认的广告主机
+- 番茄小说：只拦真机日志确认的 `log` / `rtlog` / `mon` 精确主机
 - 本机浏览器长期出现的 AppNexus、Integral Ad Science、AdKernel、Teads 等广告网络
 - 仅使用精确 `DOMAIN` / `DOMAIN-SUFFIX` + Surge 内置 `REJECT`
 
@@ -209,7 +210,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 
 - 无 JavaScript、无 MITM、无 URL Rewrite、无 Map Local、无 IP/关键词规则
 - 不整域拒绝 `qq.com`、`snssdk.com`、`zijieapi.com`、`byteimg.com` 等混合业务域
-- 不包含番茄、扫描全能王、高德、京东、YouTube、Instagram 的第一方接口或 CDN
+- 番茄只包含精确日志主机，不包含阅读、图片、听书、视频、账号或支付接口
+- 不包含扫描全能王、高德、京东、YouTube、Instagram 的第一方业务接口或 CDN
 - 不拦截 Sentry/Crashlytics/OpenTelemetry、HTTPDNS、购买、订阅、账号、支付或收据接口
 - AppsFlyer、Adjust、`app-measurement.com` 等归因/统计默认不进入基础核心规则
 - 专用 App 的路径、响应体和界面广告继续由各自的 `Self` 模块处理
@@ -227,27 +229,6 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-nove
 ```bash
 python3 scripts/check-basic-adblock.py
 ```
-
-### 番茄小说 Self
-
-文件：[rewrite/Surge/fanqie-novel-self.sgmodule](rewrite/Surge/fanqie-novel-self.sgmodule)
-
-订阅地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-novel-self.sgmodule
-```
-
-这是从旧番茄模块拆出的专用补充层，需要和“基础去广告模块”一起使用：
-
-- 拦截真机日志确认的番茄第一方 `log` / `rtlog` / `mon` 精确主机
-- 保留已验证的穿山甲广告包、素材和 SDK 路径级 URL Rewrite
-- MITM 只覆盖这些路径所需的 11 个精确主机
-- 不拦截番茄内容、图片、听书、视频、动态 CDN、直播、小游戏、账号或支付接口
-- 不使用 JavaScript，不修改响应体
-
-从旧架构迁移时，删除旧“番茄小说去广告”模块或主配置里的旧广告 ruleset/Rewrite，改为同时启用
-“基础去广告模块”与“番茄小说 Self”。
 
 ### 京东 Self
 
@@ -403,8 +384,8 @@ Loon 文件：[rule/Loon/fanqie-novel-cn.list](rule/Loon/fanqie-novel-cn.list)
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-cn.list,China,extended-matching
 ```
 
-先启用“基础去广告模块”；需要保留番茄第一方日志和穿山甲路径处理时，再启用“番茄小说 Self”，
-最后添加番茄回国分流。模块由 Surge 插入主配置规则顶部，主配置不再额外维护番茄广告 ruleset。
+先启用“基础去广告模块”，再添加番茄回国分流。番茄广告/日志使用基础模块中的精确域名规则，
+不再使用番茄专用模块，也不在主配置中额外维护番茄广告 ruleset。
 如果人在中国大陆、不需要代理回国，策略可以用 `DIRECT`。
 
 Loon 引用时不要加 Surge 的 `extended-matching` 参数，策略名按自己的配置替换，例如：
@@ -450,8 +431,8 @@ rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-re
 开发原则：
 
 - 新域名先进入候选或观察，不直接整域拦截
-- 只有跨 App、用途明确的广告网络才进入 `rewrite/Surge/basic-adblock.sgmodule`
-- 番茄第一方日志、接口和路径候选留在专用 App 范围，不升格为基础规则
+- 跨 App 广告网络和真机确认的番茄精确日志主机进入 `rewrite/Surge/basic-adblock.sgmodule`
+- 番茄主业务、账号、内容、图片、视频和路径级候选不进入基础模块
 - `bytegecko`、`douyinpic`、`ecombdimg`、`ydycdn` 等 CDN/图片/动态资源域名默认观察，确认和广告强相关后再精确单域拦截
 
 扫描全能王也有独立的候选导出脚本：

@@ -1,18 +1,19 @@
 # 基础去广告模块：调研、日志证据与维护边界
 
-更新时间：2026-07-12
+更新时间：2026-07-13
 
 ## 结论
 
 仓库以后只保留一个通用入口：`rewrite/Surge/basic-adblock.sgmodule`。它只做域名级
 `REJECT`，不包含 JavaScript、MITM、URL Rewrite、Map Local、IP 规则或宽泛关键词。
 
-番茄小说、YouTube、Instagram、高德地图、扫描全能王、京东等专用模块继续处理各自的路径、响应体、
-证书钉扎和界面广告。基础模块不接管这些 App 的第一方 API、CDN、登录、购买、同步或内容域名。
+番茄小说按规则类型直接并入基础模块，只保留精确 `log` / `rtlog` / `mon` 主机，不建立专用模块。
+YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路径或响应体处理的 App 继续使用专用模块。
+旧番茄 Self 的 URL Rewrite 与 MITM 随专用模块删除而取消；这是有意缩小证书解密范围，代价是部分路径级广告
+可能不再处理，后续只根据脱敏真机日志补充安全的精确域名规则。
 
 旧地址 `rewrite/Surge/fanqie-novel-adblock.sgmodule` 保留为兼容入口，并与新模块使用相同规则；
 新旧地址不要同时启用。旧 `rule/Surge/fanqie-novel-adblock.list` 只为已有配置冻结保留，主配置不再引用。
-旧番茄专用能力迁入 `rewrite/Surge/fanqie-novel-self.sgmodule`，与基础模块配合使用。
 
 ## Surge 官方约束
 
@@ -62,6 +63,14 @@
 Google、腾讯、AppsFlyer、Adjust 等全局第三方规则，只保留自身第一方接口与响应处理。新分层实例
 显示为“扫描全能王 Self v2”，用于和设备上可能缓存的旧模块区分。
 
+2026-07-13 在 iPhone 打开扫描全能王后抓取 45 秒，共出现 114 条新请求：
+
+- `a.gdt.qq.com` 40/40、`sdk.e.qq.com` 22/22 由基础去广告模块拒绝。
+- `open.camscanner.com` 的 13 条广告配置、广告数据、广告控制和广告记录请求由扫描全能王 Self v2
+  使用 Map Local 返回空响应；`apm-collector-uc.intsig.net/ip` 同样由专用模块处理。
+- 扫描全能王 API、下载、静态资源、文档和会员相关流量保持 `DIRECT`，未发现第一方业务接口被基础模块误拒。
+- `apmplus.volces.com` 的 2 条遥测请求继续 `DIRECT`；遥测不等于核心广告，不因此扩大基础拦截范围。
+
 ### 腾讯与字节广告 SDK
 
 - 扫描全能王日志确认 `a.gdt.qq.com`、`sdk.e.qq.com` 的 `/sdk`、`/perf`、`/event`、`/ola/v2` 请求。
@@ -82,7 +91,7 @@ Mac 月度统计还持续出现 `adnxs.com`、`adnxs-simple.com`、`adsafeprotec
 
 ## 明确排除
 
-- 番茄第一方：主业务、图片和音视频域名不进基础层；精确 `log/rtlog/mon` 主机只放在番茄 Self。
+- 番茄第一方：精确 `log/rtlog/mon` 主机进入基础规则；主业务、图片和音视频域名仍不进入。
 - 字节混合用途：`snssdk.com`、`zijieapi.com`、`byteimg.com`、`bytegecko.com`、
   `douyinpic.com`、`ecombdapi.com`、`ecombdimg.com`、直播/小游戏/动态资源。
 - 专用 App：`intsig.net`、`camscanner.com`、`amap.com`、京东、YouTube、Instagram 第一方域名与接口。
@@ -94,7 +103,7 @@ Mac 月度统计还持续出现 `adnxs.com`、`adnxs-simple.com`、`adsafeprotec
 
 1. 从 Surge 日志只聚合域名、次数、策略和规则，不公开 URL 参数、Cookie、账号或 token。
 2. 候选必须满足：本机真实出现且用途明确，或得到至少两个成熟社区来源交叉确认且不存在混合业务证据。
-3. 第一方 App 接口、路径规则、响应体清理和任何 MITM 一律进入专用模块。
+3. 除已审计的无业务日志主机外，第一方 App 接口、路径规则、响应体清理和任何 MITM 不进入基础模块。
 4. 修改后运行 `python3 scripts/check-basic-adblock.py`，确认新旧入口一致、没有高风险域名和禁止节。
 5. 先在 `main` 验证，再更新外部资源；Mac、iPhone、iPad 分别检查 `available` 与 `enabled`。
 6. 出现误杀时直接从基础模块删除该规则。不要用模块内 `DIRECT` 白名单掩盖，因为这会绕过主配置原有分流策略。

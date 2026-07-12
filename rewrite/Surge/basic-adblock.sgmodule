@@ -1,9 +1,9 @@
 #!name=基础去广告模块
-#!desc=基于本机 Surge 日志与社区资料交叉验证的通用域名级去广告。只拦明确广告网络；无脚本、无 MITM、无响应改写。
+#!desc=基础域名级去广告：通用广告网络与真机日志确认的精确应用规则。无脚本、无 MITM、无响应改写。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=基础去广告
-#!date=2026-07-12
+#!date=2026-07-13
 
 [Rule]
 # Google 广告网络。来自 iPhone 请求日志与 Mac 月度流量统计。
@@ -35,6 +35,21 @@ DOMAIN,p3-ad-sign.byteimg.com,REJECT
 DOMAIN,p6-ad-sign.byteimg.com,REJECT
 DOMAIN,p9-ad-sign.byteimg.com,REJECT
 DOMAIN,dig.bdurl.net,REJECT
+
+# 番茄小说规则。只拦真机日志确认的 log / rtlog / mon 精确主机，不碰阅读、图片、听书或视频域名。
+DOMAIN,log0-applog-lq.fqnovel.com,REJECT
+DOMAIN,log3-applog.fqnovel.com,REJECT
+DOMAIN,log3-applog-lq.fqnovel.com,REJECT
+DOMAIN,log5-applog.fqnovel.com,REJECT
+DOMAIN,log5-applog-lq.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog.fqnovel.com,REJECT
+DOMAIN,rtlog3-applog-lq.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog.fqnovel.com,REJECT
+DOMAIN,rtlog5-applog-lq.fqnovel.com,REJECT
+DOMAIN,mon11-misc-lq.fqnovel.com,REJECT
+DOMAIN,mon11-misc.fqnovel.com,REJECT
+DOMAIN,mon3-misc-lq.fqnovel.com,REJECT
+DOMAIN,mon3-misc.fqnovel.com,REJECT
 
 # 本机浏览器流量中持续出现的独立广告网络。
 DOMAIN-SUFFIX,adnxs.com,REJECT

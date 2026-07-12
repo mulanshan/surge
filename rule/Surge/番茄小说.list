@@ -1,9 +1,8 @@
 # NAME: 番茄小说
 # Fanqie Novel routing ruleset for returning app traffic to a China policy.
 # Usage:
-# Enable Basic AdBlock and, when needed, Fanqie Novel Self before this routing ruleset.
+# Enable Basic AdBlock before this routing ruleset.
 # https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblock.sgmodule
-# https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-novel-self.sgmodule
 # RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/%E7%95%AA%E8%8C%84%E5%B0%8F%E8%AF%B4.list,China,extended-matching
 #
 # Replace "China" with your China-return policy group. If you are in mainland

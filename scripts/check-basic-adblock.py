@@ -11,11 +11,9 @@ CANONICAL = ROOT / "rewrite/Surge/basic-adblock.sgmodule"
 LEGACY = ROOT / "rewrite/Surge/fanqie-novel-adblock.sgmodule"
 README = ROOT / "README.md"
 CAMSCANNER = ROOT / "rewrite/Surge/camscanner-self.sgmodule"
-FANQIE_SELF = ROOT / "rewrite/Surge/fanqie-novel-self.sgmodule"
 
 FORBIDDEN_SECTIONS = {"[Script]", "[MITM]", "[URL Rewrite]", "[Map Local]"}
 FORBIDDEN_TOKENS = {
-    "fqnovel.com",
     "fanqienovel.com",
     "fqnovelpic.com",
     "fqnovelvod.com",
@@ -34,6 +32,21 @@ FORBIDDEN_TOKENS = {
     "appsflyer.com",
     "adjust.com",
     "app-measurement.com",
+}
+EXPECTED_FANQIE_RULES = {
+    "log0-applog-lq.fqnovel.com",
+    "log3-applog.fqnovel.com",
+    "log3-applog-lq.fqnovel.com",
+    "log5-applog.fqnovel.com",
+    "log5-applog-lq.fqnovel.com",
+    "rtlog3-applog.fqnovel.com",
+    "rtlog3-applog-lq.fqnovel.com",
+    "rtlog5-applog.fqnovel.com",
+    "rtlog5-applog-lq.fqnovel.com",
+    "mon11-misc-lq.fqnovel.com",
+    "mon11-misc.fqnovel.com",
+    "mon3-misc-lq.fqnovel.com",
+    "mon3-misc.fqnovel.com",
 }
 
 
@@ -77,6 +90,7 @@ def main() -> int:
     if len(canonical_rules) != len(set(canonical_rules)):
         raise SystemExit("duplicate rules found")
 
+    actual_fanqie_rules = set()
     for rule in canonical_rules:
         parts = [part.strip() for part in rule.split(",")]
         if len(parts) != 3 or parts[0] not in {"DOMAIN", "DOMAIN-SUFFIX"}:
@@ -85,6 +99,15 @@ def main() -> int:
             raise SystemExit(f"module policy must be REJECT: {rule}")
         if any(token in parts[1] for token in FORBIDDEN_TOKENS):
             raise SystemExit(f"app-specific or high-risk domain in base module: {rule}")
+        if parts[1].endswith(".fqnovel.com"):
+            if parts[0] != "DOMAIN" or parts[1] not in EXPECTED_FANQIE_RULES:
+                raise SystemExit(f"unsafe Fanqie rule in base module: {rule}")
+            actual_fanqie_rules.add(parts[1])
+
+    if actual_fanqie_rules != EXPECTED_FANQIE_RULES:
+        missing = sorted(EXPECTED_FANQIE_RULES - actual_fanqie_rules)
+        extra = sorted(actual_fanqie_rules - EXPECTED_FANQIE_RULES)
+        raise SystemExit(f"Fanqie allowlist mismatch; missing={missing}, extra={extra}")
 
     readme = README.read_text(encoding="utf-8")
     if "RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list" in readme:
@@ -108,20 +131,12 @@ def main() -> int:
     if leftovers:
         raise SystemExit(f"generic third-party rules remain in CamScanner module: {', '.join(leftovers)}")
 
-    fanqie_self = FANQIE_SELF.read_text(encoding="utf-8")
-    for required in ("#!name=番茄小说 Self", "[Rule]", "[URL Rewrite]", "[MITM]", "log0-applog-lq.fqnovel.com"):
-        if required not in fanqie_self:
-            raise SystemExit(f"Fanqie Self missing required content: {required}")
-    for risky in ("bytegecko.com", "douyinpic.com", "ecombdapi.com", "ecombdimg.com", "minigame", "webcast-open.douyin.com"):
-        if risky in fanqie_self:
-            raise SystemExit(f"high-risk mixed content domain remains in Fanqie Self: {risky}")
-
     exporter = (ROOT / "rule/Surge/scripts/export-fanqie-candidates.sh").read_text(encoding="utf-8")
-    for required_path in ("basic-adblock.sgmodule", "fanqie-novel-self.sgmodule"):
-        if required_path not in exporter:
-            raise SystemExit(f"Fanqie candidate exporter does not load {required_path}")
+    removed_fanqie_module = "fanqie-novel-" + "self.sgmodule"
+    if "basic-adblock.sgmodule" not in exporter or removed_fanqie_module in exporter:
+        raise SystemExit("Fanqie candidate exporter must use only the Basic AdBlock module")
 
-    print(f"basic-adblock OK: {len(canonical_rules)} rules; no script, MITM, rewrite, or app-specific domains")
+    print(f"basic-adblock OK: {len(canonical_rules)} rules; no script, MITM, rewrite, or mixed business domains")
     return 0
 
 
