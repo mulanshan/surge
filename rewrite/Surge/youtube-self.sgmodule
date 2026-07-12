@@ -1,11 +1,11 @@
 #!name=YouTube Self
-#!desc=自有可审计 YouTube 去广告与后台播放唯一入口：处理播放/下一屏广告，并极保守清理首页/搜索赞助广告卡（优先保证首页不空白）。不含第三方代码。
+#!desc=自有可审计 YouTube 去广告与后台播放唯一入口：处理播放广告，并按完整信息流条目清理首页、搜索及视频详情页赞助卡。不含第三方代码。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n入口：处理 youtubei.googleapis.com / www.youtube.com 的 player、get_watch、next、browse、search、account/get_setting、account/get_setting_values。browse/search 仅做带安全阀的信息流广告卡清理；guide/reel 仍原样放行。保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
+#!arguments-desc=- 调试参数：[true, false]\n\n入口：处理 youtubei.googleapis.com / www.youtube.com 的 player、get_watch、next、browse、search、account/get_setting、account/get_setting_values。browse/search/next/get_watch.contents.next 按 protobuf rich item 整卡清理；guide/reel 仍原样放行。保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
 #!date=2026-07-12
 
 [Rule]
