@@ -1225,89 +1225,164 @@ function payloadHasExactSponsorBadge(payload) {
   return !!(payload && bytesContainAnyMarker(payload, ["赞助商广告"]));
 }
 
-function cleanFeedSurfaceProtobuf(bytes) {
-  feedAdCardsRemoved = 0;
-  const hits = markerHits(bytes);
-  let current = bytes;
+// Current YouTube iOS browse protobufs place homepage cards in:
+//   Content -> SectionListRenderer -> ItemSectionRenderer(50195462)
+//   -> repeated RichItemContent(field 1)
+// Removing the repeated field itself is important. Deleting an arbitrary
+// ad-marked descendant only hollows the card and leaves a grey placeholder.
+const ITEM_SECTION_RENDERER_FIELD = 50195462;
+const RICH_ITEM_CONTENT_FIELD = 1;
 
-  // Pass 1: recursive card cleanup.
-  let output = cleanFeedAdCardsProtobuf(current, 16);
-  if (output !== current) current = output;
+function isDirectFeedAdItem(payload) {
+  if (!payload || payload.length < 64) return false;
 
-  // Pass 2: remove highest-scoring whole cards while ad markers remain.
-  // Specifically targets "homepage first item is ad".
-  let forcedTotal = 0;
-  const needForce =
-    hits.includes("badge_cn") ||
-    hits.includes("brand_sample") ||
-    hits.includes("sponsor_cn") ||
-    hits.includes("ad_ui") ||
-    hits.includes("learn_cn");
+  // Structural UI identifiers and ad-network payloads are stronger than
+  // translated CTA text and are stable across the live Chinese responses.
+  if (
+    bytesContainAnyMarker(payload, [
+      "inline_injection_entrypoint_layout.eml",
+      "ad_badge.eml-fe",
+      "ad_avatar.eml-fe",
+      "ad_button.eml-fe",
+      "ad_details_line.eml-fe",
+      "ad_icon_text.eml-fe",
+      "ad_rating.eml-fe",
+      "in_feed_ad",
+      "promotedSparklesWebRenderer",
+      "promotedVideoRenderer",
+      "displayAdRenderer",
+      "adSlotRenderer",
+      "inFeedAdLayoutRenderer",
+    ])
+  ) {
+    return true;
+  }
 
-  if (needForce) {
-    for (let i = 0; i < 4; i += 1) {
-      const stillHot =
-        payloadHasExactSponsorBadge(current) ||
-        bytesContainAnyMarker(current, [
-          "赞助商广告",
-          "赞助商",
-          "ad_badge.eml-fe",
-          "ad_button.eml-fe",
-          "inline_injection_entrypoint_layout.eml",
-          "in_feed_ad",
-          "promotedVideoRenderer",
-          "displayAdRenderer",
-          "adSlotRenderer",
-          "了解详情",
-          "访问网站",
-          "Aikido",
-        ]);
-      // Keep going until first clear ad markers are gone, or no removable node remains.
-      if (!stillHot && (forcedTotal > 0 || feedAdCardsRemoved > 0)) break;
+  // Community implementations use pagead inside a sizeable unknown field as
+  // the fallback when YouTube has not exposed a known renderer/EML name.
+  if (
+    payload.length >= 1000 &&
+    bytesContainAnyMarker(payload, [
+      "pagead",
+      "googleads",
+      "googleadservices",
+      "doubleclick.net",
+      "adclick",
+      "adview",
+    ])
+  ) {
+    return true;
+  }
 
-      const forced = forceRemoveBestSponsorNode(current, 16);
-      if (!forced.removed) break;
+  // Text fallback for layouts whose technical EML marker has moved into an
+  // unknown protobuf field. Keep it limited to explicit sponsorship labels.
+  return bytesContainAnyMarker(payload, [
+    "赞助商广告",
+    "赞助商",
+    "付费宣传",
+    "付费推广",
+    "Sponsored",
+    "sponsored",
+    "Advertisement",
+    "advertisement",
+  ]);
+}
 
-      const ratio = forced.bytes.length / Math.max(bytes.length, 1);
-      // Allow more aggressive first-item removal; only abort on extreme shrinkage.
-      if (ratio < 0.45) {
-        logbook(
-          `feed-safety-passthrough forced-ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved + forcedTotal + forced.removed} ${bytes.length} -> ${forced.bytes.length}`
-        );
-        // Keep whatever we already successfully removed before this extreme step.
-        break;
+function cleanItemSectionRenderer(payload, counters) {
+  let fields;
+  try {
+    fields = parseFields(payload);
+  } catch {
+    return payload;
+  }
+
+  counters.sections += 1;
+  let changed = false;
+  const out = [];
+  for (const field of fields) {
+    if (
+      field.fieldNo === RICH_ITEM_CONTENT_FIELD &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload
+    ) {
+      counters.items += 1;
+      if (isDirectFeedAdItem(field.payload)) {
+        counters.removed += 1;
+        changed = true;
+        continue;
       }
-      current = forced.bytes;
-      forcedTotal += forced.removed;
-      feedAdCardsRemoved += forced.removed;
+    }
+    out.push(field);
+  }
+
+  return changed ? rebuildFields(out) : payload;
+}
+
+function cleanKnownFeedItemSections(bytes, depth, counters) {
+  if (depth <= 0) return bytes;
+
+  let fields;
+  try {
+    fields = parseFields(bytes);
+  } catch {
+    return bytes;
+  }
+
+  let changed = false;
+  const out = [];
+  for (const field of fields) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+      out.push(field);
+      continue;
+    }
+
+    let payload;
+    if (field.fieldNo === ITEM_SECTION_RENDERER_FIELD) {
+      payload = cleanItemSectionRenderer(field.payload, counters);
+    } else {
+      payload = cleanKnownFeedItemSections(field.payload, depth - 1, counters);
+    }
+
+    if (payload !== field.payload) {
+      out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+      changed = true;
+    } else {
+      out.push(field);
     }
   }
 
-  const ratio = current.length / Math.max(bytes.length, 1);
-  if (feedAdCardsRemoved === 0) {
-    logbook(`browse-scan hits=${hits.join("|") || "none"} removed=0 bytes=${bytes.length}`);
-    return bytes;
-  }
-  // Soft safety only: never fully blank large feeds.
-  if (bytes.length > 200000 && ratio < 0.40) {
+  return changed ? rebuildFields(out) : bytes;
+}
+
+function cleanFeedSurfaceProtobuf(bytes) {
+  feedAdCardsRemoved = 0;
+  const hits = markerHits(bytes);
+  const counters = { sections: 0, items: 0, removed: 0 };
+  const output = cleanKnownFeedItemSections(bytes, 18, counters);
+  feedAdCardsRemoved = counters.removed;
+
+  if (counters.removed === 0) {
     logbook(
-      `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${current.length}`
+      `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`
     );
-    feedAdCardsRemoved = 0;
     return bytes;
   }
-  if (bytes.length > 50000 && ratio < 0.35) {
+
+  const ratio = output.length / Math.max(bytes.length, 1);
+  // A single rich item should be a small fraction of a multi-card feed. If a
+  // schema change makes this delete most of the response, preserve the feed.
+  if (ratio < 0.70) {
     logbook(
-      `feed-safety-passthrough ratio=${ratio.toFixed(3)} removed=${feedAdCardsRemoved} ${bytes.length} -> ${current.length}`
+      `browse-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} ratio=${ratio.toFixed(3)}`
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
 
   logbook(
-    `browse-scan hits=${hits.join("|") || "none"} removed=${feedAdCardsRemoved} forced=${forcedTotal} ${bytes.length} -> ${current.length}`
+    `browse-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} ${bytes.length} -> ${output.length}`
   );
-  return current;
+  return output;
 }
 
 function forceRemoveBestSponsorNode(bytes, depth) {
