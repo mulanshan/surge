@@ -1,5 +1,5 @@
 #!name=基础去广告模块
-#!desc=旧“番茄小说去广告”订阅地址的兼容入口；规则与 basic-adblock.sgmodule 同步。新安装请改用新地址，两个入口不要同时启用。
+#!desc=基于本机 Surge 日志与社区资料交叉验证的通用域名级去广告。只拦明确广告网络；无脚本、无 MITM、无响应改写。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=基础去广告

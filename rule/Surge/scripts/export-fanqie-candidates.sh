@@ -5,13 +5,13 @@
 # Pass --input FILE to re-process a previously saved dump request JSON.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DEFAULT_PROFILE="/Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
 DEFAULT_SURGE_CLI="/Applications/Surge.app/Contents/Applications/surge-cli"
 
 PROFILE="${SURGE_PROFILE:-$DEFAULT_PROFILE}"
 SURGE_CLI="${SURGE_CLI:-}"
-REMOTE_HOST="${SURGE_REMOTE_HOST:-192.168.50.103}"
+REMOTE_HOST="${SURGE_REMOTE_HOST:-192.168.60.34}"
 REMOTE_PORT="${SURGE_REMOTE_PORT:-6170}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/reports/fanqie}"
 INPUT_JSON=""
@@ -24,7 +24,7 @@ Usage:
 Options:
   -i, --input FILE      Re-process an existing Surge dump request JSON.
   -o, --out-dir DIR     Output directory. Default: reports/fanqie
-      --host HOST       Remote Surge host. Default: 192.168.50.103
+      --host HOST       Remote Surge host. Default: 192.168.60.34
       --port PORT       Remote Surge controller port. Default: 6170
       --profile FILE    Surge profile used to read controller password.
   -h, --help            Show this help.
@@ -132,7 +132,10 @@ summary_path = Path(sys.argv[3])
 candidate_path = Path(sys.argv[4])
 report_path = Path(sys.argv[5])
 
-rules_path = root / "rules" / "fanqie-novel-adblock.list"
+rules_paths = [
+    root / "rewrite" / "Surge" / "basic-adblock.sgmodule",
+    root / "rewrite" / "Surge" / "fanqie-novel-self.sgmodule",
+]
 
 TOPIC_RE = re.compile(
     r"fqnovel|fanqie|snssdk|zijieapi|byteimg|bdurl|applog|bytegecko|pangolin|"
@@ -225,22 +228,23 @@ def is_rejected(row):
     return bool(row.get("rejected") is True or policy == "REJECT")
 
 
-def load_existing_domains(path):
+def load_existing_domains(paths):
     domains = set()
-    if not path.exists():
-        return domains
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
+    for path in paths:
+        if not path.exists():
             continue
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) >= 2 and parts[0] in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}:
-            domains.add(parts[1].lower())
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 2 and parts[0] in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}:
+                domains.add(parts[1].lower())
     return domains
 
 
 rows = load_requests(raw_path)
-existing = load_existing_domains(rules_path)
+existing = load_existing_domains(rules_paths)
 
 by_host = {}
 times = []
@@ -352,7 +356,7 @@ with summary_path.open("w", encoding="utf-8") as f:
 
 candidates = [item["host"] for item in items if item["class"] == "candidate-reject"]
 with candidate_path.open("w", encoding="utf-8") as f:
-    f.write("# Review before merging into rule/Surge/fanqie-novel-adblock.list\n")
+    f.write("# Review before adding to the Basic AdBlock or an app-specific module\n")
     f.write("# Generated from: " + str(raw_path) + "\n")
     for host in candidates:
         f.write(f"DOMAIN,{host}\n")
@@ -422,7 +426,7 @@ report.extend(
         f"- Summary TSV: `{summary_path}`",
         f"- Candidate rules: `{candidate_path}`",
         "",
-        "Review `candidate-rules.list` manually before copying any line into the production ruleset.",
+        "Review `candidate-rules.list` manually before adding any line to the Basic AdBlock or an app-specific module.",
     ]
 )
 

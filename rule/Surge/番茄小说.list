@@ -1,8 +1,9 @@
 # NAME: 番茄小说
 # Fanqie Novel routing ruleset for returning app traffic to a China policy.
 # Usage:
-# Place the adblock ruleset first, then this routing ruleset.
-# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list,REJECT,extended-matching
+# Enable Basic AdBlock and, when needed, Fanqie Novel Self before this routing ruleset.
+# https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblock.sgmodule
+# https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-novel-self.sgmodule
 # RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/%E7%95%AA%E8%8C%84%E5%B0%8F%E8%AF%B4.list,China,extended-matching
 #
 # Replace "China" with your China-return policy group. If you are in mainland
@@ -29,8 +30,7 @@ DOMAIN,p26-item.ecombdimg.com
 DOMAIN,p3-aio.ecombdimg.com
 
 # Embedded commerce/live entrypoints seen during app navigation and global
-# proxy testing. Keep these behind the adblock ruleset so confirmed ad/log
-# domains are still rejected.
+# proxy testing. These are mixed business endpoints, not basic adblock rules.
 DOMAIN,ec3-core-lq.ecombdapi.com
 DOMAIN,ec5-core-lq.ecombdapi.com
 DOMAIN,ecom3-normal-lq.ecombdapi.com
@@ -47,7 +47,3 @@ DOMAIN,tp-pay.snssdk.com
 DOMAIN,vas.snssdk.com
 DOMAIN,pitaya.bytedance.com
 DOMAIN,vc-brain.ndcpp.com
-
-# Observed ad/telemetry endpoint. If you also use the adblock ruleset, place it
-# before this routing ruleset so this domain is rejected instead of routed.
-DOMAIN,dig.bdurl.net

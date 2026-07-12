@@ -1,12 +1,12 @@
 #!name=扫描全能王 Self
-#!desc=自有可审计扫描全能王去广告模块：清理启动弹窗、运营活动、广告配置和统计采集。不含第三方脚本，不伪造会员权限。
+#!desc=自有可审计扫描全能王专用模块：只处理第一方广告、活动弹窗、运营位和采集接口。通用广告网络由基础去广告模块负责。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=扫描全能王
 #!openUrl=https://apps.apple.com/app/id388627783
 #!arguments=启用调试模式:false
 #!arguments-desc=- 调试参数：[true, false]\n\n范围：只处理扫描全能王 / CamScanner 的广告、活动弹窗、运营位、广告配置和统计采集。保留账号、云同步、OCR、PDF 转换、购买校验和主业务接口；不修改 purchase/cs/query_property 等会员状态接口。
-#!date=2026-06-09
+#!date=2026-07-12
 
 [Rule]
 # 明确广告、统计、崩溃/行为采集域名。保留 intsig / camscanner 主业务域，不做整域拒绝。
@@ -26,17 +26,6 @@ DOMAIN,apm-collector-uc.intsig.net,REJECT
 DOMAIN,sentry.intsig.net,REJECT
 DOMAIN,data.camscanner.com,REJECT
 
-# 常见第三方广告/归因/统计 SDK。只拦广告和上报域，避免影响 App Store / Apple 购买校验。
-DOMAIN-SUFFIX,doubleclick.net,REJECT
-DOMAIN-SUFFIX,googleadservices.com,REJECT
-DOMAIN-SUFFIX,googlesyndication.com,REJECT
-DOMAIN,a.gdt.qq.com,REJECT
-DOMAIN,sdk.e.qq.com,REJECT
-DOMAIN,apmplus.volces.com,REJECT
-DOMAIN-SUFFIX,appsflyer.com,REJECT
-DOMAIN-SUFFIX,app-measurement.com,REJECT
-DOMAIN-SUFFIX,adjust.com,REJECT
-
 [Script]
 camscanner.self.response = type=http-response,pattern=^https?:\/\/open\.camscanner\.com\/sync\/(?:get_ad_(?:data|control|cfg)|get_page_cfg(?:_v2)?|get_new_func_popup_cfg)(?:\?.*)?$,requires-body=1,max-size=-1,script-path=https://mulanshan.github.io/surge/rewrite/Surge/scripts/camscanner/camscanner-self.response.js?v=20260609-3,argument="{\"debug\":{{{启用调试模式}}}}"
 
@@ -46,11 +35,5 @@ camscanner.self.response = type=http-response,pattern=^https?:\/\/open\.camscann
 ^https?:\/\/open\.camscanner\.com\/sync\/upload_ad_record(?:\?.*)?$ data-type=text data="{}" status-code=200
 ^https?:\/\/(?:apm-collector-uc|sentry)\.intsig\.net\/ data-type=text data="" status-code=204
 
-# Google / 第三方广告统计。不会触碰 Apple StoreKit 收据校验。
-^https?:\/\/(?:googleads\.g\.doubleclick\.net|www\.googleadservices\.com|pagead2\.googlesyndication\.com)\/ data-type=text data="" status-code=204
-^https?:\/\/(?:a\.gdt\.qq\.com|sdk\.e\.qq\.com)\/ data-type=text data="" status-code=204
-^https?:\/\/apmplus\.volces\.com\/ data-type=text data="" status-code=204
-^https?:\/\/(?:app-measurement\.com|(?:[^\/]+\.)?appsflyer\.com|(?:[^\/]+\.)?adjust\.com)\/ data-type=text data="" status-code=204
-
 [MITM]
-hostname = %APPEND% open.camscanner.com, apm-collector-uc.intsig.net, sentry.intsig.net, googleads.g.doubleclick.net, www.googleadservices.com, pagead2.googlesyndication.com, a.gdt.qq.com, sdk.e.qq.com, apmplus.volces.com, app-measurement.com, *.appsflyer.com, *.adjust.com
+hostname = %APPEND% open.camscanner.com, apm-collector-uc.intsig.net, sentry.intsig.net

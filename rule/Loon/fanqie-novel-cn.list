@@ -46,7 +46,3 @@ DOMAIN,tp-pay.snssdk.com
 DOMAIN,vas.snssdk.com
 DOMAIN,pitaya.bytedance.com
 DOMAIN,vc-brain.ndcpp.com
-
-# Observed ad/telemetry endpoint. If you also use an adblock ruleset, place it
-# before this routing ruleset so this domain is rejected instead of routed.
-DOMAIN,dig.bdurl.net

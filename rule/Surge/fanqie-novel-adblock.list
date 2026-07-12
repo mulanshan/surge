@@ -1,6 +1,7 @@
-# Fanqie Novel adblock ruleset for Surge RULE-SET usage.
-# Usage:
-# RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list,REJECT,extended-matching
+# DEPRECATED: frozen compatibility ruleset for old configurations.
+# New configurations must install rewrite/Surge/basic-adblock.sgmodule instead
+# of adding an advertising RULE-SET to the main profile. This file keeps its
+# original format and rules so old external-resource URLs do not break.
 DOMAIN,log3-applog.fqnovel.com
 DOMAIN,log3-applog-lq.fqnovel.com
 DOMAIN,log5-applog.fqnovel.com
