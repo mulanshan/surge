@@ -139,7 +139,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 - 不整域拒绝 `amap.com`
 - 不拦截天气、路线规划、导航、搜索主业务和账号接口
 
-### 扫描全能王 Self
+### 扫描全能王 Self v2
 
 文件：[rewrite/Surge/camscanner-self.sgmodule](rewrite/Surge/camscanner-self.sgmodule)
 
@@ -155,14 +155,16 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 https://raw.githubusercontent.com/mulanshan/surge/camscanner-self-v1.0.0/rewrite/Surge/camscanner-self.sgmodule
 ```
 
-这是自有可审计的扫描全能王 / CamScanner 去广告模块。仓库里只保留这一个扫描全能王模块和一个响应脚本：
+这是自有可审计的扫描全能王 / CamScanner 专用模块。`main` 中显示名为“扫描全能王 Self v2”，
+用于和旧架构已安装实例明确区分；文件 URL 保持不变。仓库里只维护这一个当前模块和一个响应脚本：
 
 - 模块：`rewrite/Surge/camscanner-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 
 `camscanner-self-v1.0.0` 基于 iPhone 真机测试通过的 `753c2cb` 固化，仍包含 Google、腾讯、
 AppsFlyer、Adjust 等旧架构全局规则与 MITM，只适合独立使用或回滚；它不代表当前“基础模块 + 专用模块”分层。
-当前 `main` 已切换到新架构，需要同时启用“基础去广告模块”。待真机复测完成后再发布新的稳定 tag。
+当前 `main` 已切换到新架构，需要停用旧“扫描全能王 Self”，同时启用“基础去广告模块”和
+“扫描全能王 Self v2”。待真机复测完成后再发布新的稳定 tag。
 
 当前 `main` 功能范围：
 

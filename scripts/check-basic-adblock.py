@@ -91,6 +91,8 @@ def main() -> int:
         raise SystemExit("README still recommends the legacy advertising RULE-SET")
 
     camscanner = CAMSCANNER.read_text(encoding="utf-8")
+    if not camscanner.startswith("#!name=扫描全能王 Self v2\n"):
+        raise SystemExit("current CamScanner module must use the v2 display name")
     migrated_tokens = {
         "doubleclick.net",
         "googleadservices.com",
