@@ -1,13 +1,13 @@
 #!name=Instagram Feed Self
-#!desc=自有可审计 Instagram Feed 实验版：仅对 www.instagram.com 的 feed/graphql 入口做 MITM + 响应改写，保留 i.instagram.com 主链路不动。
+#!desc=Instagram Web Feed 兼容入口：功能已合并到 Instagram Self。不要与 Instagram Self 同时启用。
 #!author=mulanshan
 #!category=Enhance
 #!tag=Instagram
 #!openUrl=https://www.instagram.com/
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n实验版说明：这是按 YouTube Self 的方式做的单入口响应脚本模块。仅在 www.instagram.com 的 feed / discover / graphql 入口上挂载响应改写，不碰 i.instagram.com、gateway.instagram.com、cdninstagram.com 和媒体 CDN。它适合先验证 web feed 的广告清理，不适合替代 native iOS App 主链路。
+#!arguments-desc=- 调试参数：[true, false]\n\n兼容说明：Web Feed 清理已经合并到主入口 Instagram Self。仅为旧订阅保留本模块，请二选一启用；它仍不碰 i.instagram.com、gateway.instagram.com、cdninstagram.com 和媒体 CDN。
 #!system=ios
-#!date=2026-06-10
+#!date=2026-07-12
 
 # Keep this experimental module narrow: only the web feed entrypoint is MITM'd.
 # Native iOS app hosts stay outside this module because live logs showed pinning
@@ -18,7 +18,7 @@
 AND,((DOMAIN,www.instagram.com), (PROTOCOL,UDP)),REJECT
 
 [Script]
-instagram.feed.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/v1\/(?:feed\/|discover\/)|graphql\/query\/).*$,requires-body=1,max-size=-1,script-path=https://mulanshan.github.io/surge/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260709-1,argument="{\"debug\":{{{启用调试模式}}}}"
+instagram.feed.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/)).*$,requires-body=1,max-size=-1,script-path=https://mulanshan.github.io/surge/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260712-1,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [MITM]
 hostname = %APPEND% www.instagram.com

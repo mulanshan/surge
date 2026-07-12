@@ -1,12 +1,11 @@
 /*
- * Self-written Instagram cleaner for Surge.
+ * Instagram Self response cleaner for Surge.
  *
- * Behavior:
- * - Keeps the cleanup conservative and schema-tolerant.
- * - Removes objects that clearly look like sponsored, promoted, or ad payloads
- *   from selected Instagram feed and discovery responses.
- * - Does not issue network requests, read cookies, upload data, or include
- *   third-party source code.
+ * Scope:
+ * - www.instagram.com web feed, explore, clips/reels and GraphQL responses.
+ * - Removes only nodes with direct sponsored/ad markers.
+ * - Keeps the pinned i.instagram.com native API outside MITM.
+ * - Does not issue requests, read cookies, or upload any data.
  */
 
 const DEFAULTS = {
@@ -15,22 +14,10 @@ const DEFAULTS = {
 
 const config = parseArgument();
 
-const AD_LABEL_RE = /\b(sponsored|promoted|advertisement|branded content|paid partnership)\b/i;
-const AD_KEY_RE = /(^|[_-])(ad|ads|advertiser|advertisement|promotion|promoted|sponsor|sponsored|branded_content|paid_partnership)([_-]|$)/i;
-const AD_LABEL_FIELDS = [
-  "type",
-  "product_type",
-  "content_type",
-  "label",
-  "title",
-  "text",
-  "subtitle",
-  "headline",
-  "message",
-  "reason",
-  "name",
-  "category",
-];
+const AD_LABEL_RE = /(?:\b(?:sponsored|promoted|advertisement|paid partnership|branded content)\b|赞助|推广|广告)/i;
+const AD_TYPE_RE = /(?:^|[_\-\s])(?:ad|ads|advertisement|advertiser|promoted|promotion|sponsored)(?:$|[_\-\s])/i;
+const AD_TYPE_FIELDS = ["__typename", "type", "product_type", "content_type", "item_type", "view_type"];
+const AD_LABEL_FIELDS = ["label", "title", "subtitle", "headline", "message", "reason", "badge_text"];
 const DIRECT_FLAG_FIELDS = [
   "is_ad",
   "is_sponsored",
@@ -41,6 +28,42 @@ const DIRECT_FLAG_FIELDS = [
   "has_ad",
   "branded_content",
 ];
+const STRONG_MARKER_FIELDS = [
+  "ad_id",
+  "advertiser_id",
+  "ad_metadata",
+  "ad_info",
+  "ad_action",
+  "ad_tracking_token",
+  "ads_tracking_token",
+  "ad_impression_token",
+  "sponsored_label",
+  "sponsored_by",
+  "sponsor_tags",
+];
+const AD_COLLECTION_KEYS = new Set([
+  "ads",
+  "ad_items",
+  "injected_ads",
+  "sponsored_items",
+  "promoted_items",
+]);
+const AD_METADATA_KEYS = new Set([
+  "ad_metadata",
+  "ad_info",
+  "ad_action",
+  "ad_tracking_token",
+  "ads_tracking_token",
+  "ad_impression_token",
+]);
+const PRIMARY_WRAPPER_KEYS = new Set([
+  "node",
+  "item",
+  "media",
+  "media_or_ad",
+  "post",
+  "content",
+]);
 
 function parseArgument() {
   try {
@@ -72,11 +95,25 @@ function endpointFromUrl(url) {
   return stripped.split("?")[0];
 }
 
+function isSupportedEndpoint(endpoint) {
+  return /^\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/))/.test(endpoint);
+}
+
 function bodyText(body) {
   if (typeof body === "string") return body;
   if (body instanceof Uint8Array) return new TextDecoder().decode(body);
   if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
   return "";
+}
+
+function parseJsonBody(text) {
+  const prefixes = ["for (;;);", ")]}'"];
+  for (const prefix of prefixes) {
+    if (text.startsWith(prefix)) {
+      return { prefix, payload: JSON.parse(text.slice(prefix.length)) };
+    }
+  }
+  return { prefix: "", payload: JSON.parse(text) };
 }
 
 function hasOwn(value, key) {
@@ -96,52 +133,59 @@ function textOf(value) {
 
 function isTruthyFlag(value) {
   if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "1" || normalized === "yes";
-  }
-  return false;
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
 function isTruthyValue(value) {
   if (value === null || value === undefined || value === false) return false;
   if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "number") return Number.isFinite(value) && value !== 0;
   if (Array.isArray(value)) return value.length > 0;
   if (isPlainObject(value)) return Object.keys(value).length > 0;
   return Boolean(value);
 }
 
-function matchesAdLabel(value) {
-  const joined = AD_LABEL_FIELDS.map((key) => textOf(value[key]).trim()).filter(Boolean).join(" ");
-  return AD_LABEL_RE.test(joined);
+function isAdType(value) {
+  const text = textOf(value).trim();
+  if (!text) return false;
+  if (AD_TYPE_RE.test(text)) return true;
+  return /^XDT(?:GraphQL)?(?:Ad|Sponsored)(?:$|[A-Z_])/.test(text);
 }
 
-function isAdKey(key) {
-  const name = String(key || "").toLowerCase();
-  if (!name || name === "media_or_ad") return false;
-  return AD_KEY_RE.test(name);
+function hasAdLabel(value) {
+  return AD_LABEL_FIELDS.some((key) => AD_LABEL_RE.test(textOf(value[key]).trim()));
+}
+
+function hasStrongMarker(value) {
+  return STRONG_MARKER_FIELDS.some((key) => hasOwn(value, key) && isTruthyValue(value[key]));
+}
+
+function hasAdUnion(value) {
+  if (!hasOwn(value, "ad") || !isTruthyValue(value.ad)) return false;
+  const keys = Object.keys(value);
+  return hasOwn(value, "media") || hasOwn(value, "media_or_ad") || hasOwn(value, "node") || keys.length <= 4;
 }
 
 function isAdEntity(value) {
   if (!isPlainObject(value)) return false;
 
-  for (const field of DIRECT_FLAG_FIELDS) {
-    if (isTruthyFlag(value[field])) return true;
+  if (DIRECT_FLAG_FIELDS.some((key) => isTruthyFlag(value[key]))) return true;
+  if (STRONG_MARKER_FIELDS.some((key) => key === "sponsor_tags" && isTruthyValue(value[key]))) return true;
+  if (hasStrongMarker(value)) return true;
+  if (AD_TYPE_FIELDS.some((key) => isAdType(value[key]))) return true;
+  if (hasAdLabel(value)) return true;
+  if (hasAdUnion(value)) return true;
+
+  const commerciality = textOf(value.commerciality_status).trim();
+  if (commerciality && /(?:sponsored|commercial|paid[_\-\s]?partnership|branded)/i.test(commerciality)) return true;
+
+  if (isPlainObject(value.media_or_ad)) {
+    if (hasAdUnion(value.media_or_ad) || isAdEntity(value.media_or_ad)) return true;
   }
 
-  for (const key of Object.keys(value)) {
-    if (isAdKey(key) && isTruthyValue(value[key])) return true;
-  }
-
-  if (hasOwn(value, "ad_metadata") && isTruthyValue(value.ad_metadata)) return true;
-  if (hasOwn(value, "ad_info") && isTruthyValue(value.ad_info)) return true;
-  if (hasOwn(value, "ad_id") && isTruthyValue(value.ad_id)) return true;
-  if (hasOwn(value, "advertiser_id") && isTruthyValue(value.advertiser_id)) return true;
-  if (hasOwn(value, "sponsor_tags") && isTruthyValue(value.sponsor_tags)) return true;
-  if (hasOwn(value, "media_or_ad") && isAdEntity(value.media_or_ad)) return true;
-
-  return matchesAdLabel(value);
+  return false;
 }
 
 function pruneValue(value, stats) {
@@ -149,12 +193,7 @@ function pruneValue(value, stats) {
     const next = [];
     for (const item of value) {
       const cleaned = pruneValue(item, stats);
-      if (cleaned === undefined) continue;
-      if (isAdEntity(cleaned)) {
-        stats.filtered += 1;
-        continue;
-      }
-      next.push(cleaned);
+      if (cleaned !== undefined) next.push(cleaned);
     }
     return next;
   }
@@ -167,21 +206,29 @@ function pruneValue(value, stats) {
   }
 
   for (const key of Object.keys(value)) {
-    if (key === "media_or_ad" && isAdEntity(value[key])) {
+    const child = value[key];
+
+    if (AD_COLLECTION_KEYS.has(key) && Array.isArray(child) && child.length > 0) {
+      stats.filtered += child.length;
+      value[key] = [];
+      stats.collections += 1;
+      continue;
+    }
+
+    if (AD_METADATA_KEYS.has(key) && isTruthyValue(child)) {
       delete value[key];
       stats.deleted += 1;
       continue;
     }
 
-    const child = value[key];
-    if (isAdKey(key) && isTruthyValue(child)) {
-      delete value[key];
-      stats.deleted += 1;
-      continue;
+    if (PRIMARY_WRAPPER_KEYS.has(key) && isAdEntity(child)) {
+      stats.filtered += 1;
+      return undefined;
     }
 
     const cleaned = pruneValue(child, stats);
     if (cleaned === undefined) {
+      if (PRIMARY_WRAPPER_KEYS.has(key)) return undefined;
       delete value[key];
       stats.deleted += 1;
       continue;
@@ -197,10 +244,13 @@ function cleanPayload(payload) {
   const stats = {
     deleted: 0,
     filtered: 0,
+    collections: 0,
   };
-
-  pruneValue(payload, stats);
-  return stats;
+  const cleaned = pruneValue(payload, stats);
+  return {
+    payload: cleaned === undefined ? {} : cleaned,
+    stats,
+  };
 }
 
 function doneUnchanged(reason) {
@@ -210,16 +260,19 @@ function doneUnchanged(reason) {
 
 try {
   const endpoint = endpointFromUrl($request.url);
-  if (!/\/api\/v1\/(?:feed\/|discover\/)|\/graphql\/query\//.test(endpoint)) {
-    doneUnchanged("not a feed/discover endpoint");
+  if (!isSupportedEndpoint(endpoint)) {
+    doneUnchanged("unsupported endpoint");
   } else {
     const text = bodyText($response.body);
-    if (!text) doneUnchanged("empty body");
-    else {
-      const payload = JSON.parse(text);
-      const stats = cleanPayload(payload);
-      debug(`${endpoint} deleted=${stats.deleted} filtered=${stats.filtered}`);
-      $done({ body: JSON.stringify(payload) });
+    if (!text) {
+      doneUnchanged("empty body");
+    } else {
+      const parsed = parseJsonBody(text);
+      const result = cleanPayload(parsed.payload);
+      const changed = result.stats.deleted + result.stats.filtered + result.stats.collections;
+      debug(`${endpoint} deleted=${result.stats.deleted} filtered=${result.stats.filtered} collections=${result.stats.collections}`);
+      if (!changed) $done({});
+      else $done({ body: parsed.prefix + JSON.stringify(result.payload) });
     }
   }
 } catch (error) {

@@ -56,21 +56,25 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-self.sgmodule
 ```
 
-这是自有可审计的 Instagram 模块。2026-06-10 真机日志确认 iOS Instagram 主链路存在证书钉扎，广域 MITM 会导致 App 打不开或卡住；当前模块先切换为安全版，不启用 Instagram MITM/响应改写，优先保证正常联网。
+这是自有可审计的 Instagram 增强模块。2026-07-12 使用 iPhone 上的 Instagram `437.2.0` 复测：原生 App 的 `i.instagram.com` 主链路仍会在 TLS 握手后主动断开，Surge 明确记录 `MITM failed ... certificate pinning`。因此正式模块不强行解密原生 API，而是把当前可工作的 Web Feed 广告清理合并进主安装地址。
 
 - 模块：`rewrite/Surge/instagram-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
 
 当前功能范围：
 
-- 不追加 `instagram.com`、`*.instagram.com`、`*.cdninstagram.com`、`*.i.instagram.com` 到 MITM
-- 不挂载响应脚本，避免触发 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com` 等证书钉扎失败
+- 清理 `www.instagram.com` 的 `api/graphql`、`graphql/query`、`api/v1/feed`、`api/v1/discover`、`api/v1/clips` 响应中的明确广告、赞助和付费合作节点
+- 按完整 `edge / node / media_or_ad / item` 包装删除广告条目，避免只清空内容后留下空白卡片
+- 兼容 `for (;;);` JSON 前缀；没有命中广告时不重写响应体
+- 不追加 `i.instagram.com`、`graph.instagram.com`、`gateway.instagram.com`、聊天和媒体 CDN 到 MITM
 - 拦截真机日志出现的 `netseer-ipaddr-assoc` 辅助探测域名
 - 保留登录、私信、上传、账号、媒体 CDN 和正常内容流
 - 不使用第三方脚本
 - 不上传请求、响应、账号、cookie 或 token
 - 不整域拒绝 `instagram.com`
-- 后续只在真机日志证明某个非钉扎广告/追踪端点安全后，再单点加入规则
+- 原生 iOS App 信息流广告与正常内容共用被钉扎的第一方 API；在不越狱、不注入 App 的前提下，Surge 不能只删除这部分广告而不破坏正常联网
+
+调研和真机边界见：[docs/INSTAGRAM_SELF_RESEARCH.md](docs/INSTAGRAM_SELF_RESEARCH.md)。
 
 社区参考结论：
 
@@ -78,7 +82,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 - 公开搜索到的大合集通常是全平台去广告或全量 MITM 配置，不是 Instagram 专用自维护脚本
 - 当前模块不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
 
-### Instagram Feed Self（实验版）
+### Instagram Feed Self（兼容入口）
 
 文件：[rewrite/Surge/instagram-feed-self.sgmodule](rewrite/Surge/instagram-feed-self.sgmodule)
 
@@ -88,19 +92,19 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-feed-self.sgmodule
 ```
 
-这是按 YouTube Self 的结构做的 web-feed 实验版，只给 `www.instagram.com` 的 `feed / discover / graphql` 入口挂载一个响应脚本：
+Web Feed 功能已经合并到上面的 `Instagram Self`。此模块仅为旧订阅保留，不要和 `Instagram Self` 同时启用：
 
 - 模块：`rewrite/Surge/instagram-feed-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
 
-当前范围：
+兼容范围：
 
 - 仅 MITM `www.instagram.com`
-- 仅处理 `www.instagram.com/api/v1/feed/`、`www.instagram.com/api/v1/discover/` 和 `www.instagram.com/graphql/query/`
+- 处理 `api/graphql`、`graphql/query`、`api/v1/feed`、`api/v1/discover` 和 `api/v1/clips`
 - 不碰 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com`
 - 不碰媒体 CDN、登录、私信和账号链路
 
-这个实验版是为了先验证 web feed 的广告清理思路；native iOS App 主链路仍然保留在上面的安全版里。
+新安装统一使用主入口 `Instagram Self`；旧兼容入口后续只做同步维护。
 
 ### 高德地图 Self
 

@@ -1,19 +1,30 @@
 #!name=Instagram Self
-#!desc=自有可审计 Instagram 安全版：iOS App 存在证书钉扎，当前不启用 MITM/响应改写，避免破坏正常打开。不含第三方脚本。
+#!desc=自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的辅助探测请求；原生 iOS 主链路因证书钉扎保持直连。不含第三方脚本。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=Instagram
 #!openUrl=https://apps.apple.com/us/app/instagram/id389801252
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n安全版说明：iOS Instagram 的 i.instagram.com、gateway.instagram.com、cdninstagram.com 等主链路会触发证书钉扎。此版本不追加 Instagram MITM hostname，也不挂载响应脚本，优先保证 App 正常联网。后续只在真机日志证明某个非钉扎广告端点安全后，再单点加入规则。
+#!arguments-desc=- 调试参数：[true, false]\n\n当前可工作范围：对 www.instagram.com 的 api/graphql、graphql/query、feed、discover、clips 响应做广告节点清理；原生 App 的 i.instagram.com 主链路在 Instagram 437.2.0 真机上仍有证书钉扎，不能由 Surge 无损解密，因此不强行 MITM，避免 App 打不开或信息流加载失败。
 #!system=ios
-#!date=2026-06-10
+#!date=2026-07-12
 
-# Instagram iOS uses certificate pinning on the main API and gateway hosts.
-# Keep this module inert until a non-pinned, ad-only endpoint is verified in live logs.
+# The native iOS API still pins i.instagram.com certificates. Keep native API,
+# gateway, chat and media CDN hosts outside MITM. www.instagram.com is the only
+# response-cleaning target because current live tests show it can be decrypted
+# without breaking the native app transport.
 
 [Rule]
-# Live iPhone logs showed this fbcdn.net auxiliary association host carrying no
-# content payload. Keep the first pass narrow and do not reject Instagram API,
-# gateway, graph, or CDN media hosts.
+# Force the web endpoint to TCP so HTTPS response scripting can run.
+AND,((DOMAIN,www.instagram.com), (PROTOCOL,UDP)),REJECT
+
+# Live iPhone logs showed this fbcdn.net auxiliary network-association probe
+# carrying no content payload. Do not reject Instagram API, Graph, chat or CDN
+# media hosts because they also carry normal content and account functions.
 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT
+
+[Script]
+instagram.self.web.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/)).*$,requires-body=1,max-size=-1,script-path=https://mulanshan.github.io/surge/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260712-1,argument="{\"debug\":{{{启用调试模式}}}}"
+
+[MITM]
+hostname = %APPEND% www.instagram.com
