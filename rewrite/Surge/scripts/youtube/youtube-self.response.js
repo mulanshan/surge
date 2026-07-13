@@ -1622,8 +1622,11 @@ try {
         `protobuf-growth-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
       );
       $done({});
-    } else if (removedCount > 0 || output.length !== input.length) {
-      // Compare bytes only when lengths match and no explicit removals were counted.
+    } else {
+      // A protobuf edit can replace fixed-width varints without changing the
+      // encoded length (for example, false -> true capability flags). Always
+      // compare equal-length output byte-for-byte before deciding to pass the
+      // original body through.
       let changed = removedCount > 0 || output.length !== input.length;
       if (!changed && output !== input) {
         for (let i = 0; i < input.length; i += 1) {
@@ -1641,10 +1644,6 @@ try {
         logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
         $done({ body: toResponseBody(output, originalBody) });
       }
-    } else {
-      // Length unchanged and no removals: keep original bytes untouched.
-      logbook(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
-      $done({});
     }
   }
 } catch (error) {

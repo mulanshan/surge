@@ -85,19 +85,22 @@ function textOf(value) {
   return "";
 }
 
-const AD_MARKERS = [
+const AD_TOKEN_MARKERS = new Set([
   "ad",
   "ads",
-  "alimama",
   "banner",
-  "bizad",
   "dsp",
-  "feedad",
   "marketing",
   "promotion",
-  "recommend_ad",
   "splash",
-];
+]);
+
+const AD_COMPOUND_MARKERS = new Set([
+  "alimama",
+  "bizad",
+  "feedad",
+  "recommendad",
+]);
 
 const SAFE_MAIN_PAGE_TYPES = new Set([
   "FrequentLocation",
@@ -106,26 +109,35 @@ const SAFE_MAIN_PAGE_TYPES = new Set([
 ]);
 
 function keyLooksLikeAd(key) {
-  const name = String(key || "").toLowerCase();
-  return AD_MARKERS.some((marker) => name.includes(marker));
+  const raw = String(key || "");
+  const tokens = raw
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  const compact = tokens.join("");
+  return tokens.some((token) => AD_TOKEN_MARKERS.has(token)) || AD_COMPOUND_MARKERS.has(compact);
 }
 
 function valueLooksLikeAd(value) {
   if (!isPlainObject(value)) return false;
-  const joined = [
+  const structuredValues = [
     value.dataType,
     value.type,
     value.cardType,
     value.template,
     value.scene,
-    value.name,
-    value.title,
     value.source,
   ]
     .map(textOf)
-    .join(" ")
-    .toLowerCase();
-  return AD_MARKERS.some((marker) => joined.includes(marker));
+    .filter(Boolean);
+
+  for (const candidate of structuredValues) {
+    if (keyLooksLikeAd(candidate)) return true;
+  }
+
+  const label = `${textOf(value.name)} ${textOf(value.title)}`.trim();
+  return /^(?:ad|ads|advertisement|sponsored|promoted|广告|赞助|推广)$/i.test(label);
 }
 
 function cleanSplash(payload, stats) {
@@ -268,7 +280,9 @@ try {
     const payload = JSON.parse(text);
     const stats = cleanPayload(payload, endpoint);
     debug(`${endpoint} arrays=${stats.arrays} deleted=${stats.deleted} filtered=${stats.filtered} replaced=${stats.replaced}`);
-    $done({ body: JSON.stringify(payload) });
+    const changed = stats.arrays + stats.deleted + stats.filtered + stats.replaced;
+    if (!changed) $done({});
+    else $done({ body: JSON.stringify(payload) });
   }
 } catch (error) {
   logbook(`error: ${error && error.message ? error.message : error}`);

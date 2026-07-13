@@ -9,9 +9,14 @@
 
 ## 公开使用
 
-本仓库直接作为公开 Surge 模块和规则仓库使用。修改模块、脚本或规则后，提交并推送到 `mulanshan/surge/main`，手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 地址，不需要重装模块。
+本仓库直接作为公开 Surge 模块和规则仓库使用。`main` 保存通过 CI 和审查的最新模块定义与规则快照；脚本型稳定模块的 `script-path` 固定到不可变 tag，避免普通提交未经验证就改变设备正在执行的 JavaScript。手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 模块地址，不需要重装模块。
 
 需要立即刷新时，在 Surge 里更新外部资源或重新加载配置。抓包、请求导出和本地分析报告默认写入 `reports/`、`rule/Surge/reports/` 或临时目录，这些路径已加入 `.gitignore`，避免误把日志和请求内容提交到公开仓库。
+
+- 模块状态与真机验证矩阵：[docs/MODULE_STATUS.md](docs/MODULE_STATUS.md)
+- 分支、稳定 tag、发布和回滚流程：[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
+- 本次 Mac / iOS 运行态基线：[docs/RUNTIME_AUDIT_2026-07-13.md](docs/RUNTIME_AUDIT_2026-07-13.md)
+- 安全问题报告：[SECURITY.md](SECURITY.md)
 
 ## rewrite / Surge
 
@@ -37,7 +42,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。更新后请在 Surge 中更新外部资源或重载模块，确认脚本 query 版本为 `v=20260712-16`。
+安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。更新后请在 Surge 中更新外部资源或重载模块，确认脚本来自稳定 tag `surge-self-v2026.07.13`，query 版本为 `v=20260713-1`。
 
 安全边界：
 
@@ -164,7 +169,7 @@ https://raw.githubusercontent.com/mulanshan/surge/camscanner-self-v1.0.0/rewrite
 `camscanner-self-v1.0.0` 基于 iPhone 真机测试通过的 `753c2cb` 固化，仍包含 Google、腾讯、
 AppsFlyer、Adjust 等旧架构全局规则与 MITM，只适合独立使用或回滚；它不代表当前“基础模块 + 专用模块”分层。
 当前 `main` 已切换到新架构，需要停用旧“扫描全能王 Self”，同时启用“基础去广告模块”和
-“扫描全能王 Self v2”。待真机复测完成后再发布新的稳定 tag。
+“扫描全能王 Self v2”。本次脚本已固定到仓库级不可变 tag；模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
 
 当前 `main` 功能范围：
 
@@ -222,7 +227,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-novel-adblock.sgmodule
 ```
 
-旧 `rule/Surge/fanqie-novel-adblock.list` 仅为已有外部资源冻结保留，不再作为新配置入口。
+旧 `rule/Surge/fanqie-novel-adblock.list` 仅为已有外部资源兼容保留，内容同步收敛到当前基础模块的安全域名边界，不再作为新配置入口。
 官方说明、社区方案比较、真机日志证据和维护流程见：
 [docs/BASIC_ADBLOCK_RESEARCH.md](docs/BASIC_ADBLOCK_RESEARCH.md)。修改后可运行：
 
@@ -269,19 +274,21 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 
 规则集不包含策略，使用时在主配置 `[Rule]` 里指定策略组。个人规则应放在广泛的 China、Google、Microsoft、GitHub 等社区规则前面。
 
-### 生成型自有规则集
+### 自托管生成镜像
 
 目录：[rule/Surge/generated](rule/Surge/generated)
 
-这个目录保存从外部成熟规则源解析、去重并重新标注后的自有规则集。来源清单在
+这个目录保存从外部成熟规则源解析、去重并重新标注后的自托管生成镜像。它们不是完全独立原创内容，仍受各上游许可证和署名要求约束。来源、已审查哈希与许可证元数据在
 [rule/Surge/sources/managed-rules.yaml](rule/Surge/sources/managed-rules.yaml)，生成脚本是
 [scripts/generate-managed-surge-rules.py](scripts/generate-managed-surge-rules.py)。
 
-重新生成：
+只读检查当前快照：
 
 ```bash
-scripts/generate-managed-surge-rules.py
+scripts/generate-managed-surge-rules.py --check
 ```
+
+接受并写入经过人工审查的 manifest 更新时，使用生成器的更新模式，并同时提交 manifest、规则文件和 JSON 元数据。详细流程见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
 
 每个生成文件都会写入：
 
@@ -291,7 +298,7 @@ scripts/generate-managed-surge-rules.py
 - 上游规则数量
 - 合并后的唯一规则数量
 
-这样外部规则变动时，可以用 Git diff 查看具体变化，再决定是否接受。当前主配置可逐步把
+这样外部规则变动时，可以先由 `--check` 阻止漂移进入生产，再用 Git diff 查看具体变化并决定是否接受。当前主配置可逐步把
 `blackmatrix7` / `ruleset.skk.moe` 的 URL 替换为 `mulanshan/surge` 下的 generated URL。示例片段见：
 [rule/Surge/generated/rule-section-managed.conf](rule/Surge/generated/rule-section-managed.conf)。
 
@@ -323,9 +330,10 @@ AI、Google 或 global 规则抢走，其他 AI 服务也只有一个自有规�
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/apple.list,DIRECT,extended-matching
 ```
 
-这个自有规则集从 blackmatrix7 Apple、Sukka Apple domains、Sukka Apple China domains 和 Sukka Apple
-IP 规则合并生成，覆盖 iCloud、CloudKit、App Store、Maps、Apple 媒体服务、中国区 Apple 域名和 Apple
-IP 段。建议放在 Google、Microsoft、GitHub、global 这些大规则前面，并使用 `DIRECT`，避免系统服务被兜底代理规则抢走。
+这个生成镜像从 blackmatrix7 Apple、Sukka Apple domains、Sukka Apple China domains 和 Sukka Apple
+IP 规则合并生成，覆盖 iCloud、CloudKit、App Store、Maps、中国区 Apple 域名和 Apple IP 段。Apple TV
+媒体条目单独放在 `generated/apple-tv.list`，必须在 Apple 系统 `DIRECT` 规则之前加载，避免 `TV` 进程和
+AppleTV User-Agent 被系统规则抢先命中。
 
 ### Amazon / Resolve 规则选择
 
@@ -402,18 +410,18 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/%E7%95%AA%E8%8
 
 ### 示例配置
 
-文件：[rule/Surge/rule-section.conf](rule/Surge/rule-section.conf)
+唯一推荐文件：[rule/Surge/generated/rule-section-managed.conf](rule/Surge/generated/rule-section-managed.conf)
 
-这个示例展示个人规则、社区规则、流媒体规则和兜底规则的推荐顺序。使用前按自己的策略组名称替换 `Proxy`、`Ai`、`TW`、`Streaming`、`GreenCloud` 等名称。
+这个示例展示已审查镜像、AI、Apple 系统、Apple TV 和流媒体规则的推荐顺序。使用前按自己的策略组名称替换策略名。旧 [rule/Surge/rule-section.conf](rule/Surge/rule-section.conf) 仅为兼容提示，不再作为推荐配置。
 
 ### 日志导出与候选规则开发
 
 脚本：[rule/Surge/scripts/export-fanqie-candidates.sh](rule/Surge/scripts/export-fanqie-candidates.sh)
 
-默认连接 iPhone Surge External Controller，读取最近请求并生成候选报告：
+默认通过 iPhone Surge HTTPS HTTP API 读取最近请求并生成候选报告；设备地址必须由环境变量或 `--host` 明确提供，仓库不保存家庭 LAN 地址：
 
 ```bash
-rule/Surge/scripts/export-fanqie-candidates.sh
+SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-fanqie-candidates.sh
 ```
 
 也可以复盘之前保存的 `dump request` JSON：
@@ -422,7 +430,7 @@ rule/Surge/scripts/export-fanqie-candidates.sh
 rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-20260606-151744.json
 ```
 
-输出会写入 `reports/fanqie/`，该目录已忽略，不会误提交到公开仓库。主要文件：
+输出会以仅当前用户可读的权限写入 `reports/fanqie/`，该目录已忽略，不会误提交到公开仓库。HTTP API key 通过标准输入交给 `curl`，不会作为命令行参数暴露。主要文件：
 
 - `*.summary.tsv`：域名、次数、规则、策略、是否拒绝的聚合表
 - `*.candidate-rules.list`：只包含高置信新候选，加入基础或专用模块前必须人工复核
@@ -438,7 +446,7 @@ rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-re
 扫描全能王也有独立的候选导出脚本：
 
 ```bash
-rule/Surge/scripts/export-camscanner-candidates.sh
+SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-camscanner-candidates.sh
 ```
 
 也可以复盘之前保存的 `dump request` JSON：
@@ -452,3 +460,7 @@ rule/Surge/scripts/export-camscanner-candidates.sh --input /private/tmp/ios-surg
 - `purchase`、`receipt`、`order`、`payment`、`subscription`、`vip`、`premium`、`property`、`quota`、`account` 等购买/账号敏感路径一律跳过
 - 新域名先进入候选或观察，不直接整域拦截 `intsig.net`、`camscanner.com`
 - 静态资源、云同步、OCR、PDF 转换和文档接口默认观察，确认和广告强相关后再精确处理
+
+## 授权与第三方来源
+
+仓库自写代码的授权见 [LICENSE](LICENSE)。`rule/Surge/generated/` 中的生成规则包含来自多个上游项目的衍生内容，不能因为托管在本仓库就视为重新授权；具体来源、许可证和保留要求见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 manifest 元数据。

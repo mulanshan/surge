@@ -53,3 +53,23 @@ Use `X-Key` for authentication. Query parameter `x-key` is acceptable only for s
 - Local macOS `surge-cli --raw ...` may return `(null)` in some situations. Cross-check with `lsof`, proxy listeners, route state, and `curl` probes.
 - `watch request` only captures traffic that traverses the monitored Surge instance.
 - Apple TV can lag behind shared iCloud profile edits. Verify the active endpoint rather than trusting file contents.
+
+## Portable local setup
+
+The bundled helper uses the standard iCloud profile path under `$HOME`. Override
+all machine- or network-specific values at runtime instead of editing them into
+the repository:
+
+```bash
+export SURGE_PROFILE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
+export SURGE_IOS_HOST="192.168.1.50"       # example only
+export SURGE_ATV_HOST="192.168.1.60"       # example only
+export SURGE_CONTROLLER_PORT="6170"
+export SURGE_HTTP_API_PORT="1132"
+local-surge-control/scripts/surge-status.sh all
+```
+
+Omit `SURGE_IOS_HOST` to let the helper inspect ARP candidates. If discovery
+needs a small candidate set, provide space-separated addresses through
+`SURGE_IOS_HOST_HINTS`. Never commit live controller passwords, API keys, or a
+private network inventory.

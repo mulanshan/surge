@@ -7,13 +7,13 @@ description: Control and troubleshoot the user's local macOS Surge and remote iP
 
 ## Overview
 
-Use this skill for the user's Apple-ecosystem Surge setup: Mac is the operator, iPhone and Apple TV are LAN targets, and the shared profile is `DMIT.conf` in iCloud Drive. Prefer live verification over assumptions because device IPs, profile sync, and tvOS reload state can drift.
+Use this skill for an Apple-ecosystem Surge setup: Mac is the operator, while iPhone and Apple TV are optional LAN targets. Prefer live verification over assumptions because device IPs, profile sync, and tvOS reload state can drift.
 
 ## Local Context
 
 - Surge CLI is usually not in `PATH`; use `/Applications/Surge.app/Contents/Applications/surge-cli`.
-- Shared profile: `/Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf`.
-- Current known hosts are only hints, not durable identifiers: Mac `127.0.0.1`, currently observed iPhone `192.168.50.101`, previously seen iPhone `192.168.70.124` / `192.168.0.107`, previously seen Apple TV `192.168.50.107`. Do not treat `192.168.50.103` as iPhone on the current LAN; it is the Mac Wi-Fi address.
+- Shared profile default: `$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf`. Override it with `SURGE_PROFILE`.
+- Device addresses are runtime values, not repository configuration. Set `SURGE_IOS_HOST` or `SURGE_ATV_HOST` for exact targets. Set space-separated `SURGE_IOS_HOST_HINTS` only when ARP discovery is insufficient.
 - External Controller port: `6170`, configured by `external-controller-access = password@host:port`.
 - HTTPS HTTP API port: `1132`, configured by `http-api = key@host:port` and `http-api-tls = true`.
 - Read controller password and HTTP API key from `DMIT.conf` at runtime. Do not hard-code or print secrets unless the user explicitly asks.
@@ -30,7 +30,7 @@ scripts/surge-status.sh mac
 ```
 
 The script verifies External Controller with `surge-cli --remote ... environment` and verifies HTTP API with `GET /v1/events` over HTTPS using the `X-Key` header. It reads credentials from `DMIT.conf` and only reports status.
-For `ios`, the script auto-discovers a reachable non-local Surge host from current hints plus ARP candidates. Override with `SURGE_IOS_HOST=<ip>` when you need an exact target.
+For `ios`, the script auto-discovers a reachable non-local Surge host from optional hints plus ARP candidates. Override with `SURGE_IOS_HOST=<ip>` when you need an exact target. Apple TV discovery is intentionally explicit: set `SURGE_ATV_HOST=<ip>` before probing it.
 
 If the helper reports immediate connection failures inside a restricted sandbox but the same `surge-cli` or `curl` command works when run directly, treat it as a tool-permission issue and rerun the helper with LAN/network approval before diagnosing Surge.
 
@@ -60,14 +60,14 @@ Treat `Authorization denied` as the wrong Surge instance or wrong profile. Treat
 SURGE_REMOTE_HOST=<candidate-ip> scripts/export-fanqie-candidates.sh
 ```
 
-For the user's Fanqie/番茄小说 workflow, this discovery step is mandatory after a LAN change because the request buffer is short and stale IP probing wastes the useful capture window.
+For a Fanqie/番茄小说 capture workflow, this discovery step is mandatory after a LAN change because the request buffer is short and stale IP probing wastes the useful capture window.
 
 ## Credential Extraction Pattern
 
 Use this pattern when writing one-off commands:
 
 ```bash
-PROFILE="/Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
+PROFILE="${SURGE_PROFILE:-$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf}"
 SURGE_CLI="/Applications/Surge.app/Contents/Applications/surge-cli"
 CTRL_PASS="$(sed -nE 's/^external-controller-access[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1)"
 HTTP_KEY="$(sed -nE 's/^http-api[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1)"
@@ -108,7 +108,7 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
 - `GET /v1/profiles/current?sensitive=0` masks proxy credentials and is safe for normal diagnostics. Avoid `sensitive=1` unless the user explicitly needs raw secrets.
 - LAN access requires `0.0.0.0` listeners and a complex key/password. Do not expose `1132` over LAN with weak keys or without TLS.
 - Editing the iCloud `DMIT.conf` is a persistent config change outside most workspaces. Create a timestamped backup, apply the smallest edit, run `surge-cli --check`, then reload and verify every target.
-- Apple TV may keep an old runtime profile after iCloud changes. Do not claim ATV has updated until the new key works and old key fails against `192.168.50.107`.
+- Apple TV may keep an old runtime profile after iCloud changes. Do not claim ATV has updated until the new key works and old key fails against the current `SURGE_ATV_HOST`.
 - When watching traffic, only traffic traversing the monitored Surge instance appears. For iPhone app traffic, connect to the iPhone Surge endpoint or ensure the phone is routed through the Mac Surge instance.
 
 ## Change Workflow

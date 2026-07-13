@@ -5,7 +5,7 @@
 # Keep personal, hand-curated rules in rule/Surge/*.list and generated mirrors in
 # rule/Surge/generated/*.list so the two maintenance modes stay separate.
 
-version: 1
+version: 2
 generated_dir: rule/Surge/generated
 
 sets:
@@ -19,6 +19,9 @@ sets:
     sources:
       - name: blackmatrix7 Microsoft
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Microsoft/Microsoft.list
+        expected_sha256: a2854b28dc9f903a64933c74fff5b50166e9bbebc70fdfce18c592f75793ff14
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: china-direct
     name: China Direct Base
@@ -28,6 +31,9 @@ sets:
     sources:
       - name: blackmatrix7 China All No Resolve
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list
+        expected_sha256: 24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: private-tracker
     name: Private Tracker
@@ -37,24 +43,43 @@ sets:
     sources:
       - name: blackmatrix7 PrivateTracker
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
+        expected_sha256: 910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: apple
     name: Apple
-    description: Apple system, iCloud, CloudKit, App Store, Maps, media, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing.
+    description: Apple system, iCloud, CloudKit, App Store, Maps, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing. Apple TV process and user-agent rules are excluded and routed by apple-tv first.
     output: apple.list
     suggested_policy: DIRECT
     suggested_options:
       - extended-matching
     include_process_name: true
+    exclude_rules:
+      - PROCESS-NAME,TV
+      - USER-AGENT,AppleTV*
+      - USER-AGENT,com.apple.tv*
     sources:
       - name: blackmatrix7 Apple
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
+        expected_sha256: 12e20d225ae52011e28436e266df647bf2d4d94fdd97d971b5ec8b4e14626d05
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
       - name: Sukka Apple domains
         url: https://ruleset.skk.moe/List/non_ip/apple_services.conf
+        expected_sha256: a40b1657d2bdec59c384c1526b6c07d08af6ce365f95cdba983fd9a2f8e891ac
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
       - name: Sukka Apple China domains
         url: https://ruleset.skk.moe/List/non_ip/apple_cn.conf
+        expected_sha256: 24840681bef485142223772bdba04aa8cdb2a955990e269fdfe389af81a5f8c0
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
       - name: Sukka Apple IP
         url: https://ruleset.skk.moe/List/ip/apple_services.conf
+        expected_sha256: 6528a16c50ffe5f64cb6078bf3dd95d902138177d5d5e37fcdcaaf39f941fe27
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
 
   - id: google
     name: Google
@@ -66,6 +91,9 @@ sets:
     sources:
       - name: blackmatrix7 Google
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
+        expected_sha256: 4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: openai
     name: OpenAI
@@ -78,17 +106,28 @@ sets:
     sources:
       - name: blackmatrix7 OpenAI
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list
+        expected_sha256: 6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: telegram
     name: Telegram
     description: Telegram non-IP and IP rules from Sukka ruleset.
     output: telegram.list
     suggested_policy: Proxy
+    suggested_options:
+      - extended-matching
     sources:
       - name: Sukka Telegram non-IP
         url: https://ruleset.skk.moe/List/non_ip/telegram.conf
+        expected_sha256: ab9988f4305564ba6a577b392bd4e6c62dbd286ef1828e95e2fbe082f38e1b25
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
       - name: Sukka Telegram IP
         url: https://ruleset.skk.moe/List/ip/telegram.conf
+        expected_sha256: 2edcf986ebe3631d4829d3e202e6500432e5e97feade50f9778aa2e96a0fcc05
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
 
   - id: apple-tv
     name: Apple TV
@@ -97,9 +136,14 @@ sets:
     suggested_policy: 流媒体
     suggested_options:
       - extended-matching
+    include_rules:
+      - PROCESS-NAME,TV
     sources:
       - name: blackmatrix7 AppleTV
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
+        expected_sha256: 1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: youtube
     name: YouTube
@@ -112,6 +156,9 @@ sets:
     sources:
       - name: blackmatrix7 YouTube
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
+        expected_sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: netflix
     name: Netflix
@@ -121,6 +168,9 @@ sets:
     sources:
       - name: blackmatrix7 Netflix
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
+        expected_sha256: aa03f015949e8f6f981d90a7d8b1acf7e88472ee48601632bd964b0bb740f8aa
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: bahamut
     name: Bahamut
@@ -130,6 +180,9 @@ sets:
     sources:
       - name: blackmatrix7 Bahamut
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
+        expected_sha256: 5c6618ac00734921dae209bb812c1b61cc88523e158b856548153d1d3d8df2fd
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: disney
     name: Disney
@@ -139,6 +192,9 @@ sets:
     sources:
       - name: blackmatrix7 Disney
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Disney/Disney.list
+        expected_sha256: d0cfd6aee89d9d3075aef9dfadd98a2a3c6a2dba487f5091c801d1bcd70e9884
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: hbo-usa
     name: HBO USA
@@ -148,6 +204,9 @@ sets:
     sources:
       - name: blackmatrix7 HBOUSA
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list
+        expected_sha256: 9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: prime-video
     name: Prime Video
@@ -157,6 +216,9 @@ sets:
     sources:
       - name: blackmatrix7 PrimeVideo
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
+        expected_sha256: 4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: streaming
     name: Streaming Common
@@ -168,6 +230,9 @@ sets:
     sources:
       - name: Sukka Streaming non-IP
         url: https://ruleset.skk.moe/List/non_ip/stream.conf
+        expected_sha256: 32a7d987b76e66a31a57345ab0764e5f264ebaab6a6da405808c165c10c6d8f0
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE
 
   - id: paypal
     name: PayPal
@@ -177,6 +242,9 @@ sets:
     sources:
       - name: blackmatrix7 PayPal
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list
+        expected_sha256: 4ffb6f94d2f1eff835c24b533c3d1d6e0c5a4cfbc32740fa9c32315ae218fd18
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
   - id: global
     name: Global Common
@@ -188,3 +256,6 @@ sets:
     sources:
       - name: Sukka Global non-IP
         url: https://ruleset.skk.moe/List/non_ip/global.conf
+        expected_sha256: a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578
+        license: AGPL-3.0-only
+        license_url: https://ruleset.skk.moe/LICENSE

@@ -7,6 +7,7 @@
 # Sources:
 # - blackmatrix7 PrivateTracker: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
 #   sha256: 910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f
+#   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 248
 # Total unique rules: 248
 

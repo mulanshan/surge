@@ -6,7 +6,9 @@
 #!openUrl=https://apps.apple.com/app/id544007664
 #!arguments=启用调试模式:false
 #!arguments-desc=- 调试参数：[true, false]\n\n入口：处理 youtubei.googleapis.com / www.youtube.com 的 player、get_watch、next、browse、search、account/get_setting、account/get_setting_values。browse/search/next/get_watch.contents.next 按 protobuf rich item 整卡清理；guide/reel 仍原样放行。保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
-#!date=2026-07-12
+#!system=ios
+#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
+#!date=2026-07-13
 
 [Rule]
 # 禁用 YouTube QUIC/HTTP3，避免播放初始化与核心 API 走 UDP 绕过 HTTPS 处理。
@@ -15,36 +17,20 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,www.youtube.com), (PROTOCOL,UDP)),REJECT
 
 [Script]
-youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=-1,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/33ed303b1d713438b4ec3a7d71a62ee805d2a708/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260712-16,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
+# 8 MiB ceiling: larger feeds pass through instead of retaining multiple large protobuf buffers in the iOS Network Extension.
+youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=8388608,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260713-1,argument="{\"lyricLang\":\"off\",\"captionLang\":\"off\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
-^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.*(?:[?&])oad(?:=|&|$) data-type=text data="" status-code=200
 ^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/api\/stats\/ads data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adcontext data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*adformat data-type=text data="" status-code=204
-^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/www\.googleadservices\.com\/ data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?.*(?:adcontext|adformat|is_ad=1) data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/playback\?.*(?:adcontext|adformat|is_ad=1) data-type=text data="" status-code=204
+^https?:\/\/s\.youtube\.com\/api\/stats\/watchtime\?.*(?:adcontext|adformat|is_ad=1) data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/pcs\/activeview data-type=text data="" status-code=204
 ^https?:\/\/www\.youtube\.com\/ptracking\?.*pltype=ad data-type=text data="" status-code=204
 ^https?:\/\/s\.youtube\.com\/api\/stats\/atr\?.*is_ad=1 data-type=text data="" status-code=204
-^https?:\/\/googleads\.g\.doubleclick\.net\/ytcs\/adview data-type=text data="" status-code=204
-^https?:\/\/www\.google(?:\.com|\.com\.hk)\/pagead\/ data-type=text data="" status-code=204
-^https?:\/\/www\.google(?:\.com|\.com\.hk)\/ads\/on-device\/ data-type=text data="" status-code=204
-
-
-^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+oad= data-type=text data="" status-code=200
-^https?:\/\/www\.youtube\.com\/pagead\/ data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/api\/stats\/ads data-type=text data="" status-code=204
-^https?:\/\/googleads\.g\.doubleclick\.net\/pagead\/ data-type=text data="" status-code=204
-^https?:\/\/www\.youtube\.com\/youtubei\/v1\/player\/ad_break data-type=text data="" status-code=204
-^https?:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/player\/ad_break data-type=text data="" status-code=204
+^https?:\/\/(?:www\.youtube\.com|youtubei\.googleapis\.com)\/youtubei\/v1\/player\/ad_break data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, www.googleadservices.com, googleads.g.doubleclick.net, *.googlevideo.com, www.google.com, www.google.com.hk
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, *.googlevideo.com

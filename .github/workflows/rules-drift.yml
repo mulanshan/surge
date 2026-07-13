@@ -1,0 +1,117 @@
+name: Managed rules drift PR
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: managed-rules-drift
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'mulanshan/surge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UPDATE_BRANCH: codex/managed-rules-drift
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create isolated update branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$UPDATE_BRANCH" != "main"
+          git fetch origin main
+          git fetch origin "+refs/heads/$UPDATE_BRANCH:refs/remotes/origin/$UPDATE_BRANCH" || true
+          git switch -C "$UPDATE_BRANCH" origin/main
+
+      - name: Refresh pinned sources and snapshots
+        run: python3 scripts/generate-managed-surge-rules.py --refresh-sources --timeout 60
+
+      - name: Validate change scope and refreshed snapshots
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(git status --porcelain=v1 --untracked-files=all)"
+          if [[ -z "$status" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream rule drift detected." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          while IFS= read -r line; do
+            path="${line:3}"
+            case "$path" in
+              rule/Surge/generated/*|rule/Surge/sources/managed-rules.yaml)
+                ;;
+              *)
+                echo "Refresh touched an unexpected path: $path" >&2
+                exit 1
+                ;;
+            esac
+          done <<< "$status"
+
+          python3 scripts/generate-managed-surge-rules.py --check --timeout 60
+          python3 .github/scripts/check_repository.py --generated-only
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push update branch
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rule/Surge/sources/managed-rules.yaml rule/Surge/generated
+          git commit -m "chore: refresh managed Surge rules"
+          git push --force-with-lease origin "HEAD:refs/heads/$UPDATE_BRANCH"
+
+      - name: Open or update pull request
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh pr list --base main --head "$UPDATE_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            echo "Updated existing pull request #$existing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          body_file="$(mktemp)"
+          trap 'rm -f "$body_file"' EXIT
+          cat > "$body_file" <<EOF
+          This automated maintenance branch was generated with:
+
+          \`python3 scripts/generate-managed-surge-rules.py --refresh-sources\`
+
+          Before merging, review the complete manifest and generated-rule diff,
+          including source SHA-256 changes, rule counts, additions, removals,
+          routing overlap, and third-party license provenance. This workflow does
+          not publish or push changes directly to \`main\`.
+
+          Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          gh pr create \
+            --base main \
+            --head "$UPDATE_BRANCH" \
+            --title "chore: review managed Surge rule drift" \
+            --body-file "$body_file"

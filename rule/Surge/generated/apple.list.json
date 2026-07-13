@@ -2,35 +2,53 @@
   "id": "apple",
   "name": "Apple",
   "output": "rule/Surge/generated/apple.list",
-  "description": "Apple system, iCloud, CloudKit, App Store, Maps, media, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing.",
+  "description": "Apple system, iCloud, CloudKit, App Store, Maps, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing. Apple TV process and user-agent rules are excluded and routed by apple-tv first.",
   "suggested_policy": "DIRECT",
   "suggested_options": [
     "extended-matching"
   ],
-  "unique_rule_count": 81,
+  "included_rules": [],
+  "excluded_rules": [
+    "PROCESS-NAME,TV",
+    "USER-AGENT,AppleTV*",
+    "USER-AGENT,com.apple.tv*"
+  ],
+  "unique_rule_count": 78,
   "sources": [
     {
       "name": "blackmatrix7 Apple",
       "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list",
-      "sha256": "66495b5296338f41ea8e05076134c3b7cd2306f564418b0dfdf13311b393827d",
-      "rule_count": 56
+      "sha256": "12e20d225ae52011e28436e266df647bf2d4d94fdd97d971b5ec8b4e14626d05",
+      "expected_sha256": "12e20d225ae52011e28436e266df647bf2d4d94fdd97d971b5ec8b4e14626d05",
+      "license": "GPL-2.0-only",
+      "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
+      "rule_count": 53
     },
     {
       "name": "Sukka Apple domains",
       "url": "https://ruleset.skk.moe/List/non_ip/apple_services.conf",
-      "sha256": "dce6a342012ed82111daa1acabedd75d61b2c5030390b6158839aaba764f53e7",
+      "sha256": "a40b1657d2bdec59c384c1526b6c07d08af6ce365f95cdba983fd9a2f8e891ac",
+      "expected_sha256": "a40b1657d2bdec59c384c1526b6c07d08af6ce365f95cdba983fd9a2f8e891ac",
+      "license": "AGPL-3.0-only",
+      "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 25
     },
     {
       "name": "Sukka Apple China domains",
       "url": "https://ruleset.skk.moe/List/non_ip/apple_cn.conf",
-      "sha256": "8896423cf6c8efb2c5b90ce3b3cada9d8e1d21613dd963ff67dcfb54494c6fc0",
+      "sha256": "24840681bef485142223772bdba04aa8cdb2a955990e269fdfe389af81a5f8c0",
+      "expected_sha256": "24840681bef485142223772bdba04aa8cdb2a955990e269fdfe389af81a5f8c0",
+      "license": "AGPL-3.0-only",
+      "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 9
     },
     {
       "name": "Sukka Apple IP",
       "url": "https://ruleset.skk.moe/List/ip/apple_services.conf",
       "sha256": "6528a16c50ffe5f64cb6078bf3dd95d902138177d5d5e37fcdcaaf39f941fe27",
+      "expected_sha256": "6528a16c50ffe5f64cb6078bf3dd95d902138177d5d5e37fcdcaaf39f941fe27",
+      "license": "AGPL-3.0-only",
+      "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 10
     }
   ]

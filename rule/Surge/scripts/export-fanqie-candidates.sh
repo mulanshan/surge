@@ -4,15 +4,14 @@
 # Default mode reads recent requests from the remote iPhone Surge controller.
 # Pass --input FILE to re-process a previously saved dump request JSON.
 set -euo pipefail
+umask 077
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-DEFAULT_PROFILE="/Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
-DEFAULT_SURGE_CLI="/Applications/Surge.app/Contents/Applications/surge-cli"
+DEFAULT_PROFILE="${HOME}/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
 
 PROFILE="${SURGE_PROFILE:-$DEFAULT_PROFILE}"
-SURGE_CLI="${SURGE_CLI:-}"
-REMOTE_HOST="${SURGE_REMOTE_HOST:-192.168.60.34}"
-REMOTE_PORT="${SURGE_REMOTE_PORT:-6170}"
+REMOTE_HOST="${SURGE_REMOTE_HOST:-}"
+REMOTE_PORT="${SURGE_REMOTE_PORT:-1132}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/reports/fanqie}"
 INPUT_JSON=""
 
@@ -24,16 +23,15 @@ Usage:
 Options:
   -i, --input FILE      Re-process an existing Surge dump request JSON.
   -o, --out-dir DIR     Output directory. Default: reports/fanqie
-      --host HOST       Remote Surge host. Default: 192.168.60.34
-      --port PORT       Remote Surge controller port. Default: 6170
-      --profile FILE    Surge profile used to read controller password.
+      --host HOST       Remote Surge host. Required without --input.
+      --port PORT       Remote Surge HTTPS HTTP API port. Default: 1132
+      --profile FILE    Surge profile used to read the HTTP API key.
   -h, --help            Show this help.
 
 Environment:
-  SURGE_CLI             surge-cli path override.
   SURGE_PROFILE         DMIT.conf path override.
   SURGE_REMOTE_HOST     Remote host override.
-  SURGE_REMOTE_PORT     Remote controller port override.
+  SURGE_REMOTE_PORT     Remote HTTPS HTTP API port override.
   OUT_DIR               Output directory override.
 
 Outputs:
@@ -79,14 +77,6 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ -z "$SURGE_CLI" ]; then
-  if command -v surge-cli >/dev/null 2>&1; then
-    SURGE_CLI="$(command -v surge-cli)"
-  else
-    SURGE_CLI="$DEFAULT_SURGE_CLI"
-  fi
-fi
-
 mkdir -p "$OUT_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)-$$"
 RAW_JSON="$OUT_DIR/$STAMP.requests.json"
@@ -101,30 +91,42 @@ if [ -n "$INPUT_JSON" ]; then
   fi
   cp "$INPUT_JSON" "$RAW_JSON"
 else
-  if [ ! -x "$SURGE_CLI" ]; then
-    echo "surge-cli not found or not executable: $SURGE_CLI" >&2
+  if [ -z "$REMOTE_HOST" ]; then
+    echo "Remote Surge host is required. Set SURGE_REMOTE_HOST or pass --host." >&2
     exit 1
   fi
   if [ ! -f "$PROFILE" ]; then
     echo "Surge profile not found: $PROFILE" >&2
     exit 1
   fi
-  CTRL_PASS="$(sed -nE 's/^external-controller-access[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1)"
-  if [ -z "$CTRL_PASS" ]; then
-    echo "Cannot read external-controller-access from profile." >&2
+  HTTP_KEY="$(sed -nE 's/^http-api[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1)"
+  if [ -z "$HTTP_KEY" ]; then
+    echo "Cannot read http-api from profile." >&2
     exit 1
   fi
-  "$SURGE_CLI" --raw --remote "${CTRL_PASS}@${REMOTE_HOST}:${REMOTE_PORT}" dump request > "$RAW_JSON"
+  printf 'header = "X-Key: %s"\ninsecure\nsilent\nshow-error\nfail\n' "$HTTP_KEY" |
+    curl --noproxy '*' --config - "https://${REMOTE_HOST}:${REMOTE_PORT}/v1/requests/recent" > "$RAW_JSON"
 fi
 
 python3 - "$ROOT_DIR" "$RAW_JSON" "$SUMMARY_TSV" "$CANDIDATE_LIST" "$REPORT_MD" <<'PY'
-import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(sys.argv[1]) / "rule" / "Surge" / "scripts"))
+from surge_candidate_common import (  # noqa: E402
+    as_text,
+    base_domain,
+    extract_host,
+    first_time,
+    is_rejected,
+    load_existing_rules,
+    load_requests,
+    matches_existing,
+)
 
 root = Path(sys.argv[1])
 raw_path = Path(sys.argv[2])
@@ -150,98 +152,8 @@ RESOURCE_RE = re.compile(
     re.I,
 )
 
-
-def as_text(value):
-    if value is None:
-        return ""
-    if isinstance(value, list):
-        return " | ".join(as_text(v) for v in value)
-    if isinstance(value, dict):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    return str(value)
-
-
-def load_requests(path):
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(data, dict):
-        for key in ("recent-requests", "requests", "data"):
-            value = data.get(key)
-            if isinstance(value, list):
-                return value
-    if isinstance(data, list):
-        return data
-    raise SystemExit(f"Unsupported Surge request dump shape: {path}")
-
-
-def extract_host(row):
-    url = as_text(row.get("URL") or row.get("url"))
-    remote = as_text(row.get("remoteHost") or row.get("remote_host"))
-
-    match = re.search(r"\(([^)]+)\)", url)
-    if match:
-        return match.group(1).strip()
-
-    if "://" in url:
-        parsed = urlparse(url)
-        if parsed.hostname:
-            return parsed.hostname
-
-    candidate = url or remote
-    candidate = candidate.split()[0].strip()
-    candidate = candidate.strip("[]")
-    if not candidate:
-        return ""
-    if ":" in candidate and not re.match(r"^\d+\.\d+\.\d+\.\d+:", candidate):
-        host, port = candidate.rsplit(":", 1)
-        if port.isdigit():
-            return host
-    return candidate
-
-
-def base_domain(host):
-    host = host.lower().strip(".")
-    if not host:
-        return ""
-    if re.match(r"^\d+\.\d+\.\d+\.\d+$", host):
-        return host
-    parts = host.split(".")
-    if len(parts) <= 2:
-        return host
-    return ".".join(parts[-2:])
-
-
-def first_time(row):
-    notes = row.get("notes")
-    if isinstance(notes, list):
-        source = " ".join(as_text(v) for v in notes)
-    else:
-        source = as_text(notes)
-    match = re.search(r"\b(\d{2}:\d{2}:\d{2})", source)
-    return match.group(1) if match else ""
-
-
-def is_rejected(row):
-    policy = as_text(row.get("policyName"))
-    return bool(row.get("rejected") is True or policy == "REJECT")
-
-
-def load_existing_domains(paths):
-    domains = set()
-    for path in paths:
-        if not path.exists():
-            continue
-        for line in path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) >= 2 and parts[0] in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}:
-                domains.add(parts[1].lower())
-    return domains
-
-
 rows = load_requests(raw_path)
-existing = load_existing_domains(rules_paths)
+existing_rules = load_existing_rules(rules_paths)
 
 by_host = {}
 times = []
@@ -306,7 +218,7 @@ def top(counter):
 
 def classify(item):
     host = item["host"]
-    if host in existing:
+    if matches_existing(host, existing_rules):
         return "existing-rule"
     if item["rejected"] > 0:
         return "rejected-by-other"
@@ -356,7 +268,7 @@ with candidate_path.open("w", encoding="utf-8") as f:
     f.write("# Review before adding to the Basic AdBlock or an app-specific module\n")
     f.write("# Generated from: " + str(raw_path) + "\n")
     for host in candidates:
-        f.write(f"DOMAIN,{host}\n")
+        f.write(f"DOMAIN,{host},REJECT\n")
 
 classes = Counter(item["class"] for item in items)
 time_range = ""
