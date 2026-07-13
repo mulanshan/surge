@@ -62,6 +62,13 @@ function setEmptyArray(target, key, stats) {
   }
 }
 
+function filterArray(target, key, predicate, stats) {
+  if (!target || typeof target !== "object" || !Array.isArray(target[key])) return;
+  const before = target[key].length;
+  target[key] = target[key].filter((item) => !predicate(item));
+  if (target[key].length !== before) stats.filtered += before - target[key].length;
+}
+
 function deleteKey(target, key, stats) {
   if (target && typeof target === "object" && hasOwn(target, key)) {
     stats.deleted += 1;
@@ -140,6 +147,51 @@ function valueLooksLikeAd(value) {
   return /^(?:ad|ads|advertisement|sponsored|promoted|广告|赞助|推广)$/i.test(label);
 }
 
+const DIRECT_AD_MARKER_FIELDS = [
+  "ad_id",
+  "adId",
+  "ad_info",
+  "adInfo",
+  "alimama",
+];
+
+const DIRECT_AD_FLAG_FIELDS = [
+  "is_ad",
+  "isAd",
+  "is_ads",
+  "isAds",
+  "sponsored",
+  "promoted",
+];
+
+function isTruthyFlag(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
+function isTruthyMarker(value) {
+  if (value === undefined || value === null || value === false || value === 0) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (isPlainObject(value)) return Object.keys(value).length > 0;
+  return Boolean(value);
+}
+
+function isAdEntity(value) {
+  if (!isPlainObject(value)) return false;
+  if (valueLooksLikeAd(value)) return true;
+  if (DIRECT_AD_MARKER_FIELDS.some((key) => hasOwn(value, key) && isTruthyMarker(value[key]))) return true;
+  if (DIRECT_AD_FLAG_FIELDS.some((key) => hasOwn(value, key) && isTruthyFlag(value[key]))) return true;
+
+  for (const key of ["data", "content", "item", "notice", "payload"]) {
+    if (isPlainObject(value[key]) && valueLooksLikeAd(value[key])) return true;
+  }
+
+  return false;
+}
+
 function cleanSplash(payload, stats) {
   setEmptyArray(payload, "ad", stats);
   setEmptyArray(payload, "ads", stats);
@@ -155,13 +207,13 @@ function cleanSplash(payload, stats) {
 }
 
 function cleanMessages(payload, stats) {
-  setEmptyArray(payload, "msgs", stats);
-  if (isPlainObject(payload.pull3)) setEmptyArray(payload.pull3, "msgs", stats);
+  filterArray(payload, "msgs", isAdEntity, stats);
+  if (isPlainObject(payload.pull3)) filterArray(payload.pull3, "msgs", isAdEntity, stats);
   if (isPlainObject(payload.data)) {
-    setEmptyArray(payload.data, "msgs", stats);
-    setEmptyArray(payload.data, "noticeList", stats);
-    setEmptyArray(payload.data, "messageList", stats);
-    if (isPlainObject(payload.data.pull3)) setEmptyArray(payload.data.pull3, "msgs", stats);
+    filterArray(payload.data, "msgs", isAdEntity, stats);
+    filterArray(payload.data, "noticeList", isAdEntity, stats);
+    filterArray(payload.data, "messageList", isAdEntity, stats);
+    if (isPlainObject(payload.data.pull3)) filterArray(payload.data.pull3, "msgs", isAdEntity, stats);
   }
 }
 
@@ -185,8 +237,11 @@ function cleanDspProfile(payload, stats) {
 
   for (const root of roots) {
     for (const prop of props) {
-      if (Array.isArray(root[prop])) setEmptyArray(root, prop, stats);
-      else if (keyLooksLikeAd(prop)) deleteKey(root, prop, stats);
+      if (Array.isArray(root[prop])) filterArray(root, prop, isAdEntity, stats);
+      else if (isPlainObject(root[prop])) {
+        if (keyLooksLikeAd(prop) || valueLooksLikeAd(root[prop])) deleteKey(root, prop, stats);
+        else filterCardContainer(root[prop], stats);
+      } else if (keyLooksLikeAd(prop)) deleteKey(root, prop, stats);
     }
   }
 }
@@ -210,7 +265,7 @@ function filterCardContainer(container, stats) {
     const value = container[key];
     if (Array.isArray(value)) {
       const before = value.length;
-      container[key] = value.filter((item) => !valueLooksLikeAd(item));
+      container[key] = value.filter((item) => !isAdEntity(item));
       if (container[key].length !== before) stats.filtered += before - container[key].length;
     } else if (isPlainObject(value)) {
       if (keyLooksLikeAd(key) || valueLooksLikeAd(value)) {

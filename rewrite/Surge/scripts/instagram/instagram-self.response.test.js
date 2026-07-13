@@ -82,6 +82,43 @@ function bodyOf(result) {
 }
 
 {
+  const result = bodyOf(run("https://www.instagram.com/api/graphql", {
+    data: {
+      injected_story_units: [
+        { id: "organic-injected", reason: "Because you follow this account" },
+        { id: "ad-injected-1", is_ad4ad: true },
+        { id: "ad-injected-2", ad_tracking_params: { source: "feed" } },
+        { id: "unknown-injected", experimental_payload: { kind: "future_unit", value: 1 } },
+      ],
+      injected_recommendations: [
+        { id: "normal-recommendation", context: "Suggested for you" },
+      ],
+    },
+  }));
+  assert.deepEqual(result.data.injected_story_units.map((item) => item.id), [
+    "organic-injected",
+    "unknown-injected",
+  ]);
+  assert.equal(result.data.injected_story_units[1].experimental_payload.kind, "future_unit");
+  assert.equal(result.data.injected_recommendations[0].id, "normal-recommendation");
+}
+
+{
+  const result = bodyOf(run("https://www.instagram.com/graphql/query/", {
+    data: {
+      items: [
+        { id: "organic-latest-markers" },
+        { id: "ad-bloks", is_bloks_ad: "true" },
+        { id: "ad-client", ad_client_token: "client-token" },
+        { id: "ad-sponsored-info", sponsored_info: { label: "Sponsored" } },
+        { id: "ad-type", item_type: "bloks_ad" },
+      ],
+    },
+  }));
+  assert.deepEqual(result.data.items.map((item) => item.id), ["organic-latest-markers"]);
+}
+
+{
   const result = run("https://www.instagram.com/api/graphql", "for (;;);" + JSON.stringify({
     data: { edges: [{ node: { id: "ad-8", sponsored_label: "Sponsored" } }] },
   }));
@@ -94,6 +131,13 @@ assert.deepEqual(run("https://www.instagram.com/api/graphql", "not-json"), {});
 assert.deepEqual(run("https://www.instagram.com/api/graphql", { data: { items: [{ id: "normal" }] } }), {});
 assert.deepEqual(run("https://www.instagram.com/api/graphql", {
   data: { items: [{ id: "industry-news", title: "广告行业观察", headline: "广告技术发展史" }] },
+}), {});
+assert.deepEqual(run("https://www.instagram.com/api/graphql", {
+  data: {
+    injected_future_units: [
+      { id: "unknown-future-unit", payload: { opaque_key: "keep-me" } },
+    ],
+  },
 }), {});
 
 console.log("Instagram Self tests passed");

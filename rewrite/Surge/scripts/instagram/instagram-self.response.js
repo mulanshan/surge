@@ -223,15 +223,6 @@ function pruneValue(value, stats) {
       continue;
     }
 
-    // Broader match: any key starting with "injected_" that holds an array
-    // of feed-injected items is treated as an ad collection container.
-    if (/^injected_/.test(key) && Array.isArray(child) && child.length > 0) {
-      stats.filtered += child.length;
-      value[key] = [];
-      stats.collections += 1;
-      continue;
-    }
-
     if (AD_METADATA_KEYS.has(key) && isTruthyValue(child)) {
       delete value[key];
       stats.deleted += 1;

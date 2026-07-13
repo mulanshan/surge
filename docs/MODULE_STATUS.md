@@ -7,8 +7,8 @@ scripts used by a stable module are pinned to an immutable repository tag.
 | Module | Channel | Last live evidence | Required companion | Scope note |
 | --- | --- | --- | --- | --- |
 | YouTube | stable | 2026-07-12, iOS playback/feed requests | none | Playback ads, feed cards, background playback and PiP |
-| Instagram | limited | 2026-07-12, Instagram 437.2.0 | none | Web endpoints only; pinned native API stays outside MITM |
-| 高德地图 | candidate | 2026-06-08 traffic fixtures | 基础去广告模块 recommended | Conservative first-party response cleanup |
+| Instagram | limited | 2026-07-13, native HTTPS fallback and netseer rejection | none | Web endpoints only; pinned native API stays outside MITM |
+| 高德地图 | candidate | 2026-07-13, m5-x MITM and telemetry endpoints | 基础去广告模块 recommended | Conservative first-party response cleanup |
 | 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
 | 京东 | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
@@ -23,7 +23,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 ## Current stable bundle
 
-- Tag: `surge-self-v2026.07.13`
+- Tag: `surge-self-v2026.07.13.1`
 - Supported runtime used for release verification:
   - Surge Mac 6.6.0 (11270)
   - Surge iOS 5.19.0 (3727)
