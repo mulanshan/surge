@@ -2,8 +2,8 @@
  * Self-written CamScanner cleaner for Surge.
  *
  * Behavior:
- * - Removes ad, splash, popup, promotion, marketing, campaign, notice and
- *   tracking containers from selected CamScanner / INTSIG JSON responses.
+ * - Removes exact ad, splash, popup, promotion, marketing and campaign
+ *   containers from selected CamScanner / INTSIG JSON responses.
  * - Keeps purchase, account, OCR, PDF conversion, cloud sync and document
  *   business payloads intact.
  * - Does not forge membership, subscription, trial, quota, receipt or purchase
@@ -120,11 +120,6 @@ const AD_VALUE_SUBSTRINGS = [
   "interstitial",
   "popup",
   "splash",
-  "广告",
-  "开屏",
-  "弹窗",
-  "推广",
-  "营销",
 ];
 
 const SAFE_KEYS = new Set([
@@ -156,9 +151,6 @@ const AD_KEY_TOKENS = new Set([
   "interstitial",
   "market",
   "marketing",
-  "notice",
-  "operate",
-  "operation",
   "popup",
   "popwindow",
   "promotion",
@@ -235,15 +227,18 @@ function valueLooksLikeAd(value) {
     value.scene,
     value.source,
     value.template,
-    value.title,
   ]
     .map(textOf)
     .join(" ")
     .toLowerCase();
   const tokens = textTokens(joined);
-  return (
+  if (
     tokens.some((token) => AD_VALUE_TOKENS.has(token)) ||
     AD_VALUE_SUBSTRINGS.some((marker) => joined.includes(marker))
+  ) return true;
+
+  return [value.name, value.title].some((candidate) =>
+    /^(?:ad|ads|advertisement|sponsored|promoted|广告|赞助|推广|营销|开屏|弹窗)$/i.test(textOf(candidate).trim()),
   );
 }
 
@@ -301,7 +296,7 @@ function removeAdLikeFields(value, stats, depth) {
   }
 }
 
-function normalizeKnownContainers(payload, stats) {
+function normalizeKnownContainers(payload, stats, endpoint) {
   const roots = [payload];
   if (isPlainObject(payload.data)) roots.push(payload.data);
   if (isPlainObject(payload.result)) roots.push(payload.result);
@@ -317,10 +312,6 @@ function normalizeKnownContainers(payload, stats) {
     "campaignList",
     "commercial_list",
     "commercialList",
-    "notice_list",
-    "noticeList",
-    "operation_list",
-    "operationList",
     "popup_list",
     "popupList",
     "promotion_list",
@@ -340,6 +331,11 @@ function normalizeKnownContainers(payload, stats) {
     "promotion",
     "splash",
   ];
+
+  if (endpoint.endsWith("get_new_func_popup_cfg")) {
+    arrayKeys.push("func_popup_list", "funcPopupList", "new_func_popup_list", "newFuncPopupList");
+    objectKeys.push("func_popup", "funcPopup", "new_func_popup", "newFuncPopup", "popwindow");
+  }
 
   for (const root of roots) {
     for (const key of arrayKeys) {
@@ -368,7 +364,13 @@ function cleanPayload(payload, endpoint) {
     return stats;
   }
 
-  normalizeKnownContainers(payload, stats);
+  const supported = /(?:^|\/)sync\/(?:get_ad_(?:data|control|cfg)|get_page_cfg(?:_v2)?|get_new_func_popup_cfg)$/.test(endpoint);
+  if (!supported) {
+    stats.skipped = true;
+    return stats;
+  }
+
+  normalizeKnownContainers(payload, stats, endpoint);
   removeAdLikeFields(payload, stats, 0);
   return stats;
 }
@@ -390,7 +392,9 @@ try {
       doneUnchanged(`sensitive endpoint ${endpoint}`);
     } else {
       debug(`${endpoint} filtered=${stats.filtered} neutralized=${stats.neutralized}`);
-      $done({ body: JSON.stringify(payload) });
+      const changed = stats.filtered + stats.neutralized;
+      if (!changed) $done({});
+      else $done({ body: JSON.stringify(payload) });
     }
   }
 } catch (error) {

@@ -92,5 +92,8 @@ function bodyOf(result) {
 assert.deepEqual(run("https://www.instagram.com/accounts/login/", { ads: [1] }), {});
 assert.deepEqual(run("https://www.instagram.com/api/graphql", "not-json"), {});
 assert.deepEqual(run("https://www.instagram.com/api/graphql", { data: { items: [{ id: "normal" }] } }), {});
+assert.deepEqual(run("https://www.instagram.com/api/graphql", {
+  data: { items: [{ id: "industry-news", title: "广告行业观察", headline: "广告技术发展史" }] },
+}), {});
 
 console.log("Instagram Self tests passed");

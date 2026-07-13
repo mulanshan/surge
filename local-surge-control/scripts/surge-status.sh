@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 set -u
 
-PROFILE="${SURGE_PROFILE:-/Users/mulanshan/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf}"
+PROFILE="${SURGE_PROFILE:-${HOME}/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf}"
 SURGE_CLI="${SURGE_CLI:-/Applications/Surge.app/Contents/Applications/surge-cli}"
 CTRL_PORT="${SURGE_CONTROLLER_PORT:-6170}"
 API_PORT="${SURGE_HTTP_API_PORT:-1132}"
 MAC_HOST="${SURGE_MAC_HOST:-127.0.0.1}"
 IOS_HOST="${SURGE_IOS_HOST:-}"
-IOS_HOST_HINTS="${SURGE_IOS_HOST_HINTS:-192.168.50.101 192.168.70.124 192.168.0.107}"
-ATV_HOST="${SURGE_ATV_HOST:-192.168.50.107}"
+IOS_HOST_HINTS="${SURGE_IOS_HOST_HINTS:-}"
+ATV_HOST="${SURGE_ATV_HOST:-}"
 
 target="${1:-all}"
+
+if [[ ! -r "$PROFILE" ]]; then
+  echo "Surge profile is not readable: $PROFILE" >&2
+  echo "Set SURGE_PROFILE to the shared Surge profile path." >&2
+  exit 1
+fi
 
 extract_secret() {
   local key="$1"
@@ -29,7 +35,7 @@ local_ipv4s() {
 }
 
 arp_ipv4s() {
-  arp -a 2>/dev/null | sed -nE 's/.*\(([0-9.]+)\).*/\1/p'
+  arp -a 2>/dev/null | awk '$0 !~ /\(incomplete\)/' | sed -nE 's/.*\(([0-9.]+)\).*/\1/p'
 }
 
 is_local_host() {
@@ -44,22 +50,49 @@ is_local_host() {
 
 candidate_hosts() {
   {
-    printf '%s\n' $IOS_HOST_HINTS
+    if [[ -n "$IOS_HOST_HINTS" ]]; then
+      printf '%s\n' $IOS_HOST_HINTS
+    fi
     arp_ipv4s
-  } | awk 'NF && !seen[$0]++'
+  } | awk '
+    /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/ && !seen[$0]++
+  '
+}
+
+tcp_port_open() {
+  local host="$1"
+  local port="$2"
+  if ! command -v nc >/dev/null 2>&1; then
+    return 0
+  fi
+  if nc -h 2>&1 | grep -q -- '-G'; then
+    nc -G 1 -z "$host" "$port" >/dev/null 2>&1
+  else
+    nc -w 1 -z "$host" "$port" >/dev/null 2>&1
+  fi
 }
 
 verify_remote_host() {
   local host="$1"
   local output
+  local api_open=1
+  local controller_open=1
   is_local_host "$host" && return 1
 
-  if [[ -n "${HTTP_KEY}" ]]; then
+  if command -v nc >/dev/null 2>&1; then
+    api_open=0
+    controller_open=0
+    tcp_port_open "$host" "$API_PORT" && api_open=1
+    tcp_port_open "$host" "$CTRL_PORT" && controller_open=1
+    [[ $api_open -eq 0 && $controller_open -eq 0 ]] && return 1
+  fi
+
+  if [[ -n "${HTTP_KEY}" && $api_open -eq 1 ]]; then
     output="$(curl --noproxy '*' -k -fsS --connect-timeout 1 -m 2 -H "X-Key: ${HTTP_KEY}" "https://${host}:${API_PORT}/v1/events" 2>&1)"
     [[ "$output" == *'"events"'* ]] && return 0
   fi
 
-  if [[ -n "${CTRL_PASS}" && -x "$SURGE_CLI" ]]; then
+  if [[ -n "${CTRL_PASS}" && -x "$SURGE_CLI" && $controller_open -eq 1 ]]; then
     output="$("$SURGE_CLI" --raw --remote "${CTRL_PASS}@${host}:${CTRL_PORT}" environment 2>&1)"
     [[ "$output" == *'"result":"success"'* ]] && return 0
   fi
@@ -141,6 +174,14 @@ probe_ios() {
   probe_device "ios" "$host"
 }
 
+probe_atv() {
+  if [[ -z "$ATV_HOST" ]]; then
+    status_line "atv" "host" "SKIP: set SURGE_ATV_HOST=<ip> for the current Apple TV"
+    return
+  fi
+  probe_device "atv" "$ATV_HOST"
+}
+
 case "$target" in
   mac)
     probe_device "mac" "$MAC_HOST"
@@ -149,12 +190,12 @@ case "$target" in
     probe_ios
     ;;
   atv|tvos|apple-tv)
-    probe_device "atv" "$ATV_HOST"
+    probe_atv
     ;;
   all)
     probe_device "mac" "$MAC_HOST"
     probe_ios
-    probe_device "atv" "$ATV_HOST"
+    probe_atv
     ;;
   *)
     echo "Usage: $0 [all|mac|ios|atv]" >&2

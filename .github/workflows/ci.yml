@@ -1,0 +1,103 @@
+name: Repository checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: surge-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r -d '' file; do
+            found=1
+            echo "node --check $file"
+            node --check "$file"
+          done < <(find rewrite scripts -type f -name '*.js' -print0 2>/dev/null)
+          test "$found" -eq 1
+
+      - name: Run JavaScript tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r -d '' file; do
+            found=1
+            echo "node $file"
+            node "$file"
+          done < <(find . -type f \( -name '*.test.js' -o -name '*.test.mjs' -o -name 'test.js' \) -not -path './.git/*' -print0)
+          if [[ "$found" -eq 0 ]]; then
+            echo "No JavaScript tests found."
+          fi
+
+      - name: Check Python syntax and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q scripts .github/scripts
+          found=0
+          while IFS= read -r -d '' file; do
+            found=1
+            echo "python3 $file"
+            python3 "$file"
+          done < <(find . -type f \( -name 'test_*.py' -o -name '*_test.py' -o -name '*.test.py' \) -not -path './.git/*' -print0)
+          if [[ "$found" -eq 0 ]]; then
+            echo "No Python tests found."
+          fi
+
+      - name: Check shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r -d '' file; do
+            found=1
+            echo "bash -n $file"
+            bash -n "$file"
+          done < <(find . -type f -name '*.sh' -not -path './.git/*' -print0)
+          test "$found" -eq 1
+
+      - name: Validate modules and repository invariants
+        run: |
+          python3 scripts/check-basic-adblock.py
+          python3 .github/scripts/check_repository.py
+
+      - name: Check generated rules are reviewed and current
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python3 scripts/generate-managed-surge-rules.py --help | grep -q -- '--check'; then
+            python3 scripts/generate-managed-surge-rules.py --check --timeout 60
+          else
+            echo "Generator has no --check mode yet; validating checked-in metadata without fetching upstream."
+            python3 .github/scripts/check_repository.py --generated-only
+          fi

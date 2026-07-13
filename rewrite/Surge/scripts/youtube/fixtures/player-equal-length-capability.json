@@ -1,0 +1,13 @@
+{
+  "description": "Existing PiP/background capability fields change false to true without changing protobuf length",
+  "endpoint": "player",
+  "argument": {
+    "enhancePlayer": true
+  },
+  "before": [
+    18, 23, 170, 1, 10, 242, 214, 184, 194, 4, 4, 8, 0, 64, 0, 90, 8, 242, 244, 210, 246, 1, 2, 8, 0
+  ],
+  "after": [
+    18, 23, 170, 1, 10, 242, 214, 184, 194, 4, 4, 8, 1, 64, 1, 90, 8, 242, 244, 210, 246, 1, 2, 8, 1
+  ]
+}

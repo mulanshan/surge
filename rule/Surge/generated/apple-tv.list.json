@@ -7,12 +7,19 @@
   "suggested_options": [
     "extended-matching"
   ],
-  "unique_rule_count": 9,
+  "included_rules": [
+    "PROCESS-NAME,TV"
+  ],
+  "excluded_rules": [],
+  "unique_rule_count": 10,
   "sources": [
     {
       "name": "blackmatrix7 AppleTV",
       "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list",
       "sha256": "1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd",
+      "expected_sha256": "1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd",
+      "license": "GPL-2.0-only",
+      "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
       "rule_count": 9
     }
   ]

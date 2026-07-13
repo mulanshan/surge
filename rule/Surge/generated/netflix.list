@@ -8,6 +8,7 @@
 # Sources:
 # - blackmatrix7 Netflix: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
 #   sha256: aa03f015949e8f6f981d90a7d8b1acf7e88472ee48601632bd964b0bb740f8aa
+#   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 1157
 # Total unique rules: 1157
 

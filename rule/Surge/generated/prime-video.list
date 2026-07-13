@@ -7,6 +7,7 @@
 # Sources:
 # - blackmatrix7 PrimeVideo: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
 #   sha256: 4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46
+#   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 18
 # Total unique rules: 18
 

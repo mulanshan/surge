@@ -6,9 +6,10 @@
 # Suggested policy: DIRECT
 # Sources:
 # - blackmatrix7 China All No Resolve: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list
-#   sha256: 606f48a84ce44dad9e5210a466d52576cfeb5c12ace8ff45fe2ba47da9316969
-#   rules: 3754
-# Total unique rules: 3754
+#   sha256: 24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4
+#   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
+#   rules: 3752
+# Total unique rules: 3752
 
 DOMAIN,analytics.strava.com
 DOMAIN,blzddist1-a.akamaihd.net
@@ -1379,8 +1380,6 @@ DOMAIN-SUFFIX,funcdn.com
 DOMAIN-SUFFIX,funnycore.com
 DOMAIN-SUFFIX,funshion.com
 DOMAIN-SUFFIX,funshion.net
-DOMAIN-SUFFIX,futu5.com
-DOMAIN-SUFFIX,futunn.com
 DOMAIN-SUFFIX,fuwai.com
 DOMAIN-SUFFIX,fuwj.com
 DOMAIN-SUFFIX,fxxz.com

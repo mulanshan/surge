@@ -7,9 +7,11 @@
 # Sources:
 # - Sukka Telegram non-IP: https://ruleset.skk.moe/List/non_ip/telegram.conf
 #   sha256: ab9988f4305564ba6a577b392bd4e6c62dbd286ef1828e95e2fbe082f38e1b25
+#   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 14
 # - Sukka Telegram IP: https://ruleset.skk.moe/List/ip/telegram.conf
 #   sha256: 2edcf986ebe3631d4829d3e202e6500432e5e97feade50f9778aa2e96a0fcc05
+#   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 16
 # Total unique rules: 30
 

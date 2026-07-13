@@ -14,7 +14,7 @@ const DEFAULTS = {
 
 const config = parseArgument();
 
-const AD_LABEL_RE = /(?:\b(?:sponsored|promoted|advertisement|paid partnership|branded content)\b|赞助|推广|广告)/i;
+const AD_LABEL_RE = /^(?:sponsored|promoted|advertisement|paid partnership|branded content|赞助(?:内容)?|推广(?:内容)?|广告(?:内容)?|付费(?:推广|合作))$/i;
 const AD_TYPE_RE = /(?:^|[_\-\s])(?:ad|ads|advertisement|advertiser|promoted|promotion|sponsored)(?:$|[_\-\s])/i;
 const AD_TYPE_FIELDS = ["__typename", "type", "product_type", "content_type", "item_type", "view_type"];
 const AD_LABEL_FIELDS = ["label", "title", "subtitle", "headline", "message", "reason", "badge_text"];

@@ -7,6 +7,7 @@
 # Sources:
 # - blackmatrix7 YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 #   sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
+#   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 190
 # Total unique rules: 190
 

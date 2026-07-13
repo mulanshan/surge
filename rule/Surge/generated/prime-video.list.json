@@ -5,12 +5,17 @@
   "description": "Prime Video kept separate because the current profile routes it to 流媒体.",
   "suggested_policy": "流媒体",
   "suggested_options": [],
+  "included_rules": [],
+  "excluded_rules": [],
   "unique_rule_count": 18,
   "sources": [
     {
       "name": "blackmatrix7 PrimeVideo",
       "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list",
       "sha256": "4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46",
+      "expected_sha256": "4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46",
+      "license": "GPL-2.0-only",
+      "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
       "rule_count": 18
     }
   ]

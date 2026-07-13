@@ -13,7 +13,7 @@ YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路�
 可能不再处理，后续只根据脱敏真机日志补充安全的精确域名规则。
 
 旧地址 `rewrite/Surge/fanqie-novel-adblock.sgmodule` 保留为兼容入口，并与新模块使用相同规则；
-新旧地址不要同时启用。旧 `rule/Surge/fanqie-novel-adblock.list` 只为已有配置冻结保留，主配置不再引用。
+新旧地址不要同时启用。旧 `rule/Surge/fanqie-novel-adblock.list` 只为已有配置兼容保留，内容同步收敛为当前基础模块中已确认的番茄精确日志主机，主配置不再引用。
 
 ## Surge 官方约束
 
