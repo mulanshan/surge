@@ -1,4 +1,4 @@
-# Instagram Self 调研与真机边界
+# Instagram 调研与真机边界
 
 ## 结论
 

@@ -1,4 +1,4 @@
-#!name=京东 Self
+#!name=京东
 #!desc=自有可审计京东去广告模块：清理开屏、首页/我的页营销卡、弹层和搜索推荐，并可关闭京东诊断上报。不含第三方脚本，不修改账号、订单、支付或会员状态。
 #!author=mulanshan
 #!category=AdBlock

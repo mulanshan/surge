@@ -20,19 +20,19 @@
 
 ## rewrite / Surge
 
-### YouTube Self
+### YouTube
 
-文件：[rewrite/Surge/youtube-self.sgmodule](rewrite/Surge/youtube-self.sgmodule)
+文件：[rewrite/Surge/youtube.sgmodule](rewrite/Surge/youtube.sgmodule)
 
 订阅地址：
 
 ```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-self.sgmodule
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube.sgmodule
 ```
 
 这是当前仓库唯一维护的 YouTube 去广告与后台播放模块。仓库里只保留这一个 YouTube 模块和一个响应脚本：
 
-- 模块：`rewrite/Surge/youtube-self.sgmodule`
+- 模块：`rewrite/Surge/youtube.sgmodule`
 - 脚本：`rewrite/Surge/scripts/youtube/youtube-self.response.js`
 
 当前范围：
@@ -42,7 +42,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。更新后请在 Surge 中更新外部资源或重载模块，确认脚本来自稳定 tag `surge-self-v2026.07.13`，query 版本为 `v=20260713-1`。
+安装或测试时，请在 Surge 里删除所有旧的 YouTube 模块，包括 `YouTube Self`、`Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和所有抓包/调试模块，然后只添加上面的唯一安装地址。更新后请在 Surge 中更新外部资源或重载模块，确认脚本来自稳定 tag `surge-self-v2026.07.13`，query 版本为 `v=20260713-1`。
 
 安全边界：
 
@@ -51,19 +51,19 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - 脚本不发起外部请求
 - 不上传请求、响应、账号、cookie 或 token
 
-### Instagram Self
+### Instagram
 
-文件：[rewrite/Surge/instagram-self.sgmodule](rewrite/Surge/instagram-self.sgmodule)
+文件：[rewrite/Surge/instagram.sgmodule](rewrite/Surge/instagram.sgmodule)
 
 订阅地址：
 
 ```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-self.sgmodule
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram.sgmodule
 ```
 
 这是自有可审计的 Instagram 增强模块。2026-07-12 使用 iPhone 上的 Instagram `437.2.0` 复测：原生 App 的 `i.instagram.com` 主链路仍会在 TLS 握手后主动断开，Surge 明确记录 `MITM failed ... certificate pinning`。因此正式模块不强行解密原生 API，而是把当前可工作的 Web Feed 广告清理合并进主安装地址。
 
-- 模块：`rewrite/Surge/instagram-self.sgmodule`
+- 模块：`rewrite/Surge/instagram.sgmodule`
 - 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
 
 当前功能范围：
@@ -87,43 +87,21 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 - 公开搜索到的大合集通常是全平台去广告或全量 MITM 配置，不是 Instagram 专用自维护脚本
 - 当前模块不引入第三方成品脚本或现成片段；实现代码全部写在本仓库里
 
-### Instagram Feed Self（兼容入口）
+从旧版本迁移时，停用并删除旧显示名 `Instagram Self`，只保留上面的 `Instagram` 云端订阅。
 
-文件：[rewrite/Surge/instagram-feed-self.sgmodule](rewrite/Surge/instagram-feed-self.sgmodule)
+### 高德地图
 
-订阅地址：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-feed-self.sgmodule
-```
-
-Web Feed 功能已经合并到上面的 `Instagram Self`。此模块仅为旧订阅保留，不要和 `Instagram Self` 同时启用：
-
-- 模块：`rewrite/Surge/instagram-feed-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/instagram/instagram-self.response.js`
-
-兼容范围：
-
-- 仅 MITM `www.instagram.com`
-- 处理 `api/graphql`、`graphql/query`、`api/v1/feed`、`api/v1/discover` 和 `api/v1/clips`
-- 不碰 `i.instagram.com`、`gateway.instagram.com`、`test-gateway.instagram.com`
-- 不碰媒体 CDN、登录、私信和账号链路
-
-新安装统一使用主入口 `Instagram Self`；旧兼容入口后续只做同步维护。
-
-### 高德地图 Self
-
-文件：[rewrite/Surge/amap-self.sgmodule](rewrite/Surge/amap-self.sgmodule)
+文件：[rewrite/Surge/amap.sgmodule](rewrite/Surge/amap.sgmodule)
 
 订阅地址：
 
 ```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.sgmodule
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap.sgmodule
 ```
 
 这是自有可审计的高德地图去广告模块。仓库里只保留这一个高德模块和一个响应脚本：
 
-- 模块：`rewrite/Surge/amap-self.sgmodule`
+- 模块：`rewrite/Surge/amap.sgmodule`
 - 脚本：`rewrite/Surge/scripts/amap/amap-self.response.js`
 
 第一版功能范围：
@@ -144,14 +122,16 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 - 不整域拒绝 `amap.com`
 - 不拦截天气、路线规划、导航、搜索主业务和账号接口
 
-### 扫描全能王 Self v2
+从旧版本迁移时，停用并删除旧显示名 `高德地图 Self`，只保留上面的 `高德地图` 云端订阅。
 
-文件：[rewrite/Surge/camscanner-self.sgmodule](rewrite/Surge/camscanner-self.sgmodule)
+### 扫描全能王
+
+文件：[rewrite/Surge/camscanner.sgmodule](rewrite/Surge/camscanner.sgmodule)
 
 订阅地址：
 
 ```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-self.sgmodule
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner.sgmodule
 ```
 
 旧架构独立稳定版（回滚用）：
@@ -160,16 +140,16 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 https://raw.githubusercontent.com/mulanshan/surge/camscanner-self-v1.0.0/rewrite/Surge/camscanner-self.sgmodule
 ```
 
-这是自有可审计的扫描全能王 / CamScanner 专用模块。`main` 中显示名为“扫描全能王 Self v2”，
-用于和旧架构已安装实例明确区分；文件 URL 保持不变。仓库里只维护这一个当前模块和一个响应脚本：
+这是自有可审计的扫描全能王 / CamScanner 专用模块。正式显示名统一为“扫描全能王”；新 URL
+用于和设备上缓存的旧 `扫描全能王 Self`、`扫描全能王 Self v2` 条目明确区分。仓库里只维护这一个当前模块和一个响应脚本：
 
-- 模块：`rewrite/Surge/camscanner-self.sgmodule`
+- 模块：`rewrite/Surge/camscanner.sgmodule`
 - 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 
 `camscanner-self-v1.0.0` 基于 iPhone 真机测试通过的 `753c2cb` 固化，仍包含 Google、腾讯、
 AppsFlyer、Adjust 等旧架构全局规则与 MITM，只适合独立使用或回滚；它不代表当前“基础模块 + 专用模块”分层。
-当前 `main` 已切换到新架构，需要停用旧“扫描全能王 Self”，同时启用“基础去广告模块”和
-“扫描全能王 Self v2”。本次脚本已固定到仓库级不可变 tag；模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
+当前 `main` 已切换到新架构，需要停用旧“扫描全能王 Self”和“扫描全能王 Self v2”，同时启用“基础去广告模块”和
+“扫描全能王”。本次脚本已固定到仓库级不可变 tag；模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
 
 当前 `main` 功能范围：
 
@@ -219,7 +199,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 - 不包含扫描全能王、高德、京东、YouTube、Instagram 的第一方业务接口或 CDN
 - 不拦截 Sentry/Crashlytics/OpenTelemetry、HTTPDNS、购买、订阅、账号、支付或收据接口
 - AppsFlyer、Adjust、`app-measurement.com` 等归因/统计默认不进入基础核心规则
-- 专用 App 的路径、响应体和界面广告继续由各自的 `Self` 模块处理
+- 专用 App 的路径、响应体和界面广告继续由各自的专用模块处理
 
 旧地址仍保留为兼容入口，内容与新模块同步；新旧地址不要同时启用：
 
@@ -235,19 +215,19 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-nove
 python3 scripts/check-basic-adblock.py
 ```
 
-### 京东 Self
+### 京东
 
-文件：[rewrite/Surge/jd-self.sgmodule](rewrite/Surge/jd-self.sgmodule)
+文件：[rewrite/Surge/jd.sgmodule](rewrite/Surge/jd.sgmodule)
 
 订阅地址：
 
 ```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgmodule
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd.sgmodule
 ```
 
-这是按 YouTube Self 的单模块、单脚本方式编写的自有京东去广告模块：
+这是按 YouTube 的单模块、单脚本方式编写的自有京东去广告模块：
 
-- 模块：`rewrite/Surge/jd-self.sgmodule`
+- 模块：`rewrite/Surge/jd.sgmodule`
 - 脚本：`rewrite/Surge/scripts/jd/jd-self.response.js`
 - 社区调研与设计边界：`docs/JD_SELF_RESEARCH.md`
 
@@ -269,6 +249,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 - 不伪造会员、价格、余额、优惠或订单数据
 
 首版以安全优先：识别不到的广告会原样放行，后续应根据当前京东版本的脱敏真机响应逐项补充明确字段，而不是扩大 MITM 或递归删除范围。
+
+从旧版本迁移时，停用并删除旧显示名 `京东 Self`，只保留上面的 `京东` 云端订阅。
 
 ## rule / Surge
 

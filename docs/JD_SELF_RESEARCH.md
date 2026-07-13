@@ -1,4 +1,4 @@
-# 京东 Self 社区调研与设计边界
+# 京东社区调研与设计边界
 
 调研日期：2026-07-12。
 
@@ -39,7 +39,7 @@
 
 ## 本仓库实现
 
-- 模块：`rewrite/Surge/jd-self.sgmodule`
+- 模块：`rewrite/Surge/jd.sgmodule`
 - 脚本：`rewrite/Surge/scripts/jd/jd-self.response.js`
 - 测试：`rewrite/Surge/scripts/jd/jd-self.response.test.js`
 
