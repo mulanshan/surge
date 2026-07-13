@@ -11,7 +11,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 | 高德地图 | candidate | 2026-07-13, m5-x MITM and telemetry endpoints | 基础去广告模块 recommended | Conservative first-party response cleanup |
 | 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
 | 京东 | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
-| 微信 | candidate | pending WeChat 8.0.75 live regression | 基础去广告模块 recommended | Official-account ads and exact mini-program ad hosts; native MMTLS feeds excluded |
+| 微信 | candidate | 2026-07-13, iOS load and synthetic response-engine pass; real WeChat flow pending | 基础去广告模块 recommended | Official-account ads and exact mini-program ad hosts; native MMTLS feeds excluded |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
 
 ## Status meanings
@@ -24,7 +24,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 ## Current stable bundle
 
-- Tag: `surge-self-v2026.07.13.2`
+- Tag: `surge-self-v2026.07.13.3`
 - Supported runtime used for release verification:
   - Surge Mac 6.6.0 (11270)
   - Surge iOS 5.19.0 (3727)

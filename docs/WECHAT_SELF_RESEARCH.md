@@ -33,7 +33,15 @@
   `advertisement_info`。字段不存在、类型未知、JSON 解析失败或路径不匹配时立即原样放行。
 - `/mp/cps_product_info`：公众号文章商品推广专用接口，通过 Map Local 返回空 JSON。
 
-响应脚本最大读取 `524288` 字节，不使用旧社区规则常见的无限制 `max-size=0`。
+响应脚本最大读取 `524288` 字节，不使用旧社区规则常见的无限制 `max-size=0`。脚本只处理成功的
+HTTP 响应，接受 Surge 官方支持的字符串、`Uint8Array` 与 `ArrayBuffer` 响应体，兼容单个 UTF-8 BOM，
+并保持字符串型广告计数字段的原始类型。所有出现的目标字段会先整体完成类型校验；任一字段属于未知
+结构时整包原样放行，不做部分修改。调试模式只记录命中结果或安全的放行原因，不记录 URL 参数、
+请求头、Cookie、token 或原始响应体。
+
+`/mp/cps_product_info` 的 Map Local 响应显式设置 `Content-Type: application/json`。Surge 官方说明指出
+`data-type=text` 未指定 header 时默认使用 `text/plain`；明确 JSON 类型可以避免客户端按错误 MIME 类型
+处理空对象。
 
 ### 小程序广告素材
 
@@ -78,3 +86,13 @@
 6. 朋友圈和视频号只观察，不把“仍有广告”当作脚本失效；它们属于已声明的 MMTLS 限制。
 
 完成上述回归并确认无脚本错误后，模块才可从 `candidate` 调整为 `limited` 或 `stable`。
+
+## 2026-07-13 iOS 运行时检查
+
+- 目标 iOS Surge 实例的 External Controller 与 HTTPS HTTP API 均可认证。
+- `微信` 模块同时出现在 `available` 与 `enabled`，Rewrite、Scripting、MITM 均已开启。
+- `wechat.self.response` 已加载并启用，固定 tag 脚本与工作区源码 SHA-256 一致。
+- 使用 Surge iOS 自身的脚本评估引擎和合成的 `/mp/getappmsgad` 响应验证，广告计数被清零，
+  广告数组被清空，并产生不含敏感数据的完成日志。
+- 当时最近请求缓冲区没有真实 `/mp/getappmsgad` 或 `/mp/cps_product_info` 命中，因此公众号文章、
+  商品推广与常用小程序的人工回归仍需保留为发布前门禁，不能仅凭合成测试晋升为 `stable`。
