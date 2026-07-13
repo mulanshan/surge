@@ -48,6 +48,26 @@ EXPECTED_FANQIE_RULES = {
     "mon3-misc-lq.fqnovel.com",
     "mon3-misc.fqnovel.com",
 }
+EXPECTED_WEB_RULES = {
+    "DOMAIN-SUFFIX,amazon-adsystem.com,REJECT",
+    "DOMAIN-SUFFIX,adsrvr.org,REJECT",
+    "DOMAIN-SUFFIX,criteo.com,REJECT",
+    "DOMAIN-SUFFIX,outbrain.com,REJECT",
+    "DOMAIN-SUFFIX,pubmatic.com,REJECT",
+    "DOMAIN-SUFFIX,taboola.com,REJECT",
+    "DOMAIN-SUFFIX,tsyndicate.com,REJECT",
+    "DOMAIN-SUFFIX,uuidksinc.net,REJECT",
+    "DOMAIN-SUFFIX,mavrtracktor.com,REJECT",
+    "DOMAIN-SUFFIX,rallytrck.website,REJECT",
+    "DOMAIN-SUFFIX,snaptrckr.fun,REJECT",
+    "DOMAIN,cm.pxltag.com,REJECT",
+    "DOMAIN,creative.marzaent.com,REJECT",
+    "DOMAIN,go.marzaent.com,REJECT",
+    "DOMAIN,creative.mayzaent.com,REJECT",
+    "DOMAIN,go.mayzaent.com,REJECT",
+    "DOMAIN,creative.myavlive.com,REJECT",
+    "DOMAIN,go.myavlive.com,REJECT",
+}
 
 
 def module_rules(path: Path) -> list[str]:
@@ -85,7 +105,7 @@ def main() -> int:
     legacy_rules = module_rules(LEGACY)
     if canonical_rules != legacy_rules:
         raise SystemExit("legacy and canonical module rule bodies differ")
-    if len(canonical_rules) < 25:
+    if len(canonical_rules) < 90:
         raise SystemExit(f"unexpectedly small rule set: {len(canonical_rules)}")
     if len(canonical_rules) != len(set(canonical_rules)):
         raise SystemExit("duplicate rules found")
@@ -108,6 +128,10 @@ def main() -> int:
         missing = sorted(EXPECTED_FANQIE_RULES - actual_fanqie_rules)
         extra = sorted(actual_fanqie_rules - EXPECTED_FANQIE_RULES)
         raise SystemExit(f"Fanqie allowlist mismatch; missing={missing}, extra={extra}")
+
+    missing_web_rules = sorted(EXPECTED_WEB_RULES - set(canonical_rules))
+    if missing_web_rules:
+        raise SystemExit(f"required web advertising rules missing: {missing_web_rules}")
 
     readme = README.read_text(encoding="utf-8")
     if "RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/fanqie-novel-adblock.list" in readme:
@@ -136,7 +160,10 @@ def main() -> int:
     if "basic-adblock.sgmodule" not in exporter or removed_fanqie_module in exporter:
         raise SystemExit("Fanqie candidate exporter must use only the Basic AdBlock module")
 
-    print(f"basic-adblock OK: {len(canonical_rules)} rules; no script, MITM, rewrite, or mixed business domains")
+    print(
+        f"basic-adblock OK: {len(canonical_rules)} rules; "
+        "web advertising coverage present; no script, MITM, rewrite, or mixed business domains"
+    )
     return 0
 
 

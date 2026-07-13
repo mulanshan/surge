@@ -6,6 +6,9 @@
 
 仓库以后只保留一个通用入口：`rewrite/Surge/basic-adblock.sgmodule`。它只做域名级
 `REJECT`，不包含 JavaScript、MITM、URL Rewrite、Map Local、IP 规则或宽泛关键词。
+2026-07-13 的网页强化版把规则从 44 条扩展到 94 条：新增一组由 anti-AD、AdGuard DNS
+与 HaGeZi Pro 三方交叉确认的独立网页广告网络，以及 iPhone 真机当次页面中确认的广告像素、
+素材和跳转入口。没有把第三方清单直接混载进运行时。
 
 番茄小说按规则类型直接并入基础模块，只保留精确 `log` / `rtlog` / `mon` 主机，不建立专用模块。
 YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路径或响应体处理的 App 继续使用专用模块。
@@ -45,6 +48,7 @@ YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路�
 | [Sukka reject](https://github.com/SukkaW/Surge) | 基础 Domain-set 约 115,510 条，并另分 non-IP、drop、no-drop、URL regex、IP | 不把广告、隐私、反挖矿、恶意网址、HTTPDNS 等不同目标合并进基础层 |
 | [anti-AD](https://github.com/privacy-protection-tools/anti-AD) | Surge Domain-set 约 98,803 条，有长期白名单和误杀讨论 | 用作候选复核，不直接复制近十万条聚合数据 |
 | [app2smile rules](https://github.com/app2smile/rules) | 通用广告联盟与起点、B 站、贴吧等专用模块分开 | 采用“基础网络层 + 专用 App 模块”的分层思路，不复制第三方脚本 |
+| [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter) + [HaGeZi Pro](https://github.com/hagezi/dns-blocklists) | 与 anti-AD 交叉核验常见程序化广告、推荐广告和弹窗网络 | 只把三方一致且用途独立的域名手工写入自有模块；不远程加载这些列表 |
 
 社区历史误杀也用于确定排除边界，例如 `imasdk.googleapis.com` 可能影响视频播放、
 `activity.windows.com` 可能影响 Microsoft 同步、`mmstat.com` 可能影响登录/验证码。
@@ -86,8 +90,20 @@ Mac 月度统计还持续出现 `adnxs.com`、`adnxs-simple.com`、`adsafeprotec
 `ad-score.com`、`ad-m.net`、`adkernel.com`、`teads.tv` 与 `googleadsserving.cn`。
 这些都是独立广告网络域名，适合基础层精确拒绝。
 
-本轮实时快照读取了 Mac 最近 200 条和 iPhone 最近 50 条请求。除既有广告网络外，没有发现足够安全的
-新候选；`QUIC-BLOCK`、Sentry、Crashlytics、OpenTelemetry 等不能当作广告证据。
+### 2026-07-13 网页强化真机证据
+
+iPhone 上的基础模块已启用，生效配置也完整包含原有 44 条规则，但最近 50 条网页请求仍有一批
+广告相关主机按 `FINAL` 放行。新增规则优先覆盖两类：
+
+- 通用程序化广告与推荐网络：Amazon Ads、Criteo、OpenX、Outbrain、PubMatic、Rubicon、
+  Taboola、TripleLift 等。每个加入的整域都同时出现在 anti-AD、AdGuard DNS 和 HaGeZi Pro。
+- 当前页面实际出现的广告脚本、像素和跳转入口：`tsyndicate.com`、`uuidksinc.net`、
+  `mavrtracktor.com`、`godkc.com`、`rallytrck.website`、`snaptrckr.fun` 等；来源不足以支持
+  整域判断的轮换主机只加入精确 `DOMAIN`。
+
+同批出现但没有加入的包括页面主站、Cloudflare Challenge、播放器、推荐接口、图片/视频 CDN，
+以及 Google Analytics / Tag Manager。它们分别承担正文、防机器人、播放或站点功能，不能只凭
+“在有广告的页面出现”就判定为广告。`QUIC-BLOCK`、Sentry、Crashlytics、OpenTelemetry 也继续排除。
 
 ## 明确排除
 
