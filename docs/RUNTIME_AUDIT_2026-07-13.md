@@ -187,3 +187,43 @@ When the iPhone Surge UI eventually refreshes the canonical cloud subscription
 to 94 rules, the durable cleanup path is to enable `基础去广告模块`, disable the
 versioned local entry, and remove the local `.sgmodule` file only after the
 effective-profile rule count is reconfirmed.
+
+## Native DOMAIN-SET and YouTube log hardening rollout
+
+Pull request `#11` and immutable release `surge-self-v2026.07.13.4` completed on
+2026-07-13. The release, tag payload, GitHub Release checksum block, historical
+release audit, pull-request CI, `main` CI, and Pages deployment all passed.
+
+Nine domain-heavy mixed rulesets were split into 7,391 native DOMAIN-SET entries
+and 175 residual rules. The original 7,566-rule compatibility snapshots remain
+available for rollback, and automated tests reconstruct every original rule
+exactly from each optimized pair. The live profile retained its Pages URLs,
+policies, options, and first-match order. Its optimized downloaded text is
+124,352 bytes instead of 212,233 bytes for the nine full lists, a 41.4% decrease.
+
+After a timestamped iCloud profile backup and local `surge-cli --check`, the iOS
+profile was reloaded and all external resources refreshed. A first reload raced
+the new resource cache and recorded transient load-failure events; after the
+resources became ready, a clean reload produced no new event. Final state:
+
+- 36 of 36 external resources ready: 9 domain sets, 21 rule sets, and 6 scripts;
+- 205 top-level effective rules, including all 18 optimized pair entries;
+- successful controlled requests matched `microsoft.domainset`,
+  `youtube.domainset`, and `paypal.domainset` with their intended policies;
+- no failed or rejected controlled request after the final switch.
+
+The YouTube script now routes normal JSON, protobuf, schema-cleanup, and
+passthrough diagnostics through strict `debug === true` logging. Safety aborts
+and top-level errors remain unconditional. Synthetic tests cover debug false,
+debug true, the string value `"false"`, schema safety, growth/inflation aborts,
+and malformed input.
+
+The official module API can toggle modules but cannot refresh an installed cloud
+definition. The cloud `YouTube` entry therefore remained on the previous script
+pin after an off/on cycle and full external-resource refresh. It was disabled
+atomically and replaced by one iCloud-local fallback named `YouTube 稳定 .4`.
+The final effective profile contains exactly one YouTube response script, pinned
+to `.4` with `debug=false`; a controlled player request matched
+`youtube.domainset`, executed that script, and was modified without request
+failure. The fallback file should be removed only after the canonical cloud
+subscription is updated to `.4` and the single-script invariant is reconfirmed.

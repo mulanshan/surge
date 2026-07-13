@@ -6,7 +6,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 | Module | Channel | Last live evidence | Required companion | Scope note |
 | --- | --- | --- | --- | --- |
-| YouTube | stable | 2026-07-12, iOS playback/feed requests | none | Playback ads, feed cards, background playback and PiP |
+| YouTube | stable | 2026-07-13, `.4` script execution and native DOMAIN-SET routing | none | Playback ads, feed cards, background playback and PiP |
 | Instagram | limited | 2026-07-13, native HTTPS fallback and netseer rejection | none | Web endpoints only; pinned native API stays outside MITM |
 | 高德地图 | candidate | 2026-07-13, m5-x MITM and telemetry endpoints | 基础去广告模块 recommended | Conservative first-party response cleanup |
 | 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
@@ -30,6 +30,22 @@ scripts used by a stable module are pinned to an immutable repository tag.
   - Surge iOS 5.19.0 (3727)
 - The public module install URLs remain under `main`; each script-backed module
   pins its `script-path` to the immutable tag above.
+
+## Current iOS rollout evidence
+
+- The effective profile contains 205 top-level rules, including nine adjacent
+  `DOMAIN-SET` / residual `RULE-SET` pairs with the original policies and order.
+- All 36 external resources are ready: 9 domain sets, 21 rule sets, and 6 scripts.
+- Controlled Microsoft, YouTube, and PayPal requests completed successfully and
+  matched `microsoft.domainset`, `youtube.domainset`, and `paypal.domainset`.
+- The installed cloud `YouTube` definition did not refresh through the official
+  module API. It is disabled on the audited device, while the single enabled
+  iCloud-local fallback `YouTube 稳定 .4` pins the same public `.4` script with
+  `debug=false`. A synthetic valid-JSON player response was modified by that
+  script without a failed or rejected request.
+- Once Surge's UI updates the canonical cloud subscription to `.4`, enable
+  `YouTube`, disable `YouTube 稳定 .4`, verify one `.4` YouTube script remains,
+  and then remove `modules/youtube-stable-v20260713-4.sgmodule`.
 
 The first 2026-07-13 iOS rollout used versioned iCloud-local module definitions
 because the official remote API cannot update an installed module definition.
