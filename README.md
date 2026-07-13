@@ -203,20 +203,6 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 - AppsFlyer、Adjust、`app-measurement.com` 等归因/统计默认不进入基础核心规则
 - 专用 App 的路径、响应体和界面广告继续由各自的专用模块处理
 
-旧地址仍保留为兼容入口，内容与新模块同步；新旧地址不要同时启用：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/fanqie-novel-adblock.sgmodule
-```
-
-旧 `rule/Surge/fanqie-novel-adblock.list` 仅为已有外部资源兼容保留，内容同步收敛到当前基础模块的安全域名边界，不再作为新配置入口。
-官方说明、社区方案比较、真机日志证据和维护流程见：
-[docs/BASIC_ADBLOCK_RESEARCH.md](docs/BASIC_ADBLOCK_RESEARCH.md)。修改后可运行：
-
-```bash
-python3 scripts/check-basic-adblock.py
-```
-
 ### 京东
 
 文件：[rewrite/Surge/jd-self.sgmodule](rewrite/Surge/jd-self.sgmodule)
