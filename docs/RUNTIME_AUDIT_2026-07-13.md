@@ -227,3 +227,13 @@ to `.4` with `debug=false`; a controlled player request matched
 `youtube.domainset`, executed that script, and was modified without request
 failure. The fallback file should be removed only after the canonical cloud
 subscription is updated to `.4` and the single-script invariant is reconfirmed.
+
+The owner then used Surge's manual module-update action. Final verification
+confirmed that the canonical cloud `YouTube` module is enabled, the local
+fallback is no longer available, and all eight intended modules remain enabled.
+The effective profile contains one YouTube response script from the cloud
+module, pinned to `surge-self-v2026.07.13.4` with query `v=20260713-2` and
+`debug=false`. All 36 resources remained ready, the profile retained 205
+top-level rules, and a new controlled player request was modified by
+`youtube.self.response (YouTube)` without failure or rejection. A clean reload
+after the cloud switch produced no new failure-like event.
