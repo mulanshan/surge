@@ -2,6 +2,7 @@
   "schema_version": 1,
   "tag": "surge-self-v2026.07.13.3",
   "status": "active",
+  "release_commit": "fb9ad28190e738dd39ffb7ddbadb5b324365af38",
   "supersedes": "surge-self-v2026.07.13.2",
   "scripts": [
     {
