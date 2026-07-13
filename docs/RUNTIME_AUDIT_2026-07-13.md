@@ -63,3 +63,46 @@ After publishing the stable tag:
 3. Confirm the current module set has no duplicate compatibility entries.
 4. Use targeted, redacted app sessions to promote candidate modules in
    `docs/MODULE_STATUS.md` to stable.
+
+## Post-release rollout result
+
+The repository hardening release was deployed later on 2026-07-13:
+
+- Pull request CI and the subsequent `main` push both passed.
+- Immutable tag and GitHub Release: `surge-self-v2026.07.13`.
+- The five tagged response scripts matched the reviewed local SHA-256 values.
+- `main` now requires pull requests and the `validate` status check; force push
+  and branch deletion are disabled.
+- The obsolete `gh-pages` branch was deleted. GitHub Pages continues to build
+  from `main` with HTTPS enforced.
+- Private vulnerability reporting is enabled.
+- The scheduled managed-rule workflow completed successfully and created no PR
+  because all 17 reviewed source pins still matched.
+
+The installed remote iOS module cache did not refresh through the public HTTP
+API because Surge exposes module enable/disable state but no module-install or
+module-update endpoint. To avoid continuing to run the old broad MITM and
+unlimited-response definitions, the audited modules were copied into the shared
+iCloud `modules/` directory with versioned names and switched atomically:
+
+- YouTube Self 2026.07.13
+- Instagram Self 2026.07.13
+- 高德地图 Self 2026.07.13
+- 扫描全能王 Self v2 2026.07.13
+- 京东 Self 2026.07.13
+
+The previous five installed module entries remain available but disabled. The
+existing 基础去广告模块 remains enabled because its rule payload did not require
+a script-definition migration. The final effective profile confirmed:
+
+- all five script paths use `surge-self-v2026.07.13`;
+- all response size limits are finite;
+- the narrowed MITM host list is active;
+- every tagged script resource reports `ready=1`;
+- Apple TV media rules precede Apple system DIRECT rules;
+- the Apple TV ruleset reports `ready=1` after the initial Pages deployment
+  race was resolved by a successful external-resource refresh;
+- the final recent-request window contains no failed or rejected requests.
+
+`allow-wifi-access` remained unchanged, as required by the explicit release
+exception above.

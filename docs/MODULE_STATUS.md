@@ -30,5 +30,11 @@ scripts used by a stable module are pinned to an immutable repository tag.
 - The public module install URLs remain under `main`; each script-backed module
   pins its `script-path` to the immutable tag above.
 
+The 2026-07-13 iOS rollout uses versioned iCloud-local module definitions for
+the five script-backed modules because the official remote API cannot update an
+installed module definition. Those local definitions still load their scripts
+from the immutable public tag. The older installed entries are disabled, not
+simultaneously active.
+
 Changing a module from `candidate` to `stable` requires updating this matrix in
 the same pull request as the release notes.
