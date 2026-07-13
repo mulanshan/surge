@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "rewrite/Surge/basic-adblock.sgmodule"
 LEGACY = ROOT / "rewrite/Surge/fanqie-novel-adblock.sgmodule"
 README = ROOT / "README.md"
-CAMSCANNER = ROOT / "rewrite/Surge/camscanner.sgmodule"
+CAMSCANNER = ROOT / "rewrite/Surge/camscanner-self.sgmodule"
 
 FORBIDDEN_SECTIONS = {"[Script]", "[MITM]", "[URL Rewrite]", "[Map Local]"}
 FORBIDDEN_TOKENS = {

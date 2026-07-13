@@ -1,5 +1,5 @@
 #!name=YouTube
-#!desc=自有可审计 YouTube 去广告与后台播放唯一入口：处理播放广告，并按完整信息流条目清理首页、搜索及视频详情页赞助卡。不含第三方代码。
+#!desc=固定云端订阅，自有可审计 YouTube 去广告与后台播放唯一入口：处理播放广告，并按完整信息流条目清理首页、搜索及视频详情页赞助卡。不含第三方代码。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube

@@ -32,9 +32,10 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 The first 2026-07-13 iOS rollout used versioned iCloud-local module definitions
 because the official remote API cannot update an installed module definition.
-The canonical public modules now use new URL paths and display names without
-`Self`. A device must install those new cloud URLs before the old URL-backed
-entries are removed; all scripts remain pinned to the immutable public tag.
+The maintained public module URLs are now the permanent device-management
+entries: existing devices update those subscriptions in place, while new
+devices install the same URLs once. Display names no longer contain `Self`, and
+all response scripts remain pinned to the immutable public tag.
 
 Changing a module from `candidate` to `stable` requires updating this matrix in
 the same pull request as the release notes.

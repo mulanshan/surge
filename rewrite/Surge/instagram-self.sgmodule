@@ -1,5 +1,5 @@
 #!name=Instagram
-#!desc=自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的辅助探测请求；原生 iOS 主链路因证书钉扎保持直连。不含第三方脚本。
+#!desc=固定云端订阅，自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的辅助探测请求；原生 iOS 主链路因证书钉扎保持直连。不含第三方脚本。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=Instagram
