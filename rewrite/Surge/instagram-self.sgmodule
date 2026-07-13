@@ -1,24 +1,23 @@
 #!name=Instagram
-#!desc=固定云端订阅，自有可审计 Instagram 增强版：清理 Web Feed 与原生 App Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的辅助探测请求。不含第三方脚本。
+#!desc=固定云端订阅，自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的辅助探测请求。原生 iOS App 主链路因证书钉扎无法解密，改为拦截已知广告/追踪辅助请求。不含第三方脚本。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=Instagram
 #!openUrl=https://apps.apple.com/us/app/instagram/id389801252
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n可工作范围：对 www.instagram.com 的 api/graphql、graphql/query、feed、discover、clips 响应做广告节点清理；对 i.instagram.com 原生 API 的 feed/timeline、discover、clips 响应做同等清理。两个端点的 QUIC/UDP 都被拦以强制 TCP 回退，使 MITM 脚本可以执行。
+#!arguments-desc=- 调试参数：[true, false]\n\n可工作范围：对 www.instagram.com 的 api/graphql、graphql/query、feed、discover、clips 响应做广告节点清理（浏览器访问）。原生 App 的 i.instagram.com 因证书钉扎无法 MITM，因此原生 App 去广告依赖 Rule 级别拦截已知广告/追踪辅助请求。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-07-13
 
-# Both www.instagram.com (web API) and i.instagram.com (native API) are targeted.
-# QUIC/UDP is blocked on both to force TCP fallback, enabling HTTPS response scripting.
-# Media CDN (cdninstagram.com / fbcdn.net) remains direct since scripts only inspect
-# JSON API responses, not media content.
+# The native iOS API (i.instagram.com) uses certificate pinning. Surge's MITM is
+# rejected by the app, so the feed response cannot be decrypted or modified.
+# Only www.instagram.com (browser/web API) can be MITM'd for response cleaning.
+# For native app ads, block known ad/tracking auxiliary endpoints via rules instead.
 
 [Rule]
-# Force both API endpoints to TCP so HTTPS response scripting can run.
+# Force the web endpoint to TCP so HTTPS response scripting can run.
 AND,((DOMAIN,www.instagram.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN,i.instagram.com), (PROTOCOL,UDP)),REJECT
 
 # Live iPhone logs showed this fbcdn.net auxiliary network-association probe
 # carrying no content payload. Do not reject Instagram API, Graph, chat or CDN
@@ -27,7 +26,6 @@ DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT
 
 [Script]
 instagram.self.web.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/)).*$,requires-body=1,max-size=6291456,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260713-2,argument="{\"debug\":{{{启用调试模式}}}}"
-instagram.self.native.response = type=http-response,pattern=^https:\/\/i\.instagram\.com\/api\/v1\/(?:feed\/|discover\/|clips\/).*$,requires-body=1,max-size=6291456,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260713-2,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [MITM]
-hostname = %APPEND% www.instagram.com, i.instagram.com
+hostname = %APPEND% www.instagram.com
