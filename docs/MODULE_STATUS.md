@@ -6,11 +6,11 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 | Module | Channel | Last live evidence | Required companion | Scope note |
 | --- | --- | --- | --- | --- |
-| YouTube Self | stable | 2026-07-12, iOS playback/feed requests | none | Playback ads, feed cards, background playback and PiP |
-| Instagram Self | limited | 2026-07-12, Instagram 437.2.0 | none | Web endpoints only; pinned native API stays outside MITM |
-| 高德地图 Self | candidate | 2026-06-08 traffic fixtures | 基础去广告模块 recommended | Conservative first-party response cleanup |
-| 扫描全能王 Self v2 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
-| 京东 Self | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
+| YouTube | stable | 2026-07-12, iOS playback/feed requests | none | Playback ads, feed cards, background playback and PiP |
+| Instagram | limited | 2026-07-12, Instagram 437.2.0 | none | Web endpoints only; pinned native API stays outside MITM |
+| 高德地图 | candidate | 2026-06-08 traffic fixtures | 基础去广告模块 recommended | Conservative first-party response cleanup |
+| 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
+| 京东 | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
 
 ## Status meanings
@@ -30,11 +30,11 @@ scripts used by a stable module are pinned to an immutable repository tag.
 - The public module install URLs remain under `main`; each script-backed module
   pins its `script-path` to the immutable tag above.
 
-The 2026-07-13 iOS rollout uses versioned iCloud-local module definitions for
-the five script-backed modules because the official remote API cannot update an
-installed module definition. Those local definitions still load their scripts
-from the immutable public tag. The older installed entries are disabled, not
-simultaneously active.
+The first 2026-07-13 iOS rollout used versioned iCloud-local module definitions
+because the official remote API cannot update an installed module definition.
+The canonical public modules now use new URL paths and display names without
+`Self`. A device must install those new cloud URLs before the old URL-backed
+entries are removed; all scripts remain pinned to the immutable public tag.
 
 Changing a module from `candidate` to `stable` requires updating this matrix in
 the same pull request as the release notes.

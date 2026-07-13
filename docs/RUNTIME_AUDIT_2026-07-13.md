@@ -35,8 +35,9 @@ Enabled during the audit:
 - 京东 Self
 - 基础去广告模块
 
-The legacy Instagram Feed and Fanqie compatibility module entries were not
-enabled alongside their current replacements.
+The legacy Fanqie compatibility module entry was not enabled alongside its
+current replacement. The retired Instagram Feed compatibility entry was also
+disabled during the audit and has since been removed from the repository.
 
 ## External resources and logs
 
@@ -60,7 +61,7 @@ After publishing the stable tag:
 
 1. Update all external resources on iOS.
 2. Confirm every script resolves through the tagged URL and remains `ready=1`.
-3. Confirm the current module set has no duplicate compatibility entries.
+3. Confirm the current module set has no duplicate or retired entries.
 4. Use targeted, redacted app sessions to promote candidate modules in
    `docs/MODULE_STATUS.md` to stable.
 
@@ -106,3 +107,13 @@ a script-definition migration. The final effective profile confirmed:
 
 `allow-wifi-access` remained unchanged, as required by the explicit release
 exception above.
+
+## Subsequent cloud-module migration
+
+The owner later chose cloud-installed modules for easier setup on replacement
+and additional devices. A live check after the old cloud entries were manually
+re-enabled showed that Surge had reused their stale URL-backed definitions:
+they still had unlimited response sizes and pre-release script URLs. The public
+module files were therefore moved to new canonical URL paths and renamed to
+`YouTube`, `Instagram`, `高德地图`, `扫描全能王`, and `京东`. The new URLs must be
+installed and verified before the old `Self`-named cache entries are removed.

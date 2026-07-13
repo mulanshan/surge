@@ -20,6 +20,21 @@ MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 SCRIPT_PATH_RE = re.compile(r"(?:^|,)script-path=([^,\s]+)")
 STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}")
+CANONICAL_MODULE_NAMES = {
+    "youtube.sgmodule": "YouTube",
+    "instagram.sgmodule": "Instagram",
+    "amap.sgmodule": "高德地图",
+    "camscanner.sgmodule": "扫描全能王",
+    "jd.sgmodule": "京东",
+}
+RETIRED_MODULE_FILES = {
+    "youtube-self.sgmodule",
+    "instagram-self.sgmodule",
+    "instagram-feed-self.sgmodule",
+    "amap-self.sgmodule",
+    "camscanner-self.sgmodule",
+    "jd-self.sgmodule",
+}
 
 
 def fail(message: str) -> None:
@@ -76,11 +91,25 @@ def module_script_targets() -> dict[Path, list[Path]]:
     return targets
 
 
-def check_compatibility_modules(targets: dict[Path, list[Path]]) -> None:
-    instagram = targets.get(MODULE_DIR / "instagram-self.sgmodule", [])
-    instagram_legacy = targets.get(MODULE_DIR / "instagram-feed-self.sgmodule", [])
-    if instagram != instagram_legacy:
-        fail("Instagram compatibility module must use the same local script as Instagram Self")
+def check_module_display_names() -> None:
+    for retired_name in sorted(RETIRED_MODULE_FILES):
+        if (MODULE_DIR / retired_name).exists():
+            fail(f"retired module file still exists: rewrite/Surge/{retired_name}")
+
+    for file_name, expected_name in CANONICAL_MODULE_NAMES.items():
+        module = MODULE_DIR / file_name
+        if not module.is_file():
+            fail(f"missing canonical module: rewrite/Surge/{file_name}")
+        first_line = module.read_text(encoding="utf-8").splitlines()[0]
+        if first_line != f"#!name={expected_name}":
+            fail(f"unexpected module display name in rewrite/Surge/{file_name}: {first_line}")
+
+    for module in sorted(MODULE_DIR.glob("*.sgmodule")):
+        first_line = module.read_text(encoding="utf-8").splitlines()[0]
+        if not first_line.startswith("#!name="):
+            fail(f"module has no display name: {module.relative_to(ROOT)}")
+        if "self" in first_line.casefold():
+            fail(f"module display name still contains Self: {module.relative_to(ROOT)}")
 
 
 def rule_lines(path: Path) -> list[str]:
@@ -135,8 +164,8 @@ def main() -> int:
     args = parser.parse_args()
 
     if not args.generated_only:
+        check_module_display_names()
         targets = module_script_targets()
-        check_compatibility_modules(targets)
         script_count = sum(len(items) for items in targets.values())
         print(f"module paths OK: {len(targets)} modules, {script_count} self-hosted script references")
 

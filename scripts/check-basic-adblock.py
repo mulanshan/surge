@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "rewrite/Surge/basic-adblock.sgmodule"
 LEGACY = ROOT / "rewrite/Surge/fanqie-novel-adblock.sgmodule"
 README = ROOT / "README.md"
-CAMSCANNER = ROOT / "rewrite/Surge/camscanner-self.sgmodule"
+CAMSCANNER = ROOT / "rewrite/Surge/camscanner.sgmodule"
 
 FORBIDDEN_SECTIONS = {"[Script]", "[MITM]", "[URL Rewrite]", "[Map Local]"}
 FORBIDDEN_TOKENS = {
@@ -114,8 +114,8 @@ def main() -> int:
         raise SystemExit("README still recommends the legacy advertising RULE-SET")
 
     camscanner = CAMSCANNER.read_text(encoding="utf-8")
-    if not camscanner.startswith("#!name=扫描全能王 Self v2\n"):
-        raise SystemExit("current CamScanner module must use the v2 display name")
+    if not camscanner.startswith("#!name=扫描全能王\n"):
+        raise SystemExit("current CamScanner module must use the canonical display name")
     migrated_tokens = {
         "doubleclick.net",
         "googleadservices.com",
