@@ -34,7 +34,7 @@ function parseArgument() {
 }
 
 function debug(...args) {
-  if (config.debug) logbook(args.join(" "));
+  if (config.debug === true) logbook(args.join(" "));
 }
 
 function logbook(message) {
@@ -1366,7 +1366,7 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
   feedAdCardsRemoved = counters.removed;
 
   if (counters.removed === 0) {
-    logbook(
+    debug(
       `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`
     );
     return bytes;
@@ -1389,7 +1389,7 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
     return bytes;
   }
 
-  logbook(
+  debug(
     `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
   );
   return output;
@@ -1604,7 +1604,7 @@ try {
   if (looksLikeJsonText(originalBody)) {
     const textBody = typeof originalBody === "string" ? originalBody : bodyText(originalBody);
     const output = cleanJson(textBody, endpoint);
-    logbook(`json ${endpoint} type=${inputType} ${textBody.length} -> ${output.length}`);
+    debug(`json ${endpoint} type=${inputType} ${textBody.length} -> ${output.length}`);
     $done({ body: output });
   } else {
     const input = bodyBytes(originalBody);
@@ -1637,11 +1637,11 @@ try {
         }
       }
       if (!changed) {
-        logbook(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
+        debug(`protobuf-passthrough ${endpoint} type=${inputType} bytes=${input.length}`);
         $done({});
       } else {
         const removed = removedCount ? ` removed=${removedCount}` : "";
-        logbook(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
+        debug(`protobuf ${endpoint} type=${inputType} ${input.length} -> ${output.length}${removed}`);
         $done({ body: toResponseBody(output, originalBody) });
       }
     }

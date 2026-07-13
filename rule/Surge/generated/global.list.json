@@ -20,5 +20,9 @@
       "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 1265
     }
-  ]
+  ],
+  "domain_set_output": "rule/Surge/generated/global.domainset",
+  "non_domain_output": "rule/Surge/generated/global.non-domain.list",
+  "domain_set_rule_count": 1255,
+  "non_domain_rule_count": 10
 }

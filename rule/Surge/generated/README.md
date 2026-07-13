@@ -22,22 +22,22 @@ and merge it through a PR; this command does not publish anything by itself:
 scripts/generate-managed-surge-rules.py --refresh-sources
 ```
 
-| ID | File | Suggested policy | Unique rules |
-| --- | --- | --- | ---: |
-| microsoft | `microsoft.list` | `DIRECT` | 671 |
-| china-direct | `china-direct.list` | `DIRECT` | 3752 |
-| private-tracker | `private-tracker.list` | `DIRECT` | 248 |
-| apple | `apple.list` | `DIRECT` | 78 |
-| google | `google.list` | `自动` | 698 |
-| openai | `openai.list` | `自动` | 35 |
-| telegram | `telegram.list` | `Proxy` | 30 |
-| apple-tv | `apple-tv.list` | `流媒体` | 10 |
-| youtube | `youtube.list` | `自动` | 190 |
-| netflix | `netflix.list` | `绿云` | 1157 |
-| bahamut | `bahamut.list` | `流媒体` | 8 |
-| disney | `disney.list` | `流媒体` | 173 |
-| hbo-usa | `hbo-usa.list` | `流媒体` | 11 |
-| prime-video | `prime-video.list` | `流媒体` | 18 |
-| streaming | `streaming.list` | `自动` | 321 |
-| paypal | `paypal.list` | `自动` | 248 |
-| global | `global.list` | `Proxy` | 1265 |
+| ID | Compatibility file | Optimized files | Suggested policy | Unique rules |
+| --- | --- | --- | --- | ---: |
+| microsoft | `microsoft.list` | `microsoft.domainset` (664) + `microsoft.non-domain.list` (7) | `DIRECT` | 671 |
+| china-direct | `china-direct.list` | `china-direct.domainset` (3691) + `china-direct.non-domain.list` (61) | `DIRECT` | 3752 |
+| private-tracker | `private-tracker.list` | `private-tracker.domainset` (241) + `private-tracker.non-domain.list` (7) | `DIRECT` | 248 |
+| apple | `apple.list` | - | `DIRECT` | 78 |
+| google | `google.list` | `google.domainset` (685) + `google.non-domain.list` (13) | `自动` | 698 |
+| openai | `openai.list` | - | `自动` | 35 |
+| telegram | `telegram.list` | - | `Proxy` | 30 |
+| apple-tv | `apple-tv.list` | - | `流媒体` | 10 |
+| youtube | `youtube.list` | `youtube.domainset` (179) + `youtube.non-domain.list` (11) | `自动` | 190 |
+| netflix | `netflix.list` | - | `绿云` | 1157 |
+| bahamut | `bahamut.list` | - | `流媒体` | 8 |
+| disney | `disney.list` | `disney.domainset` (172) + `disney.non-domain.list` (1) | `流媒体` | 173 |
+| hbo-usa | `hbo-usa.list` | - | `流媒体` | 11 |
+| prime-video | `prime-video.list` | - | `流媒体` | 18 |
+| streaming | `streaming.list` | `streaming.domainset` (258) + `streaming.non-domain.list` (63) | `自动` | 321 |
+| paypal | `paypal.list` | `paypal.domainset` (246) + `paypal.non-domain.list` (2) | `自动` | 248 |
+| global | `global.list` | `global.domainset` (1255) + `global.non-domain.list` (10) | `Proxy` | 1265 |

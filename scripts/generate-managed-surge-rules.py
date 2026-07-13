@@ -44,6 +44,8 @@ SET_KEYS = {
     "name",
     "description",
     "output",
+    "domain_set_output",
+    "non_domain_output",
     "suggested_policy",
     "suggested_options",
     "include_process_name",
@@ -78,6 +80,8 @@ class RuleSet:
     name: str
     description: str
     output: str
+    domain_set_output: str | None
+    non_domain_output: str | None
     suggested_policy: str
     suggested_options: list[str]
     include_process_name: bool
@@ -90,6 +94,8 @@ class RuleSet:
 class GeneratedRuleSet:
     metadata: dict[str, Any]
     list_text: str
+    domain_set_text: str | None
+    non_domain_text: str | None
     metadata_text: str
     source_hashes: dict[tuple[str, str], str]
 
@@ -240,8 +246,8 @@ def normalize_rule_line(
 def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
     data = parse_simple_yaml(path)
     reject_unknown_keys(data, TOP_LEVEL_KEYS, "manifest")
-    if data.get("version") != 2:
-        raise ValueError("manifest: version must be 2")
+    if data.get("version") != 3:
+        raise ValueError("manifest: version must be 3")
     generated_dir_value = require_string(data, "generated_dir", "manifest")
     generated_dir = ROOT / generated_dir_value
     try:
@@ -265,10 +271,38 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
             raise ValueError(f"{context}: invalid id {rule_id!r}")
         if Path(output).name != output or not output.endswith(".list"):
             raise ValueError(f"{context}: output must be a .list basename")
-        if rule_id in seen_ids or output in seen_outputs:
+        raw_domain_set_output = item.get("domain_set_output")
+        raw_non_domain_output = item.get("non_domain_output")
+        if (raw_domain_set_output is None) != (raw_non_domain_output is None):
+            raise ValueError(
+                f"{context}: domain_set_output and non_domain_output must be configured together"
+            )
+        domain_set_output: str | None = None
+        non_domain_output: str | None = None
+        if raw_domain_set_output is not None:
+            domain_set_output = require_string(item, "domain_set_output", context)
+            non_domain_output = require_string(item, "non_domain_output", context)
+            if Path(domain_set_output).name != domain_set_output or not domain_set_output.endswith(
+                ".domainset"
+            ):
+                raise ValueError(f"{context}: domain_set_output must be a .domainset basename")
+            if Path(non_domain_output).name != non_domain_output or not non_domain_output.endswith(
+                ".non-domain.list"
+            ):
+                raise ValueError(
+                    f"{context}: non_domain_output must be a .non-domain.list basename"
+                )
+        outputs = [output]
+        if domain_set_output is not None and non_domain_output is not None:
+            outputs.extend([domain_set_output, non_domain_output])
+        if (
+            rule_id in seen_ids
+            or len(outputs) != len(set(outputs))
+            or any(name in seen_outputs for name in outputs)
+        ):
             raise ValueError(f"{context}: duplicate id or output")
         seen_ids.add(rule_id)
-        seen_outputs.add(output)
+        seen_outputs.update(outputs)
 
         options = item.get("suggested_options", [])
         if not isinstance(options, list) or any(option not in ALLOWED_SUGGESTED_OPTIONS for option in options):
@@ -343,6 +377,8 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
                 name=require_string(item, "name", context),
                 description=require_string(item, "description", context),
                 output=output,
+                domain_set_output=domain_set_output,
+                non_domain_output=non_domain_output,
                 suggested_policy=require_string(item, "suggested_policy", context),
                 suggested_options=list(options),
                 include_process_name=include_process_name,
@@ -385,6 +421,21 @@ def rule_sort_key(line: str) -> tuple[int, str]:
 
 def safe_width_lines(text: str, width: int = 88) -> list[str]:
     return textwrap.wrap(text, width=width, break_long_words=False, break_on_hyphens=False)
+
+
+def split_domain_set_entries(ordered_rules: list[str]) -> tuple[list[str], list[str]]:
+    """Convert exact/suffix domain rules and retain every other rule verbatim."""
+    domain_set: list[str] = []
+    non_domain: list[str] = []
+    for rule in ordered_rules:
+        rule_type, value, *_rest = rule.split(",")
+        if rule_type == "DOMAIN":
+            domain_set.append(value)
+        elif rule_type == "DOMAIN-SUFFIX":
+            domain_set.append(f".{value}")
+        else:
+            non_domain.append(rule)
+    return domain_set, non_domain
 
 
 def build_one(
@@ -433,31 +484,55 @@ def build_one(
         )
 
     ordered = sorted(entries, key=rule_sort_key)
-    lines = [
+    header_lines = [
         f"# NAME: {rule_set.name}",
         f"# ID: {rule_set.rule_id}",
         "# Generated by scripts/generate-managed-surge-rules.py",
         "# Do not edit this file directly unless you intentionally want to fork it.",
     ]
     for wrapped in safe_width_lines(rule_set.description):
-        lines.append(f"# {wrapped}")
-    lines.extend([f"# Suggested policy: {rule_set.suggested_policy}", "# Sources:"])
+        header_lines.append(f"# {wrapped}")
+    header_lines.extend([f"# Suggested policy: {rule_set.suggested_policy}", "# Sources:"])
     for meta in source_meta:
-        lines.append(f"# - {meta['name']}: {meta['url']}")
-        lines.append(f"#   sha256: {meta['sha256']}")
-        lines.append(f"#   license: {meta['license']} ({meta['license_url']})")
-        lines.append(f"#   rules: {meta['rule_count']}")
+        header_lines.append(f"# - {meta['name']}: {meta['url']}")
+        header_lines.append(f"#   sha256: {meta['sha256']}")
+        header_lines.append(f"#   license: {meta['license']} ({meta['license_url']})")
+        header_lines.append(f"#   rules: {meta['rule_count']}")
     if rule_set.include_rules:
-        lines.append("# Curated rules moved from overlapping generated sets:")
+        header_lines.append("# Curated rules moved from overlapping generated sets:")
         for rule in sorted(rule_set.include_rules, key=rule_sort_key):
-            lines.append(f"# - {rule}")
+            header_lines.append(f"# - {rule}")
     if rule_set.exclude_rules:
-        lines.append("# Excluded overlapping rules:")
+        header_lines.append("# Excluded overlapping rules:")
         for rule in sorted(rule_set.exclude_rules, key=rule_sort_key):
-            lines.append(f"# - {rule}")
-    lines.extend([f"# Total unique rules: {len(ordered)}", ""])
-    lines.extend(ordered)
+            header_lines.append(f"# - {rule}")
+    lines = [*header_lines, f"# Total unique rules: {len(ordered)}", "", *ordered]
     list_text = "\n".join(lines).rstrip() + "\n"
+
+    domain_set_text: str | None = None
+    non_domain_text: str | None = None
+    domain_set_entries: list[str] = []
+    non_domain_entries: list[str] = []
+    if rule_set.domain_set_output is not None:
+        domain_set_entries, non_domain_entries = split_domain_set_entries(ordered)
+        if not domain_set_entries:
+            raise ValueError(f"{rule_set.rule_id}: optimized split contains no domain rules")
+        domain_set_lines = [
+            *header_lines,
+            "# Artifact: Surge DOMAIN-SET (exact domains and leading-dot suffix domains only).",
+            f"# Total DOMAIN-SET entries: {len(domain_set_entries)}",
+            "",
+            *domain_set_entries,
+        ]
+        domain_set_text = "\n".join(domain_set_lines).rstrip() + "\n"
+        non_domain_lines = [
+            *header_lines,
+            "# Artifact: residual Surge RULE-SET (all rules not representable by DOMAIN-SET).",
+            f"# Total residual rules: {len(non_domain_entries)}",
+            "",
+            *non_domain_entries,
+        ]
+        non_domain_text = "\n".join(non_domain_lines).rstrip() + "\n"
 
     metadata = {
         "id": rule_set.rule_id,
@@ -471,9 +546,24 @@ def build_one(
         "unique_rule_count": len(ordered),
         "sources": source_meta,
     }
+    if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
+        metadata.update(
+            {
+                "domain_set_output": str(
+                    (ROOT / "rule/Surge/generated" / rule_set.domain_set_output).relative_to(ROOT)
+                ),
+                "non_domain_output": str(
+                    (ROOT / "rule/Surge/generated" / rule_set.non_domain_output).relative_to(ROOT)
+                ),
+                "domain_set_rule_count": len(domain_set_entries),
+                "non_domain_rule_count": len(non_domain_entries),
+            }
+        )
     return GeneratedRuleSet(
         metadata=metadata,
         list_text=list_text,
+        domain_set_text=domain_set_text,
+        non_domain_text=non_domain_text,
         metadata_text=json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
         source_hashes=source_hashes,
     )
@@ -524,12 +614,19 @@ def index_text(generated: list[dict[str, Any]]) -> str:
         "scripts/generate-managed-surge-rules.py --refresh-sources",
         "```",
         "",
-        "| ID | File | Suggested policy | Unique rules |",
-        "| --- | --- | --- | ---: |",
+        "| ID | Compatibility file | Optimized files | Suggested policy | Unique rules |",
+        "| --- | --- | --- | --- | ---: |",
     ]
     for item in generated:
+        optimized = "-"
+        if item.get("domain_set_output") and item.get("non_domain_output"):
+            optimized = (
+                f"`{Path(item['domain_set_output']).name}` ({item['domain_set_rule_count']}) + "
+                f"`{Path(item['non_domain_output']).name}` ({item['non_domain_rule_count']})"
+            )
         lines.append(
-            f"| {item['id']} | `{Path(item['output']).name}` | `{item['suggested_policy']}` | {item['unique_rule_count']} |"
+            f"| {item['id']} | `{Path(item['output']).name}` | {optimized} | "
+            f"`{item['suggested_policy']}` | {item['unique_rule_count']} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -633,6 +730,10 @@ def main() -> int:
                 built.append(item)
                 source_hashes.update(item.source_hashes)
                 write_staged_file(staging_dir, rule_set.output, item.list_text)
+                if item.domain_set_text is not None and rule_set.domain_set_output is not None:
+                    write_staged_file(staging_dir, rule_set.domain_set_output, item.domain_set_text)
+                if item.non_domain_text is not None and rule_set.non_domain_output is not None:
+                    write_staged_file(staging_dir, rule_set.non_domain_output, item.non_domain_text)
                 write_staged_file(staging_dir, f"{rule_set.output}.json", item.metadata_text)
 
             generated_metadata = [item.metadata for item in built]
@@ -654,6 +755,16 @@ def main() -> int:
                 for rule_set, item in zip(sets, built):
                     if not compare_candidate(generated_dir / rule_set.output, item.list_text):
                         mismatches.append(rule_set.output)
+                    if item.domain_set_text is not None and rule_set.domain_set_output is not None:
+                        if not compare_candidate(
+                            generated_dir / rule_set.domain_set_output, item.domain_set_text
+                        ):
+                            mismatches.append(rule_set.domain_set_output)
+                    if item.non_domain_text is not None and rule_set.non_domain_output is not None:
+                        if not compare_candidate(
+                            generated_dir / rule_set.non_domain_output, item.non_domain_text
+                        ):
+                            mismatches.append(rule_set.non_domain_output)
                     if not compare_candidate(generated_dir / f"{rule_set.output}.json", item.metadata_text):
                         mismatches.append(f"{rule_set.output}.json")
                 if not compare_candidate(generated_dir / "README.md", readme_text):
@@ -667,6 +778,15 @@ def main() -> int:
 
             for rule_set in sets:
                 atomic_replace(staging_dir / rule_set.output, generated_dir / rule_set.output)
+                if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
+                    atomic_replace(
+                        staging_dir / rule_set.domain_set_output,
+                        generated_dir / rule_set.domain_set_output,
+                    )
+                    atomic_replace(
+                        staging_dir / rule_set.non_domain_output,
+                        generated_dir / rule_set.non_domain_output,
+                    )
                 atomic_replace(staging_dir / f"{rule_set.output}.json", generated_dir / f"{rule_set.output}.json")
             atomic_replace(staging_dir / "README.md", generated_dir / "README.md")
 

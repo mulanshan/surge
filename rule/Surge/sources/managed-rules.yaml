@@ -5,7 +5,7 @@
 # Keep personal, hand-curated rules in rule/Surge/*.list and generated mirrors in
 # rule/Surge/generated/*.list so the two maintenance modes stay separate.
 
-version: 2
+version: 3
 generated_dir: rule/Surge/generated
 
 sets:
@@ -13,6 +13,8 @@ sets:
     name: Microsoft
     description: Microsoft account, SSO, Office, Copilot, and related services. Kept direct in the current profile to avoid split login routes.
     output: microsoft.list
+    domain_set_output: microsoft.domainset
+    non_domain_output: microsoft.non-domain.list
     suggested_policy: DIRECT
     suggested_options:
       - extended-matching
@@ -27,6 +29,8 @@ sets:
     name: China Direct Base
     description: Mainland China service baseline for DIRECT routing.
     output: china-direct.list
+    domain_set_output: china-direct.domainset
+    non_domain_output: china-direct.non-domain.list
     suggested_policy: DIRECT
     sources:
       - name: blackmatrix7 China All No Resolve
@@ -39,6 +43,8 @@ sets:
     name: Private Tracker
     description: Private tracker services that should stay DIRECT for PT connectivity.
     output: private-tracker.list
+    domain_set_output: private-tracker.domainset
+    non_domain_output: private-tracker.non-domain.list
     suggested_policy: DIRECT
     sources:
       - name: blackmatrix7 PrivateTracker
@@ -85,6 +91,8 @@ sets:
     name: Google
     description: Google common services. AI-specific Google entries should stay before this ruleset.
     output: google.list
+    domain_set_output: google.domainset
+    non_domain_output: google.non-domain.list
     suggested_policy: 自动
     suggested_options:
       - extended-matching
@@ -149,6 +157,8 @@ sets:
     name: YouTube
     description: YouTube service rules kept separate because the current profile routes them to 自动.
     output: youtube.list
+    domain_set_output: youtube.domainset
+    non_domain_output: youtube.non-domain.list
     suggested_policy: 自动
     suggested_options:
       - extended-matching
@@ -188,6 +198,8 @@ sets:
     name: Disney
     description: Disney kept separate because the current profile routes it to 流媒体.
     output: disney.list
+    domain_set_output: disney.domainset
+    non_domain_output: disney.non-domain.list
     suggested_policy: 流媒体
     sources:
       - name: blackmatrix7 Disney
@@ -224,6 +236,8 @@ sets:
     name: Streaming Common
     description: Common streaming services currently routed to 自动 in the main profile.
     output: streaming.list
+    domain_set_output: streaming.domainset
+    non_domain_output: streaming.non-domain.list
     suggested_policy: 自动
     suggested_options:
       - extended-matching
@@ -238,6 +252,8 @@ sets:
     name: PayPal
     description: PayPal service rules.
     output: paypal.list
+    domain_set_output: paypal.domainset
+    non_domain_output: paypal.non-domain.list
     suggested_policy: 自动
     sources:
       - name: blackmatrix7 PayPal
@@ -250,6 +266,8 @@ sets:
     name: Global Common
     description: Broad global services fallback. Keep this late in the rule order.
     output: global.list
+    domain_set_output: global.domainset
+    non_domain_output: global.non-domain.list
     suggested_policy: Proxy
     suggested_options:
       - extended-matching

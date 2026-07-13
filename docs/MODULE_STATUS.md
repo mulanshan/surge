@@ -24,7 +24,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 ## Current stable bundle
 
-- Tag: `surge-self-v2026.07.13.3`
+- Tag: `surge-self-v2026.07.13.4`
 - Supported runtime used for release verification:
   - Surge Mac 6.6.0 (11270)
   - Surge iOS 5.19.0 (3727)
