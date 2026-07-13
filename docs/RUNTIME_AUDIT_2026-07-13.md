@@ -158,3 +158,32 @@ Targeted regression results:
 The iOS module set ended as `HomeKit Accessories Quirk`, `YouTube`,
 `Instagram`, `高德地图`, `扫描全能王`, `京东`, and `基础去广告模块`, with no legacy or
 temporary probe entry remaining.
+
+## Basic web advertising hardening and iOS rollout
+
+Pull request `#9` later expanded the canonical Basic AdBlock module from 44 to
+94 auditable domain rules. The new layer covers common programmatic advertising,
+pop-up/redirect networks, and exact advertising hosts observed in the current
+iPhone web session. It still contains no JavaScript, MITM, URL rewrite, Map
+Local, broad application business domains, or media CDN rules.
+
+The fixed `main` install URL and commit-specific GitHub payload both matched
+SHA-256 `8c961ebc...` after the merge. Surge's `external-resource update all`
+and profile reload did not update the installed cloud-module cache: the remote
+`基础去广告模块` entry still expanded to 44 rules. The validated payload was therefore
+copied into the shared iCloud `modules/` directory as
+`basic-adblock-web-20260713.sgmodule`, with the device-local display name
+`基础去广告模块 网页增强 2026.07.13`. The old cloud entry was disabled and the local
+enhanced entry enabled atomically.
+
+The final effective iOS profile contained all 94 enhanced rules and none from
+the disabled cloud entry. Controlled requests through the iPhone LAN proxy
+confirmed `REJECT` for `tsyndicate.com`, `amazon-adsystem.com`,
+`go.mayzaent.com`, and `mavrtracktor.com`; `cdnjs.cloudflare.com` remained
+allowed and returned HTTP 200. No unexpected non-REJECT request failure or
+error-like Surge event was present after the switch.
+
+When the iPhone Surge UI eventually refreshes the canonical cloud subscription
+to 94 rules, the durable cleanup path is to enable `基础去广告模块`, disable the
+versioned local entry, and remove the local `.sgmodule` file only after the
+effective-profile rule count is reconfirmed.
