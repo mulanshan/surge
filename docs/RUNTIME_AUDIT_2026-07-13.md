@@ -118,3 +118,43 @@ URLs are therefore retained as the canonical identities so every installed
 device can use Surge's normal module update action. Their display names are now
 `YouTube`, `Instagram`, `高德地图`, `扫描全能王`, and `京东`; the URL paths remain
 stable for one-time installation and subsequent in-place updates.
+
+## Protected patch release and final iOS regression
+
+A later integrity audit found that `surge-self-v2026.07.13` had been moved after
+its GitHub Release was published. The Release recorded Instagram SHA-256
+`21b5cec6...`, while the moved tag served a different script. That tag is now
+marked `retired-moved` and protected against any further update or deletion.
+
+The replacement release completed on 2026-07-13:
+
+- pull request `#5` passed the protected `validate` check and merged to `main`;
+- protected tag and GitHub Release: `surge-self-v2026.07.13.1`;
+- a repository tag ruleset blocks update and deletion of every
+  `refs/tags/surge-self-v*` ref with no bypass actor;
+- release manifests, CI checks, tag/release event checks, and a scheduled remote
+  audit verify the exact five script SHA-256 values;
+- all five canonical module files stayed at their original `main` install URLs.
+
+The existing iOS module subscriptions were updated in place rather than
+reinstalled. Final effective-profile checks on `192.168.70.250` showed five
+references to `surge-self-v2026.07.13.1`, zero references to the retired tag,
+and 26 of 26 external resources ready.
+
+Targeted regression results:
+
+- 高德地图: a temporary no-rewrite probe first confirmed that
+  `m5-x.amap.com` supports MITM and carries `shield/alc/collect` plus
+  `shield/amapstream/upload`. The final canonical module then matched both
+  paths repeatedly with `modified=true`, no rejected/failed business request,
+  and no MITM or script error. The temporary probe was disabled and removed.
+- Instagram: native HTTPS connections remained healthy; expected QUIC attempts
+  fell back to HTTPS. The narrowed logical rule matched six verified
+  `netseer-ipaddr-assoc` requests only when the host also ended in `fbcdn.net`,
+  while 27 sampled HTTPS requests completed normally and no unexpected failure
+  appeared.
+- Both module debug arguments were returned to `false` after validation.
+
+The iOS module set ended as `HomeKit Accessories Quirk`, `YouTube`,
+`Instagram`, `高德地图`, `扫描全能王`, `京东`, and `基础去广告模块`, with no legacy or
+temporary probe entry remaining.
