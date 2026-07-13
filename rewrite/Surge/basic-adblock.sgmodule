@@ -1,5 +1,5 @@
 #!name=基础去广告模块
-#!desc=基础域名级去广告：通用广告网络与真机日志确认的精确应用规则。无脚本、无 MITM、无响应改写。
+#!desc=基础域名级去广告：常见网页广告、弹窗跳转网络与真机日志确认的精确应用规则。无脚本、无 MITM、无响应改写。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=基础去广告
@@ -59,3 +59,60 @@ DOMAIN-SUFFIX,ad-score.com,REJECT
 DOMAIN-SUFFIX,ad-m.net,REJECT
 DOMAIN-SUFFIX,adkernel.com,REJECT
 DOMAIN-SUFFIX,teads.tv,REJECT
+
+# 通用网页程序化广告与推荐网络。均由 anti-AD、AdGuard DNS 与 HaGeZi Pro 三方交叉确认。
+DOMAIN-SUFFIX,amazon-adsystem.com,REJECT
+DOMAIN-SUFFIX,adsrvr.org,REJECT
+DOMAIN-SUFFIX,adform.net,REJECT
+DOMAIN-SUFFIX,bidswitch.net,REJECT
+DOMAIN-SUFFIX,casalemedia.com,REJECT
+DOMAIN-SUFFIX,criteo.com,REJECT
+DOMAIN-SUFFIX,criteo.net,REJECT
+DOMAIN-SUFFIX,doubleverify.com,REJECT
+DOMAIN-SUFFIX,lijit.com,REJECT
+DOMAIN-SUFFIX,media.net,REJECT
+DOMAIN-SUFFIX,mgid.com,REJECT
+DOMAIN-SUFFIX,moatads.com,REJECT
+DOMAIN-SUFFIX,openx.net,REJECT
+DOMAIN-SUFFIX,outbrain.com,REJECT
+DOMAIN-SUFFIX,pubmatic.com,REJECT
+DOMAIN-SUFFIX,quantserve.com,REJECT
+DOMAIN-SUFFIX,revcontent.com,REJECT
+DOMAIN-SUFFIX,rubiconproject.com,REJECT
+DOMAIN-SUFFIX,sharethrough.com,REJECT
+DOMAIN-SUFFIX,smartadserver.com,REJECT
+DOMAIN-SUFFIX,taboola.com,REJECT
+DOMAIN-SUFFIX,taboolasyndication.com,REJECT
+DOMAIN-SUFFIX,triplelift.com,REJECT
+DOMAIN-SUFFIX,yieldmo.com,REJECT
+DOMAIN-SUFFIX,zemanta.com,REJECT
+
+# 网页弹窗、跳转与高风险广告网络。只拦独立广告基础设施，不碰页面主站或媒体 CDN。
+DOMAIN-SUFFIX,adsterra.com,REJECT
+DOMAIN-SUFFIX,exoclick.com,REJECT
+DOMAIN-SUFFIX,exdynsrv.com,REJECT
+DOMAIN-SUFFIX,exosrv.com,REJECT
+DOMAIN-SUFFIX,juicyads.com,REJECT
+DOMAIN-SUFFIX,popads.net,REJECT
+DOMAIN-SUFFIX,popcash.net,REJECT
+DOMAIN-SUFFIX,propellerads.com,REJECT
+DOMAIN-SUFFIX,trafficjunky.com,REJECT
+DOMAIN-SUFFIX,trafficstars.com,REJECT
+DOMAIN-SUFFIX,tsyndicate.com,REJECT
+
+# 2026-07-13 iPhone 网页真机日志确认的广告像素、素材与跳转入口。
+# 不加入同批出现的正文、播放器、Cloudflare 验证、推荐接口与媒体 CDN。
+DOMAIN-SUFFIX,godkc.com,REJECT
+DOMAIN-SUFFIX,mavrtracktor.com,REJECT
+DOMAIN-SUFFIX,rallytrck.website,REJECT
+DOMAIN-SUFFIX,rmishe.com,REJECT
+DOMAIN-SUFFIX,snaptrckr.fun,REJECT
+DOMAIN-SUFFIX,uuidksinc.net,REJECT
+DOMAIN-SUFFIX,xxxviiijmp.com,REJECT
+DOMAIN,cm.pxltag.com,REJECT
+DOMAIN,creative.marzaent.com,REJECT
+DOMAIN,go.marzaent.com,REJECT
+DOMAIN,creative.mayzaent.com,REJECT
+DOMAIN,go.mayzaent.com,REJECT
+DOMAIN,creative.myavlive.com,REJECT
+DOMAIN,go.myavlive.com,REJECT
