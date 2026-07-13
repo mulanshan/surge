@@ -59,6 +59,8 @@ class GeneratorTests(unittest.TestCase):
             name="Apple fixture",
             description="Fixture",
             output="apple-fixture.list",
+            domain_set_output=None,
+            non_domain_output=None,
             suggested_policy="DIRECT",
             suggested_options=[],
             include_process_name=True,
@@ -77,7 +79,7 @@ class GeneratorTests(unittest.TestCase):
 
     def test_manifest_schema_rejects_unknown_fields_and_options(self):
         template = """\
-version: 2
+version: 3
 generated_dir: rule/Surge/generated
 sets:
   - id: fixture
@@ -110,6 +112,48 @@ sets:
             with self.assertRaisesRegex(ValueError, "suggested_options"):
                 generator.load_manifest(path)
 
+            path.write_text(
+                "version: 3\n"
+                "generated_dir: rule/Surge/generated\n"
+                "sets:\n"
+                "  - id: fixture\n"
+                "    name: Fixture\n"
+                "    description: Fixture\n"
+                "    output: fixture.non-domain.list\n"
+                "    domain_set_output: fixture.domainset\n"
+                "    non_domain_output: fixture.non-domain.list\n"
+                "    suggested_policy: DIRECT\n"
+                "    sources:\n"
+                "      - name: fixture\n"
+                "        url: https://example.invalid/rules.list\n"
+                f"        expected_sha256: {'0' * 64}\n"
+                "        license: MIT\n"
+                "        license_url: https://example.invalid/LICENSE\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate id or output"):
+                generator.load_manifest(path)
+
+    def test_domain_set_split_preserves_only_exact_and_suffix_domains(self):
+        domain_set, non_domain = generator.split_domain_set_entries(
+            [
+                "DOMAIN,exact.example",
+                "DOMAIN-SUFFIX,suffix.example",
+                "DOMAIN-KEYWORD,keyword",
+                "USER-AGENT,Example*",
+                "IP-CIDR,192.0.2.0/24,no-resolve",
+            ]
+        )
+        self.assertEqual(domain_set, ["exact.example", ".suffix.example"])
+        self.assertEqual(
+            non_domain,
+            [
+                "DOMAIN-KEYWORD,keyword",
+                "USER-AGENT,Example*",
+                "IP-CIDR,192.0.2.0/24,no-resolve",
+            ],
+        )
+
     def test_refresh_changes_only_expected_digest_fields(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "manifest.yaml"
@@ -130,6 +174,88 @@ sets:
 
 
 class RepositoryInvariantTests(unittest.TestCase):
+    def test_optimized_domain_sets_are_equivalent_to_compatibility_rulesets(self):
+        expected_counts = {
+            "microsoft": (664, 7),
+            "china-direct": (3691, 61),
+            "private-tracker": (241, 7),
+            "google": (685, 13),
+            "youtube": (179, 11),
+            "disney": (172, 1),
+            "streaming": (258, 63),
+            "paypal": (246, 2),
+            "global": (1255, 10),
+        }
+        generated = ROOT / "rule/Surge/generated"
+        for rule_id, (domain_count, residual_count) in expected_counts.items():
+            with self.subTest(rule_id=rule_id):
+                compatibility = {
+                    line
+                    for line in (generated / f"{rule_id}.list").read_text(encoding="utf-8").splitlines()
+                    if line and not line.startswith("#")
+                }
+                domain_lines = [
+                    line
+                    for line in (generated / f"{rule_id}.domainset").read_text(encoding="utf-8").splitlines()
+                    if line and not line.startswith("#")
+                ]
+                residual = {
+                    line
+                    for line in (generated / f"{rule_id}.non-domain.list").read_text(
+                        encoding="utf-8"
+                    ).splitlines()
+                    if line and not line.startswith("#")
+                }
+                self.assertEqual(len(domain_lines), domain_count)
+                self.assertEqual(len(residual), residual_count)
+                self.assertTrue(all("," not in line for line in domain_lines))
+                reconstructed = set(residual)
+                for line in domain_lines:
+                    if line.startswith("."):
+                        reconstructed.add(f"DOMAIN-SUFFIX,{line[1:]}")
+                    else:
+                        reconstructed.add(f"DOMAIN,{line}")
+                self.assertEqual(reconstructed, compatibility)
+
+    def test_domain_set_resources_stay_adjacent_with_policy_and_option_parity(self):
+        optimized_ids = [
+            "microsoft",
+            "china-direct",
+            "private-tracker",
+            "youtube",
+            "google",
+            "paypal",
+            "disney",
+            "streaming",
+            "global",
+        ]
+        section = (ROOT / "rule/Surge/generated/rule-section-managed.conf").read_text(
+            encoding="utf-8"
+        )
+        rules = [
+            line
+            for line in section.splitlines()
+            if line.startswith(("DOMAIN-SET,", "RULE-SET,"))
+        ]
+        positions = []
+        for rule_id in optimized_ids:
+            with self.subTest(rule_id=rule_id):
+                domain_marker = f"/generated/{rule_id}.domainset,"
+                residual_marker = f"/generated/{rule_id}.non-domain.list,"
+                position = next(i for i, line in enumerate(rules) if domain_marker in line)
+                positions.append(position)
+                self.assertIn(residual_marker, rules[position + 1])
+                domain_parts = rules[position].split(",")
+                residual_parts = rules[position + 1].split(",")
+                self.assertEqual(domain_parts[2], residual_parts[2])
+                self.assertNotIn("no-resolve", domain_parts[3:])
+                self.assertEqual(
+                    domain_parts[3:],
+                    [option for option in residual_parts[3:] if option != "no-resolve"],
+                )
+                self.assertNotIn(f"/generated/{rule_id}.list,", section)
+        self.assertEqual(positions, sorted(positions))
+
     def test_apple_tv_precedes_apple_direct_and_overlap_markers_are_filtered(self):
         section = (ROOT / "rule/Surge/generated/rule-section-managed.conf").read_text(encoding="utf-8")
         self.assertLess(section.index("generated/apple-tv.list"), section.index("generated/apple.list"))

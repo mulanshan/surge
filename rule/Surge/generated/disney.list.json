@@ -18,5 +18,9 @@
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
       "rule_count": 173
     }
-  ]
+  ],
+  "domain_set_output": "rule/Surge/generated/disney.domainset",
+  "non_domain_output": "rule/Surge/generated/disney.non-domain.list",
+  "domain_set_rule_count": 172,
+  "non_domain_rule_count": 1
 }

@@ -119,9 +119,12 @@ def rule_lines(path: Path) -> list[str]:
 def check_generated_rules() -> None:
     generator = load_generator()
     generated_dir, rule_sets = generator.load_manifest(MANIFEST)
-    expected_outputs = {rule_set.output for rule_set in rule_sets}
-    actual_outputs = {path.name for path in generated_dir.glob("*.list")}
-    missing = sorted(expected_outputs - actual_outputs)
+    expected_outputs: set[str] = set()
+    for rule_set in rule_sets:
+        expected_outputs.add(rule_set.output)
+        if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
+            expected_outputs.update([rule_set.domain_set_output, rule_set.non_domain_output])
+    missing = sorted(name for name in expected_outputs if not (generated_dir / name).is_file())
     if missing:
         fail(f"missing generated rulesets: {', '.join(missing)}")
 
@@ -135,6 +138,21 @@ def check_generated_rules() -> None:
         if metadata.get("id") != rule_set.rule_id or metadata.get("output") != expected_output:
             fail(f"stale id/output metadata: {metadata_path.relative_to(ROOT)}")
 
+        expected_domain_set_output = (
+            str((generated_dir / rule_set.domain_set_output).relative_to(ROOT))
+            if rule_set.domain_set_output
+            else None
+        )
+        expected_non_domain_output = (
+            str((generated_dir / rule_set.non_domain_output).relative_to(ROOT))
+            if rule_set.non_domain_output
+            else None
+        )
+        if metadata.get("domain_set_output") != expected_domain_set_output:
+            fail(f"stale DOMAIN-SET metadata: {metadata_path.relative_to(ROOT)}")
+        if metadata.get("non_domain_output") != expected_non_domain_output:
+            fail(f"stale residual ruleset metadata: {metadata_path.relative_to(ROOT)}")
+
         expected_sources = [(source.name, source.url) for source in rule_set.sources]
         actual_sources = [(source.get("name"), source.get("url")) for source in metadata.get("sources", [])]
         if actual_sources != expected_sources:
@@ -146,12 +164,37 @@ def check_generated_rules() -> None:
         if metadata.get("unique_rule_count") != len(rules):
             fail(f"generated rule count mismatch: {metadata_path.relative_to(ROOT)}")
         text = rules_path.read_text(encoding="utf-8")
+        artifact_texts = [text]
+        if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
+            domain_path = generated_dir / rule_set.domain_set_output
+            residual_path = generated_dir / rule_set.non_domain_output
+            domain_lines = rule_lines(domain_path)
+            residual_lines = rule_lines(residual_path)
+            if any("," in line for line in domain_lines):
+                fail(f"invalid DOMAIN-SET entry: {domain_path.relative_to(ROOT)}")
+            reconstructed = set(residual_lines)
+            for line in domain_lines:
+                reconstructed.add(
+                    f"DOMAIN-SUFFIX,{line[1:]}" if line.startswith(".") else f"DOMAIN,{line}"
+                )
+            if reconstructed != set(rules):
+                fail(f"optimized split is not equivalent: {rules_path.relative_to(ROOT)}")
+            if metadata.get("domain_set_rule_count") != len(domain_lines):
+                fail(f"DOMAIN-SET count mismatch: {metadata_path.relative_to(ROOT)}")
+            if metadata.get("non_domain_rule_count") != len(residual_lines):
+                fail(f"residual rule count mismatch: {metadata_path.relative_to(ROOT)}")
+            artifact_texts.extend(
+                [
+                    domain_path.read_text(encoding="utf-8"),
+                    residual_path.read_text(encoding="utf-8"),
+                ]
+            )
         for source in metadata.get("sources", []):
             sha256 = source.get("sha256", "")
             if not re.fullmatch(r"[0-9a-f]{64}", sha256):
                 fail(f"invalid source SHA-256: {metadata_path.relative_to(ROOT)}")
-            if f"#   sha256: {sha256}" not in text:
-                fail(f"source SHA-256 missing from ruleset header: {rules_path.relative_to(ROOT)}")
+            if any(f"#   sha256: {sha256}" not in artifact for artifact in artifact_texts):
+                fail(f"source SHA-256 missing from generated artifact header: {rules_path.relative_to(ROOT)}")
 
 
 def main() -> int:

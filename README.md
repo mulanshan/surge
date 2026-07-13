@@ -42,7 +42,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自稳定 tag `surge-self-v2026.07.13.3`，YouTube query 版本为 `v=20260713-1`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自稳定 tag `surge-self-v2026.07.13.4`，YouTube query 版本为 `v=20260713-2`。
 
 安全边界：
 
@@ -294,6 +294,10 @@ scripts/generate-managed-surge-rules.py --check
 - 上游内容 SHA-256
 - 上游规则数量
 - 合并后的唯一规则数量
+
+域名密集的混合规则集同时生成一个 Surge 原生 `.domainset` 和一个很小的
+`.non-domain.list`。主配置让二者相邻并使用同一策略；`no-resolve` 只保留在仍含 IP
+规则的残余 `RULE-SET`。原完整 `.list` 继续作为兼容与快速回滚快照，但不会在优化配置中重复加载。
 
 这样外部规则变动时，可以先由 `--check` 阻止漂移进入生产，再用 Git diff 查看具体变化并决定是否接受。当前主配置可逐步把
 `blackmatrix7` / `ruleset.skk.moe` 的 URL 替换为 `mulanshan/surge` 下的 generated URL。示例片段见：
