@@ -1,0 +1,28 @@
+#!name=微信
+#!desc=固定云端订阅，自有可审计微信去广告模块：清理公众号文章广告与商品推广接口，并拒绝部分明确的小程序广告素材主机。不含第三方脚本；不承诺清除朋友圈或视频号原生广告。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=微信
+#!openUrl=https://apps.apple.com/cn/app/id414478124
+#!arguments=启用调试模式:false
+#!arguments-desc=- 调试参数：[true, false]\n\n当前只处理普通 HTTPS 可见的公众号广告与少量明确广告素材。微信朋友圈、视频号及其他 MMTLS 原生流量不在本模块能力范围内。不会整域拦截 weixin.qq.com、wxs.qq.com、servicewechat.com、tenpay.com、qpic.cn 或 qlogo.cn。
+#!system=ios
+#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
+#!date=2026-07-13
+
+[Rule]
+# 社区长期交叉确认的微信小程序广告素材主机。保持精确 DOMAIN，避免误伤 wxs.qq.com 其他资源。
+DOMAIN,wxa.wxs.qq.com,REJECT
+DOMAIN,wximg.wxs.qq.com,REJECT
+DOMAIN,wxsmw.wxs.qq.com,REJECT
+
+[Script]
+# 公众号文章广告接口。脚本只识别根对象中的明确 advertisement_* 字段，未知结构原样放行。
+wechat.self.response = type=http-response,pattern=^https:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad(?:\?.*)?$,requires-body=1,max-size=524288,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13.2/rewrite/Surge/scripts/wechat/wechat-self.response.js?v=20260713-1,argument="{\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+# 公众号文章内的商品推广专用接口；不覆盖文章、评论、赞赏或账号接口。
+^https:\/\/mp\.weixin\.qq\.com\/mp\/cps_product_info(?:\?.*)?$ data-type=text data="{}" status-code=200
+
+[MITM]
+hostname = %APPEND% mp.weixin.qq.com
