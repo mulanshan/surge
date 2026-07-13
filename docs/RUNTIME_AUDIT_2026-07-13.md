@@ -110,10 +110,11 @@ exception above.
 
 ## Subsequent cloud-module migration
 
-The owner later chose cloud-installed modules for easier setup on replacement
-and additional devices. A live check after the old cloud entries were manually
-re-enabled showed that Surge had reused their stale URL-backed definitions:
-they still had unlimited response sizes and pre-release script URLs. The public
-module files were therefore moved to new canonical URL paths and renamed to
-`YouTube`, `Instagram`, `高德地图`, `扫描全能王`, and `京东`. The new URLs must be
-installed and verified before the old `Self`-named cache entries are removed.
+The owner later chose permanent cloud subscriptions for easier setup on
+replacement and additional devices. A live check after the cloud entries were
+manually re-enabled showed that their installed definitions were still stale:
+they had unlimited response sizes and pre-release script URLs. The fixed public
+URLs are therefore retained as the canonical identities so every installed
+device can use Surge's normal module update action. Their display names are now
+`YouTube`, `Instagram`, `高德地图`, `扫描全能王`, and `京东`; the URL paths remain
+stable for one-time installation and subsequent in-place updates.

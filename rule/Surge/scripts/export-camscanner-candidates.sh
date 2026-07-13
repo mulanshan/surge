@@ -134,7 +134,7 @@ raw_path = Path(sys.argv[2])
 summary_path = Path(sys.argv[3])
 candidate_path = Path(sys.argv[4])
 report_path = Path(sys.argv[5])
-module_path = root / "rewrite" / "Surge" / "camscanner.sgmodule"
+module_path = root / "rewrite" / "Surge" / "camscanner-self.sgmodule"
 
 TOPIC_RE = re.compile(
     r"camscanner|intsig|scan[-_.]?cam|camscannerapp|cs[-_.]?(ad|api|stat)|app[-_.]?static[.]camscanner|"
@@ -278,7 +278,7 @@ with summary_path.open("w", encoding="utf-8") as f:
 
 candidates = [item["host"] for item in items if item["class"] == "candidate-reject"]
 with candidate_path.open("w", encoding="utf-8") as f:
-    f.write("# Review before merging into rewrite/Surge/camscanner.sgmodule\n")
+    f.write("# Review before merging into rewrite/Surge/camscanner-self.sgmodule\n")
     f.write("# Generated from: " + str(raw_path) + "\n")
     for host in candidates:
         f.write(f"DOMAIN,{host},REJECT\n")

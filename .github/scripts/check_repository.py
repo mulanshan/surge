@@ -21,19 +21,14 @@ GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 SCRIPT_PATH_RE = re.compile(r"(?:^|,)script-path=([^,\s]+)")
 STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}")
 CANONICAL_MODULE_NAMES = {
-    "youtube.sgmodule": "YouTube",
-    "instagram.sgmodule": "Instagram",
-    "amap.sgmodule": "高德地图",
-    "camscanner.sgmodule": "扫描全能王",
-    "jd.sgmodule": "京东",
+    "youtube-self.sgmodule": "YouTube",
+    "instagram-self.sgmodule": "Instagram",
+    "amap-self.sgmodule": "高德地图",
+    "camscanner-self.sgmodule": "扫描全能王",
+    "jd-self.sgmodule": "京东",
 }
 RETIRED_MODULE_FILES = {
-    "youtube-self.sgmodule",
-    "instagram-self.sgmodule",
     "instagram-feed-self.sgmodule",
-    "amap-self.sgmodule",
-    "camscanner-self.sgmodule",
-    "jd-self.sgmodule",
 }
 
 

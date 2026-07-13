@@ -39,7 +39,7 @@
 
 ## 本仓库实现
 
-- 模块：`rewrite/Surge/jd.sgmodule`
+- 模块：`rewrite/Surge/jd-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/jd/jd-self.response.js`
 - 测试：`rewrite/Surge/scripts/jd/jd-self.response.test.js`
 
