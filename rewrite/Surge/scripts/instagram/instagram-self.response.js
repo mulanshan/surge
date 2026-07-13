@@ -15,9 +15,9 @@ const DEFAULTS = {
 const config = parseArgument();
 
 const AD_LABEL_RE = /^(?:sponsored|promoted|advertisement|paid partnership|branded content|赞助(?:内容)?|推广(?:内容)?|广告(?:内容)?|付费(?:推广|合作))$/i;
-const AD_TYPE_RE = /(?:^|[_\-\s])(?:ad|ads|advertisement|advertiser|promoted|promotion|sponsored)(?:$|[_\-\s])/i;
+const AD_TYPE_RE = /(?:^|[_\-\s])(?:ad|ads|ad4ad|advertisement|advertiser|promoted|promotion|sponsored|bloks_ad|ad_bloks)(?:$|[_\-\s])/i;
 const AD_TYPE_FIELDS = ["__typename", "type", "product_type", "content_type", "item_type", "view_type"];
-const AD_LABEL_FIELDS = ["label", "title", "subtitle", "headline", "message", "reason", "badge_text"];
+const AD_LABEL_FIELDS = ["label", "title", "subtitle", "headline", "message", "reason", "badge_text", "badge", "context", "sub_text"];
 const DIRECT_FLAG_FIELDS = [
   "is_ad",
   "is_sponsored",
@@ -27,6 +27,9 @@ const DIRECT_FLAG_FIELDS = [
   "is_paid_partnership",
   "has_ad",
   "branded_content",
+  "is_branded_content",
+  "is_ad4ad",
+  "is_bloks_ad",
 ];
 const STRONG_MARKER_FIELDS = [
   "ad_id",
@@ -40,6 +43,9 @@ const STRONG_MARKER_FIELDS = [
   "sponsored_label",
   "sponsored_by",
   "sponsor_tags",
+  "sponsored_info",
+  "ad_client_token",
+  "ad_tracking_params",
 ];
 const AD_COLLECTION_KEYS = new Set([
   "ads",
@@ -47,6 +53,8 @@ const AD_COLLECTION_KEYS = new Set([
   "injected_ads",
   "sponsored_items",
   "promoted_items",
+  "multi_ads",
+  "bloks_ad_items",
 ]);
 const AD_METADATA_KEYS = new Set([
   "ad_metadata",
@@ -209,6 +217,15 @@ function pruneValue(value, stats) {
     const child = value[key];
 
     if (AD_COLLECTION_KEYS.has(key) && Array.isArray(child) && child.length > 0) {
+      stats.filtered += child.length;
+      value[key] = [];
+      stats.collections += 1;
+      continue;
+    }
+
+    // Broader match: any key starting with "injected_" that holds an array
+    // of feed-injected items is treated as an ad collection container.
+    if (/^injected_/.test(key) && Array.isArray(child) && child.length > 0) {
       stats.filtered += child.length;
       value[key] = [];
       stats.collections += 1;
