@@ -42,7 +42,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自稳定 tag `surge-self-v2026.07.13`，query 版本为 `v=20260713-1`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自稳定 tag `surge-self-v2026.07.13.1`，YouTube query 版本为 `v=20260713-1`。
 
 安全边界：
 
@@ -72,7 +72,8 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/instagram-s
 - 按完整 `edge / node / media_or_ad / item` 包装删除广告条目，避免只清空内容后留下空白卡片
 - 兼容 `for (;;);` JSON 前缀；没有命中广告时不重写响应体
 - 不追加 `i.instagram.com`、`graph.instagram.com`、`gateway.instagram.com`、聊天和媒体 CDN 到 MITM
-- 拦截真机日志出现的 `netseer-ipaddr-assoc` 辅助探测域名
+- 仅拦截同时带 `netseer-ipaddr-assoc` 标记并属于 `fbcdn.net` 的真机已验证辅助探测主机
+- `injected_*` 容器只递归删除带明确广告标志的实体，正常推荐与未知结构保持原样
 - 保留登录、私信、上传、账号、媒体 CDN 和正常内容流
 - 不使用第三方脚本
 - 不上传请求、响应、账号、cookie 或 token
@@ -104,14 +105,15 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 - 模块：`rewrite/Surge/amap-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/amap/amap-self.response.js`
 
-第一版功能范围：
+当前功能范围：
 
 - 清理开屏广告接口 `ws/valueadded/alimama/splash_screen`
-- 清理消息盒子与通知列表 `ws/msgbox/pull`、`ws/message/notice/list`
+- 在消息盒子与通知列表 `ws/msgbox/pull`、`ws/message/notice/list` 中只过滤明确广告实体，保留正常服务通知
 - 清理首页广告卡片 `ws/faas/amap-navigation/main-page`
 - 清理搜索热词广告配置 `ws/shield/search/new_hotword`
 - 清理 DSP/推荐广告配置 `ws/shield/dsp/profile/index/nodefaas`
 - 对明确广告/归因接口使用 Map Local 返回空响应
+- 覆盖 `m5.amap.com`、`m5-zb.amap.com` 与 2026-07-13 真机验证的 `m5-x.amap.com`；后者已确认承载 `shield/alc/collect` 和 `shield/amapstream/upload`
 
 安全边界：
 

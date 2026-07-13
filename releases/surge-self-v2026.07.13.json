@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "tag": "surge-self-v2026.07.13",
+  "status": "retired-moved",
+  "release_commit": "bb945a88292326503a92e112f600a25766d20a92",
+  "observed_tag_commit": "144f112be4cc2230a05bd0446d87331be69b46bb",
+  "superseded_by": "surge-self-v2026.07.13.1",
+  "note": "The tag no longer identifies the payload recorded by its GitHub Release and must never be referenced or reused.",
+  "scripts": [
+    {
+      "name": "YouTube",
+      "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+      "sha256": "fc873e48f505678f131e7d865f22d2d13d40c1f284d01d8d22f2c38f87ff4698"
+    },
+    {
+      "name": "Instagram",
+      "path": "rewrite/Surge/scripts/instagram/instagram-self.response.js",
+      "sha256": "21b5cec67a16d9ae59d0cfe77b51e3e0d6cef3f9d5eae7277cba55b834880f6b"
+    },
+    {
+      "name": "Amap",
+      "path": "rewrite/Surge/scripts/amap/amap-self.response.js",
+      "sha256": "c41a3175598fee9ad41e97c9ded854028402f49f44c9378c0077a08e5c7e95fe"
+    },
+    {
+      "name": "CamScanner",
+      "path": "rewrite/Surge/scripts/camscanner/camscanner-self.response.js",
+      "sha256": "972027af3a17667e404b0314b6d50ab6ce64584e40e91a77231ad3b43735f1ee"
+    },
+    {
+      "name": "JD",
+      "path": "rewrite/Surge/scripts/jd/jd-self.response.js",
+      "sha256": "616f6c8380496cbec01b10b429e1c267e6b68db34acabfd59e44656350b7ac35"
+    }
+  ]
+}

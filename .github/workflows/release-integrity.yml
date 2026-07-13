@@ -1,0 +1,54 @@
+name: Release integrity
+
+on:
+  push:
+    tags:
+      - "surge-self-v*"
+  release:
+    types: [published, edited]
+  schedule:
+    - cron: "43 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: surge-release-integrity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # Release edits may target an old tag that predates this verifier.
+          # Use the tag itself only for tag-push events; otherwise run the
+          # current verifier from the default branch and fetch all tags.
+          ref: ${{ github.event_name == 'push' && github.ref || github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify tag payload
+        if: github.event_name == 'push'
+        run: python3 scripts/verify-surge-release.py --tag "$GITHUB_REF_NAME"
+
+      - name: Verify published Release
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 scripts/verify-surge-release.py --tag "$RELEASE_TAG" --github-release
+
+      - name: Audit all remote releases
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/verify-surge-release.py --check-remote

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "tag": "surge-self-v2026.07.13.1",
+  "status": "active",
+  "supersedes": "surge-self-v2026.07.13",
+  "scripts": [
+    {
+      "name": "YouTube",
+      "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+      "sha256": "fc873e48f505678f131e7d865f22d2d13d40c1f284d01d8d22f2c38f87ff4698"
+    },
+    {
+      "name": "Instagram",
+      "path": "rewrite/Surge/scripts/instagram/instagram-self.response.js",
+      "sha256": "588005a5d16ef588f2b0945d8580174e0aa7c9d309159adfc8611e4138a1ed88"
+    },
+    {
+      "name": "Amap",
+      "path": "rewrite/Surge/scripts/amap/amap-self.response.js",
+      "sha256": "31f75700d2f374226a6410697e653f5631337b6f1e5792e0028173ff69c0da8c"
+    },
+    {
+      "name": "CamScanner",
+      "path": "rewrite/Surge/scripts/camscanner/camscanner-self.response.js",
+      "sha256": "972027af3a17667e404b0314b6d50ab6ce64584e40e91a77231ad3b43735f1ee"
+    },
+    {
+      "name": "JD",
+      "path": "rewrite/Surge/scripts/jd/jd-self.response.js",
+      "sha256": "616f6c8380496cbec01b10b429e1c267e6b68db34acabfd59e44656350b7ac35"
+    }
+  ]
+}

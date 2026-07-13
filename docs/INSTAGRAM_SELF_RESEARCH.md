@@ -15,7 +15,7 @@
 - 原生 `i.instagram.com`、`graph.instagram.com`、gateway、聊天和媒体 CDN 不做 MITM。
 - `www.instagram.com` Web Feed 入口启用响应脚本，覆盖当前 Web GraphQL 和旧版 feed/discover/clips 路径。
 - 仅删除具有明确广告、赞助、推广、付费合作标志的完整节点；未知结构原样保留。
-- 只拒绝真机已确认不承载内容的 `netseer-ipaddr-assoc` 辅助探测请求。
+- 规则层只拒绝同时满足 `netseer-ipaddr-assoc` 主机标记与 `fbcdn.net` 域名后缀的辅助探测请求；变化前缀由关键字条件覆盖，但不会扩大到其他 `ipaddr-assoc` 或 Meta SDK 域名。
 
 ## Surge 官方依据
 
@@ -41,3 +41,12 @@
 - `/api/v1/clips/`
 
 脚本识别直接布尔标志、广告 ID/元数据、广告类型、Sponsored/Promoted/广告/推广标签、paid partnership，以及 `edge -> node`、`media_or_ad`、`item` 等包装结构。没有任何明确广告标志时返回 `$done({})`，不重新序列化响应。
+
+`injected_*` 只是 Instagram 对注入式 Feed 单元的容器命名，不等同于广告标志。脚本会递归检查其中的每个实体：保留正常推荐与未知结构，只删除带 `is_ad4ad`、`is_bloks_ad`、`ad_client_token`、`ad_tracking_params`、`sponsored_info`、广告类型或其他直接广告标志的实体。只有语义本身明确为广告集合的 `ads`、`injected_ads`、`sponsored_items` 等键才整组清空。
+
+2026-07-13 的规则复核同时撤掉了两个缺乏 Instagram 专属证据的扩大项：
+
+- 不拒绝 `connect.facebook.net`；它是跨 Meta 产品使用的 Web SDK 主机，当前真机日志不足以证明其请求只承载 Instagram 广告。
+- 不使用通用 `DOMAIN-KEYWORD,ipaddr-assoc`；该条件可能命中无关应用或未来正常业务主机。
+
+当前保留的规则等价于“主机名含 `netseer-ipaddr-assoc` 且域名后缀为 `fbcdn.net`”，既适配日志中变化的前缀，也把影响范围限制在已验证的探测形态。

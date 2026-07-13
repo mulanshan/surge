@@ -1,11 +1,11 @@
 #!name=Instagram
-#!desc=固定云端订阅，自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截已验证的广告/追踪辅助请求。原生 iOS App 主链路因证书钉扎无法解密，改为域名级拦截已知广告/追踪辅助域。不含第三方脚本。
+#!desc=固定云端订阅，自有可审计 Instagram 增强版：清理 Web Feed、探索页和 Reels 中的明确广告对象，并拦截真机验证的 netseer 网络关联辅助探测。原生 iOS App 主链路因证书钉扎无法解密，不强行 MITM。不含第三方脚本。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=Instagram
 #!openUrl=https://apps.apple.com/us/app/instagram/id389801252
 #!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n可工作范围：对 www.instagram.com 的 api/graphql、graphql/query、feed、discover、clips 响应做广告节点清理（浏览器访问）。原生 App 的 i.instagram.com 因证书钉扎无法 MITM，因此原生 App 去广告依赖域名级拦截已知广告/追踪辅助域。
+#!arguments-desc=- 调试参数：[true, false]\n\n可工作范围：对 www.instagram.com 的 api/graphql、graphql/query、feed、discover、clips 响应做广告节点清理（浏览器访问）。原生 App 的 i.instagram.com 因证书钉扎无法 MITM；规则层只拦截同时带 netseer-ipaddr-assoc 标记且属于 fbcdn.net 的已验证辅助探测主机。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-07-13
@@ -19,20 +19,14 @@
 # Force the web endpoint to TCP so HTTPS response scripting can run.
 AND,((DOMAIN,www.instagram.com), (PROTOCOL,UDP)),REJECT
 
-# Facebook JS SDK tracking domain. The native iOS Instagram app uses
-# graph.facebook.com (Graph API) and the native FBSDK, not the web JS SDK.
-# Blocking connect.facebook.net is safe and prevents analytics/tracking calls.
-DOMAIN,connect.facebook.net,REJECT
-
-# Live iPhone logs confirmed these fbcdn.net auxiliary network-association
-# probes carry no content payload and appear in bursts during feed scroll.
-# The ipaddr-assoc keyword catches the known {uuid}-netseer-ipaddr-assoc
-# pattern, and netseer covers any prefix variant Instagram may introduce.
-DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT
-DOMAIN-KEYWORD,ipaddr-assoc,REJECT
+# Live iPhone logs confirmed a changing-prefix netseer-ipaddr-assoc host under
+# fbcdn.net carries no content payload and appears in bursts during feed scroll.
+# Require both properties so unrelated Meta SDK or other ipaddr-assoc traffic
+# remains untouched.
+AND,((DOMAIN-KEYWORD,netseer-ipaddr-assoc), (DOMAIN-SUFFIX,fbcdn.net)),REJECT
 
 [Script]
-instagram.self.web.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/)).*$,requires-body=1,max-size=6291456,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260713-3,argument="{\"debug\":{{{启用调试模式}}}}"
+instagram.self.web.response = type=http-response,pattern=^https:\/\/www\.instagram\.com\/(?:api\/graphql\/?|graphql\/query\/?|api\/v1\/(?:feed\/|discover\/|clips\/)).*$,requires-body=1,max-size=6291456,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13.1/rewrite/Surge/scripts/instagram/instagram-self.response.js?v=20260713-4,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [MITM]
 hostname = %APPEND% www.instagram.com

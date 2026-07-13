@@ -19,7 +19,7 @@ MODULE_DIR = ROOT / "rewrite/Surge"
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 SCRIPT_PATH_RE = re.compile(r"(?:^|,)script-path=([^,\s]+)")
-STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}")
+STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}(?:\.\d+)?")
 CANONICAL_MODULE_NAMES = {
     "youtube-self.sgmodule": "YouTube",
     "instagram-self.sgmodule": "Instagram",
