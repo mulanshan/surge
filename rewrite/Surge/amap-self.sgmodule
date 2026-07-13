@@ -15,7 +15,7 @@
 DOMAIN,adashx.ut.amap.com,REJECT
 
 [Script]
-amap.self.response = type=http-response,pattern=^https?:\/\/(?:m5|m5-zb|m5-x)\.amap\.com\/+ws\/(?:(?:valueadded|aos)\/alimama\/splash_screen(?:_rt)?|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword)(?:\?.*)?$,requires-body=1,max-size=2097152,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13.1/rewrite/Surge/scripts/amap/amap-self.response.js?v=20260713-2,argument="{\"debug\":{{{启用调试模式}}}}"
+amap.self.response = type=http-response,pattern=^https?:\/\/(?:m5|m5-zb|m5-x)\.amap\.com\/+ws\/(?:(?:valueadded|aos)\/alimama\/splash_screen(?:_rt)?|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword)(?:\?.*)?$,requires-body=1,max-size=2097152,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.13.2/rewrite/Surge/scripts/amap/amap-self.response.js?v=20260713-2,argument="{\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 # 明显广告/归因接口，返回空对象或空响应即可；避免对天气、导航、搜索主业务做整接口拦截。

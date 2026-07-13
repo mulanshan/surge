@@ -23,7 +23,7 @@ through a branch, CI, review, and an immutable release tag.
 3. Verify that response scripts do not issue network requests, read credentials,
    or log raw request/response bodies.
 4. Check the shared Surge profile with `surge-cli --check`.
-5. Update `releases/<tag>.json` with the exact five script SHA-256 values, then
+5. Update `releases/<tag>.json` with the exact current script SHA-256 values, then
    run `python3 scripts/verify-surge-release.py`.
 6. Open a pull request and wait for every required check to pass.
 7. Confirm the repository tag ruleset blocks updates and deletions for

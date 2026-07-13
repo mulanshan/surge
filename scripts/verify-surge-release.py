@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the five self-hosted Surge scripts against release manifests."""
+"""Verify current Surge scripts while retaining historical release manifests."""
 
 from __future__ import annotations
 
@@ -27,7 +27,9 @@ EXPECTED = {
     "Amap": ("amap-self.sgmodule", "rewrite/Surge/scripts/amap/amap-self.response.js"),
     "CamScanner": ("camscanner-self.sgmodule", "rewrite/Surge/scripts/camscanner/camscanner-self.response.js"),
     "JD": ("jd-self.sgmodule", "rewrite/Surge/scripts/jd/jd-self.response.js"),
+    "WeChat": ("wechat-self.sgmodule", "rewrite/Surge/scripts/wechat/wechat-self.response.js"),
 }
+LEGACY_FIVE_SCRIPT_NAMES = frozenset(EXPECTED) - {"WeChat"}
 
 
 def fail(message: str) -> None:
@@ -63,12 +65,23 @@ def load_manifests() -> dict[str, dict]:
         if tag in manifests:
             fail(f"duplicate release manifest: {tag}")
         records = data.get("scripts")
-        if not isinstance(records, list) or len(records) != len(EXPECTED):
-            fail(f"{tag} must list exactly five scripts")
-        by_name = {item.get("name"): item for item in records if isinstance(item, dict)}
-        if set(by_name) != set(EXPECTED):
-            fail(f"{tag} has an unexpected script set")
-        for name, (_, expected_path) in EXPECTED.items():
+        if not isinstance(records, list) or not all(isinstance(item, dict) for item in records):
+            fail(f"{tag} scripts must be a list of records")
+        record_names = [item.get("name") for item in records]
+        if not all(isinstance(name, str) for name in record_names):
+            fail(f"{tag} script names must be strings")
+        by_name = dict(zip(record_names, records, strict=True))
+        if len(by_name) != len(records):
+            fail(f"{tag} has duplicate script names")
+        script_names = frozenset(by_name)
+        current_script_names = frozenset(EXPECTED)
+        if data.get("status") == "active":
+            if script_names != current_script_names:
+                fail(f"{tag} active manifest must list exactly {len(EXPECTED)} current scripts")
+        elif script_names not in {LEGACY_FIVE_SCRIPT_NAMES, current_script_names}:
+            fail(f"{tag} has an unexpected historical script set")
+        for name in script_names:
+            _, expected_path = EXPECTED[name]
             item = by_name[name]
             if item.get("path") != expected_path or not SHA_RE.fullmatch(item.get("sha256", "")):
                 fail(f"invalid {name} entry in {tag}")
@@ -126,7 +139,7 @@ def verify_worktree(manifests: dict[str, dict]) -> str:
         revision = item.get("release_commit")
         if revision:
             verify_manifest_payload(item, revision)
-    print(f"release worktree OK: {active_tag}, five scripts and five module pins")
+    print(f"release worktree OK: {active_tag}, {len(EXPECTED)} scripts and {len(EXPECTED)} module pins")
     return active_tag
 
 

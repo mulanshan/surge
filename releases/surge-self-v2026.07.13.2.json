@@ -1,10 +1,9 @@
 {
   "schema_version": 1,
-  "tag": "surge-self-v2026.07.13.1",
-  "status": "superseded",
-  "release_commit": "c68d328a16e759c65dcf935fe51cb672a22b148e",
-  "supersedes": "surge-self-v2026.07.13",
-  "superseded_by": "surge-self-v2026.07.13.2",
+  "tag": "surge-self-v2026.07.13.2",
+  "status": "active",
+  "release_commit": "7bf854308dd863a25e4ed7444421cd2d94060045",
+  "supersedes": "surge-self-v2026.07.13.1",
   "scripts": [
     {
       "name": "YouTube",
@@ -30,6 +29,11 @@
       "name": "JD",
       "path": "rewrite/Surge/scripts/jd/jd-self.response.js",
       "sha256": "616f6c8380496cbec01b10b429e1c267e6b68db34acabfd59e44656350b7ac35"
+    },
+    {
+      "name": "WeChat",
+      "path": "rewrite/Surge/scripts/wechat/wechat-self.response.js",
+      "sha256": "1254d7c1073f6f4ad98e2bf6b9fbcb39c7a37e5d1a5a768ba562bccc9f95c9b1"
     }
   ]
 }

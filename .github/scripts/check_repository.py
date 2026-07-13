@@ -26,6 +26,7 @@ CANONICAL_MODULE_NAMES = {
     "amap-self.sgmodule": "高德地图",
     "camscanner-self.sgmodule": "扫描全能王",
     "jd-self.sgmodule": "京东",
+    "wechat-self.sgmodule": "微信",
 }
 RETIRED_MODULE_FILES = {
     "instagram-feed-self.sgmodule",
