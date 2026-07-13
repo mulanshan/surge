@@ -3,8 +3,8 @@
  *
  * Security boundaries:
  * - Only processes mp.weixin.qq.com/mp/getappmsgad JSON responses.
- * - Only changes the explicit root-level advertisement_num and
- *   advertisement_info fields.
+ * - Only changes successful responses whose explicit root-level
+ *   advertisement_num and advertisement_info fields pass validation together.
  * - Does not issue network requests, read cookies or tokens, upload data,
  *   use eval, or include third-party source code.
  * - Leaves unknown endpoints, schemas and malformed bodies untouched.
@@ -18,9 +18,13 @@ const config = parseArgument();
 
 function parseArgument() {
   try {
-    return Object.assign({}, DEFAULTS, JSON.parse(typeof $argument === "string" ? $argument : "{}"));
+    const parsed = JSON.parse(typeof $argument === "string" ? $argument : "{}");
+    if (!isPlainObject(parsed)) return { ...DEFAULTS };
+    return {
+      debug: parsed.debug === true,
+    };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
@@ -47,10 +51,20 @@ function bodyText(body) {
   return "";
 }
 
+function jsonText(body) {
+  const text = bodyText(body);
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
 function isSupportedRequest(request) {
-  return /^https:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad(?:[?#]|$)/i.test(
+  return /^https:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad(?:\?|$)/i.test(
     String(request && request.url ? request.url : ""),
   );
+}
+
+function isSuccessfulResponse(response) {
+  const status = response && response.status;
+  return typeof status !== "number" || (status >= 200 && status < 300);
 }
 
 function isPlainObject(value) {
@@ -62,29 +76,43 @@ function hasOwn(value, key) {
 }
 
 function isAdvertisementCount(value) {
-  if (typeof value === "number") return Number.isFinite(value) && value >= 0;
-  return typeof value === "string" && /^\d+$/.test(value.trim());
+  if (typeof value === "number") return Number.isSafeInteger(value) && value >= 0;
+  if (typeof value !== "string" || !/^\d+$/.test(value.trim())) return false;
+  return Number.isSafeInteger(Number(value.trim()));
+}
+
+function zeroOfSameType(value) {
+  return typeof value === "string" ? "0" : 0;
 }
 
 function cleanAdvertisementPayload(payload) {
   const stats = {
     recognized: 0,
+    validSchema: false,
     resetCount: false,
     removedItems: 0,
   };
 
   if (!isPlainObject(payload)) return stats;
 
-  if (hasOwn(payload, "advertisement_num") && isAdvertisementCount(payload.advertisement_num)) {
-    stats.recognized += 1;
+  const hasCount = hasOwn(payload, "advertisement_num");
+  const hasInfo = hasOwn(payload, "advertisement_info");
+  stats.recognized = Number(hasCount) + Number(hasInfo);
+  if (!stats.recognized) return stats;
+
+  const validCount = !hasCount || isAdvertisementCount(payload.advertisement_num);
+  const validInfo = !hasInfo || Array.isArray(payload.advertisement_info);
+  if (!validCount || !validInfo) return stats;
+  stats.validSchema = true;
+
+  if (hasCount) {
     if (Number(payload.advertisement_num) !== 0) {
-      payload.advertisement_num = 0;
+      payload.advertisement_num = zeroOfSameType(payload.advertisement_num);
       stats.resetCount = true;
     }
   }
 
-  if (hasOwn(payload, "advertisement_info") && Array.isArray(payload.advertisement_info)) {
-    stats.recognized += 1;
+  if (hasInfo) {
     if (payload.advertisement_info.length > 0) {
       stats.removedItems = payload.advertisement_info.length;
       payload.advertisement_info = [];
@@ -96,9 +124,13 @@ function cleanAdvertisementPayload(payload) {
 
 if (!isSupportedRequest($request)) {
   $done({});
+} else if (!isSuccessfulResponse($response)) {
+  debug("pass-through: non-success response");
+  $done({});
 } else {
-  const text = bodyText($response && $response.body);
+  const text = jsonText($response && $response.body);
   if (!text) {
+    debug("pass-through: empty body");
     $done({});
   } else {
     try {
@@ -106,13 +138,23 @@ if (!isSupportedRequest($request)) {
       const stats = cleanAdvertisementPayload(payload);
       const changed = stats.resetCount || stats.removedItems > 0;
 
-      if (!stats.recognized || !changed) {
+      if (!stats.recognized) {
+        debug("pass-through: unrecognized schema");
+        $done({});
+      } else if (!stats.validSchema) {
+        debug("pass-through: invalid advertisement schema");
+        $done({});
+      } else if (!changed) {
+        debug("pass-through: no ad changes");
         $done({});
       } else {
-        debug(`cleaned advertisement fields; removed_items=${stats.removedItems}`);
+        debug(
+          `cleaned advertisement fields; reset_count=${stats.resetCount ? 1 : 0}; removed_items=${stats.removedItems}`,
+        );
         $done({ body: JSON.stringify(payload) });
       }
     } catch {
+      debug("pass-through: invalid JSON");
       $done({});
     }
   }
