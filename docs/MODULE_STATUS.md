@@ -38,14 +38,14 @@ scripts used by a stable module are pinned to an immutable repository tag.
 - All 36 external resources are ready: 9 domain sets, 21 rule sets, and 6 scripts.
 - Controlled Microsoft, YouTube, and PayPal requests completed successfully and
   matched `microsoft.domainset`, `youtube.domainset`, and `paypal.domainset`.
-- The installed cloud `YouTube` definition did not refresh through the official
-  module API. It is disabled on the audited device, while the single enabled
-  iCloud-local fallback `YouTube 稳定 .4` pins the same public `.4` script with
-  `debug=false`. A synthetic valid-JSON player response was modified by that
-  script without a failed or rejected request.
-- Once Surge's UI updates the canonical cloud subscription to `.4`, enable
-  `YouTube`, disable `YouTube 稳定 .4`, verify one `.4` YouTube script remains,
-  and then remove `modules/youtube-stable-v20260713-4.sgmodule`.
+- The official module API could not refresh the installed cloud definition, so
+  an iCloud-local `.4` fallback was used briefly. After the owner ran Surge's
+  manual module update, the canonical cloud `YouTube` entry became the sole
+  enabled YouTube module and the fallback file was removed.
+- The final cloud module expands to exactly one `.4` response script with
+  `debug=false`. A controlled valid-JSON player response matched
+  `youtube.domainset`, was modified by `youtube.self.response (YouTube)`, and
+  completed without failure or rejection.
 
 The first 2026-07-13 iOS rollout used versioned iCloud-local module definitions
 because the official remote API cannot update an installed module definition.
