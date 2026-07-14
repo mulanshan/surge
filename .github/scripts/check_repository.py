@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
@@ -18,8 +19,11 @@ ROOT = Path(__file__).resolve().parents[2]
 MODULE_DIR = ROOT / "rewrite/Surge"
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
+WORKFLOW_DIR = ROOT / ".github/workflows"
 SCRIPT_PATH_RE = re.compile(r"(?:^|,)script-path=([^,\s]+)")
 STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}(?:\.\d+)?")
+ACTION_USE_RE = re.compile(r"^\s*uses:\s*([^\s#]+)")
+FULL_COMMIT_RE = re.compile(r"[0-9a-f]{40}")
 CANONICAL_MODULE_NAMES = {
     "youtube-self.sgmodule": "YouTube",
     "instagram-self.sgmodule": "Instagram",
@@ -106,6 +110,64 @@ def check_module_display_names() -> None:
             fail(f"module has no display name: {module.relative_to(ROOT)}")
         if "self" in first_line.casefold():
             fail(f"module display name still contains Self: {module.relative_to(ROOT)}")
+
+
+def check_supply_chain_files() -> None:
+    workflows = sorted([*WORKFLOW_DIR.glob("*.yml"), *WORKFLOW_DIR.glob("*.yaml")])
+    if not workflows:
+        fail("no GitHub Actions workflows found")
+    for workflow in workflows:
+        for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+            match = ACTION_USE_RE.match(line)
+            if not match:
+                continue
+            action = match.group(1)
+            if action.startswith("./"):
+                continue
+            if "@" not in action or not FULL_COMMIT_RE.fullmatch(action.rsplit("@", 1)[1]):
+                fail(
+                    f"GitHub Action must use a full commit SHA: "
+                    f"{workflow.relative_to(ROOT)}:{line_number}: {action}"
+                )
+
+    if not (ROOT / ".github/dependabot.yml").is_file():
+        fail("missing .github/dependabot.yml for pinned Action updates")
+
+    tracking_workflow = WORKFLOW_DIR / "pinned-upstream-drift.yml"
+    if not tracking_workflow.is_file() or "--check-upstream" not in tracking_workflow.read_text(
+        encoding="utf-8"
+    ):
+        fail("missing read-only pinned upstream tracking workflow")
+
+    refresh_workflow = WORKFLOW_DIR / "rules-drift.yml"
+    refresh_text = refresh_workflow.read_text(encoding="utf-8")
+    if re.search(r"(?m)^  schedule:", refresh_text):
+        fail("write-capable managed-source refresh workflow must not be scheduled")
+    for required in (
+        "workflow_dispatch:",
+        "rule_set:",
+        "source_commit:",
+        '--refresh-sources --only "$RULE_SET"',
+        "rule/Surge/upstream/*",
+    ):
+        if required not in refresh_text:
+            fail(f"managed-source refresh workflow is missing safety invariant: {required}")
+
+    required_licenses = {
+        ROOT / "LICENSES/blackmatrix7-ios_rule_script-GPL-2.0-only.txt": (
+            "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+        ),
+        ROOT / "LICENSES/SukkaW-Surge-AGPL-3.0-only.txt": (
+            "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef"
+        ),
+    }
+    missing = sorted(str(path.relative_to(ROOT)) for path in required_licenses if not path.is_file())
+    if missing:
+        fail(f"missing bundled third-party license text: {', '.join(missing)}")
+    for path, expected_sha256 in required_licenses.items():
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected_sha256:
+            fail(f"bundled third-party license text changed: {path.relative_to(ROOT)}")
 
 
 def rule_lines(path: Path) -> list[str]:
@@ -204,6 +266,7 @@ def main() -> int:
 
     if not args.generated_only:
         check_module_display_names()
+        check_supply_chain_files()
         targets = module_script_targets()
         script_count = sum(len(items) for items in targets.values())
         print(f"module paths OK: {len(targets)} modules, {script_count} self-hosted script references")

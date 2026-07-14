@@ -5,7 +5,8 @@
 # Apple TV service rules kept separate because the current profile routes them to 流媒体.
 # Suggested policy: 流媒体
 # Sources:
-# - blackmatrix7 AppleTV: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
+# - blackmatrix7 AppleTV: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/AppleTV/AppleTV.list
+#   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
 #   sha256: 1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 9

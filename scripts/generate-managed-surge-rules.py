@@ -12,6 +12,7 @@ import re
 import sys
 import tempfile
 import textwrap
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Callable
@@ -19,6 +20,7 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
+UPSTREAM_DIR = ROOT / "rule/Surge/upstream"
 
 ALLOWED_RULES = {
     "DOMAIN",
@@ -53,7 +55,15 @@ SET_KEYS = {
     "exclude_rules",
     "sources",
 }
-SOURCE_KEYS = {"name", "url", "expected_sha256", "license", "license_url"}
+SOURCE_KEYS = {
+    "name",
+    "url",
+    "snapshot",
+    "tracking_url",
+    "expected_sha256",
+    "license",
+    "license_url",
+}
 MARKER_PATTERNS = (
     re.compile(r"rul35et", re.IGNORECASE),
     re.compile(r"mad3_by_5ukk4w", re.IGNORECASE),
@@ -68,10 +78,12 @@ class SourceHashMismatch(ValueError):
 @dataclasses.dataclass(frozen=True)
 class Source:
     name: str
-    url: str
+    url: str | None
+    tracking_url: str | None
     expected_sha256: str
     license: str
     license_url: str
+    snapshot: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -205,6 +217,43 @@ def reject_unknown_keys(mapping: dict[str, Any], allowed: set[str], context: str
         raise ValueError(f"{context}: unknown field(s): {', '.join(sorted(unknown))}")
 
 
+def raw_github_parts(url: str) -> tuple[str, str, str, str] | None:
+    parsed = urllib.parse.urlparse(url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if parsed.scheme != "https" or parsed.netloc != "raw.githubusercontent.com" or len(parts) < 4:
+        return None
+    return parts[0], parts[1], parts[2], "/".join(parts[3:])
+
+
+def immutable_remote_source(url: str) -> bool:
+    parts = raw_github_parts(url)
+    return parts is not None and bool(re.fullmatch(r"[0-9a-f]{40}", parts[2]))
+
+
+def snapshot_path(value: str, context: str, *, require_file: bool = True) -> Path:
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"{context}: snapshot must be a repository-relative path")
+    candidate = ROOT / relative
+    try:
+        candidate.resolve().relative_to(UPSTREAM_DIR.resolve())
+    except ValueError as exc:
+        raise ValueError(f"{context}: snapshot must stay under rule/Surge/upstream") from exc
+    if candidate.is_symlink():
+        raise ValueError(f"{context}: snapshot must not be a symbolic link")
+    if require_file and not candidate.is_file():
+        raise ValueError(f"{context}: snapshot file does not exist: {value}")
+    return candidate
+
+
+def repin_raw_github_url(url: str, commit: str) -> str:
+    parts = raw_github_parts(url)
+    if parts is None or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("commit refresh requires a raw.githubusercontent.com source and 40-hex commit")
+    owner, repository, _old_ref, path = parts
+    return f"https://raw.githubusercontent.com/{owner}/{repository}/{commit}/{path}"
+
+
 def normalize_rule_line(
     line: str,
     *,
@@ -260,6 +309,8 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
     sets: list[RuleSet] = []
     seen_ids: set[str] = set()
     seen_outputs: set[str] = set()
+    seen_snapshots: set[str] = set()
+    blackmatrix_pins: set[str] = set()
     for index, item in enumerate(data["sets"], 1):
         context = f"set #{index}"
         if not isinstance(item, dict):
@@ -357,17 +408,56 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
             expected_sha256 = require_string(source_item, "expected_sha256", source_context).lower()
             if not SHA256_RE.fullmatch(expected_sha256):
                 raise ValueError(f"{source_context}: expected_sha256 must be 64 lowercase hex characters")
-            url = require_string(source_item, "url", source_context)
+            url_value = source_item.get("url")
+            snapshot_value = source_item.get("snapshot")
+            if (url_value is None) == (snapshot_value is None):
+                raise ValueError(f"{source_context}: configure exactly one of url or snapshot")
+            tracking_url = require_string(source_item, "tracking_url", source_context)
             license_url = require_string(source_item, "license_url", source_context)
-            if not url.startswith("https://") or not license_url.startswith("https://"):
-                raise ValueError(f"{source_context}: source and license URLs must use HTTPS")
+            if not tracking_url.startswith("https://") or not license_url.startswith("https://"):
+                raise ValueError(f"{source_context}: tracking and license URLs must use HTTPS")
+
+            url: str | None = None
+            snapshot: str | None = None
+            if url_value is not None:
+                url = require_string(source_item, "url", source_context)
+                if url == tracking_url:
+                    raise ValueError(f"{source_context}: url and tracking_url must differ")
+                if not immutable_remote_source(url):
+                    raise ValueError(
+                        f"{source_context}: remote build input must be a raw GitHub 40-hex commit URL; "
+                        "use snapshot for moving or non-GitHub sources"
+                    )
+                pinned_parts = raw_github_parts(url)
+                tracking_parts = raw_github_parts(tracking_url)
+                assert pinned_parts is not None
+                if tracking_parts is None or (
+                    pinned_parts[0], pinned_parts[1], pinned_parts[3]
+                ) != (tracking_parts[0], tracking_parts[1], tracking_parts[3]):
+                    raise ValueError(
+                        f"{source_context}: tracking_url must identify the same GitHub repository path"
+                    )
+                if re.fullmatch(r"[0-9a-f]{40}", tracking_parts[2]):
+                    raise ValueError(
+                        f"{source_context}: tracking_url must use a moving ref, not a commit pin"
+                    )
+                if pinned_parts[:2] == ("blackmatrix7", "ios_rule_script"):
+                    blackmatrix_pins.add(pinned_parts[2])
+            else:
+                snapshot = require_string(source_item, "snapshot", source_context)
+                snapshot_path(snapshot, source_context)
+                if snapshot in seen_snapshots:
+                    raise ValueError(f"{source_context}: duplicate snapshot path: {snapshot}")
+                seen_snapshots.add(snapshot)
             sources.append(
                 Source(
                     name=source_name,
                     url=url,
+                    tracking_url=tracking_url,
                     expected_sha256=expected_sha256,
                     license=require_string(source_item, "license", source_context),
                     license_url=license_url,
+                    snapshot=snapshot,
                 )
             )
 
@@ -387,6 +477,8 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
                 sources=sources,
             )
         )
+    if len(blackmatrix_pins) > 1:
+        raise ValueError("manifest: all blackmatrix7/ios_rule_script sources must use one commit pin")
     return generated_dir, sets
 
 
@@ -438,24 +530,46 @@ def split_domain_set_entries(ordered_rules: list[str]) -> tuple[list[str], list[
     return domain_set, non_domain
 
 
+def load_source_bytes(
+    source: Source,
+    timeout: int,
+    *,
+    fetcher: Callable[[str, int], bytes] = fetch_text,
+) -> bytes:
+    if source.snapshot is not None:
+        return snapshot_path(source.snapshot, f"source {source.name}").read_bytes()
+    if source.url is None:
+        raise ValueError(f"source {source.name}: missing immutable url or snapshot")
+    return fetcher(source.url, timeout)
+
+
 def build_one(
     rule_set: RuleSet,
     timeout: int,
     *,
     enforce_expected_hashes: bool = True,
     fetcher: Callable[[str, int], bytes] = fetch_text,
+    source_overrides: dict[str, bytes] | None = None,
+    allowed_hash_changes: set[str] | None = None,
 ) -> GeneratedRuleSet:
     entries: dict[str, set[str]] = {rule: {"manifest include_rules"} for rule in rule_set.include_rules}
     source_meta: list[dict[str, Any]] = []
     source_hashes: dict[tuple[str, str], str] = {}
 
     for source in rule_set.sources:
-        raw = fetcher(source.url, timeout)
+        raw = (
+            source_overrides[source.name]
+            if source_overrides is not None and source.name in source_overrides
+            else load_source_bytes(source, timeout, fetcher=fetcher)
+        )
         sha = hashlib.sha256(raw).hexdigest()
         source_hashes[(rule_set.rule_id, source.name)] = sha
-        if enforce_expected_hashes and sha != source.expected_sha256:
+        hash_may_change = not enforce_expected_hashes or (
+            allowed_hash_changes is not None and source.name in allowed_hash_changes
+        )
+        if not hash_may_change and sha != source.expected_sha256:
             raise SourceHashMismatch(
-                f"{rule_set.rule_id}/{source.name}: upstream sha256 changed\n"
+                f"{rule_set.rule_id}/{source.name}: pinned source sha256 changed\n"
                 f"  expected: {source.expected_sha256}\n"
                 f"  actual:   {sha}\n"
                 "Run --refresh-sources only on a review branch, inspect the complete diff, and open a PR."
@@ -471,17 +585,18 @@ def build_one(
             if normalized and normalized not in rule_set.exclude_rules:
                 rules.add(normalized)
                 entries.setdefault(normalized, set()).add(source.name)
-        source_meta.append(
-            {
-                "name": source.name,
-                "url": source.url,
-                "sha256": sha,
-                "expected_sha256": sha if not enforce_expected_hashes else source.expected_sha256,
-                "license": source.license,
-                "license_url": source.license_url,
-                "rule_count": len(rules),
-            }
-        )
+        metadata = {
+            "name": source.name,
+            "url": source.url,
+            "snapshot": source.snapshot,
+            "sha256": sha,
+            "expected_sha256": sha if hash_may_change else source.expected_sha256,
+            "license": source.license,
+            "license_url": source.license_url,
+            "rule_count": len(rules),
+        }
+        metadata["tracking_url"] = source.tracking_url
+        source_meta.append(metadata)
 
     ordered = sorted(entries, key=rule_sort_key)
     header_lines = [
@@ -494,7 +609,9 @@ def build_one(
         header_lines.append(f"# {wrapped}")
     header_lines.extend([f"# Suggested policy: {rule_set.suggested_policy}", "# Sources:"])
     for meta in source_meta:
-        header_lines.append(f"# - {meta['name']}: {meta['url']}")
+        location = meta["url"] or f"snapshot:{meta['snapshot']}"
+        header_lines.append(f"# - {meta['name']}: {location}")
+        header_lines.append(f"#   tracking: {meta['tracking_url']}")
         header_lines.append(f"#   sha256: {meta['sha256']}")
         header_lines.append(f"#   license: {meta['license']} ({meta['license_url']})")
         header_lines.append(f"#   rules: {meta['rule_count']}")
@@ -607,11 +724,18 @@ def index_text(generated: list[dict[str, Any]]) -> str:
         "scripts/generate-managed-surge-rules.py --update",
         "```",
         "",
-        "Refresh upstream hashes and snapshots only on a review branch. Inspect the complete diff",
-        "and merge it through a PR; this command does not publish anything by itself:",
+        "Compare all moving tracking URLs with the reviewed build inputs:",
         "",
         "```bash",
-        "scripts/generate-managed-surge-rules.py --refresh-sources",
+        "scripts/generate-managed-surge-rules.py --check-upstream",
+        "```",
+        "",
+        "Refresh one reviewed snapshot on a branch, or atomically repin every remote source",
+        "to an explicitly reviewed GitHub commit. Both modes require a rule-set scope:",
+        "",
+        "```bash",
+        "scripts/generate-managed-surge-rules.py --refresh-sources --only global",
+        "scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --source-commit <40hex>",
         "```",
         "",
         "| ID | Compatibility file | Optimized files | Suggested policy | Unique rules |",
@@ -631,12 +755,18 @@ def index_text(generated: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def refreshed_manifest_text(path: Path, source_hashes: dict[tuple[str, str], str]) -> str:
-    """Replace only expected_sha256 values while preserving the reviewed manifest layout."""
+def refreshed_manifest_text(
+    path: Path,
+    source_hashes: dict[tuple[str, str], str],
+    source_urls: dict[tuple[str, str], str] | None = None,
+) -> str:
+    """Replace selected source pins while preserving the reviewed manifest layout."""
+    source_urls = source_urls or {}
     lines = path.read_text(encoding="utf-8").splitlines()
     current_set = ""
     current_source = ""
-    seen: set[tuple[str, str]] = set()
+    seen_hashes: set[tuple[str, str]] = set()
+    seen_urls: set[tuple[str, str]] = set()
     output: list[str] = []
     for line in lines:
         stripped = line.strip()
@@ -646,17 +776,25 @@ def refreshed_manifest_text(path: Path, source_hashes: dict[tuple[str, str], str
             current_source = ""
         elif indent == 6 and stripped.startswith("- name:"):
             current_source = stripped.split(":", 1)[1].strip()
+        elif indent == 8 and stripped.startswith("url:"):
+            key = (current_set, current_source)
+            if key in source_urls:
+                line = f"        url: {source_urls[key]}"
+                seen_urls.add(key)
         elif indent == 8 and stripped.startswith("expected_sha256:"):
             key = (current_set, current_source)
-            if key not in source_hashes:
-                raise ValueError(f"Cannot refresh unrecognized source digest at {current_set}/{current_source}")
-            line = f"        expected_sha256: {source_hashes[key]}"
-            seen.add(key)
+            if key in source_hashes:
+                line = f"        expected_sha256: {source_hashes[key]}"
+                seen_hashes.add(key)
         output.append(line)
-    missing = set(source_hashes) - seen
-    if missing:
-        names = ", ".join(f"{rule_id}/{source}" for rule_id, source in sorted(missing))
+    missing_hashes = set(source_hashes) - seen_hashes
+    if missing_hashes:
+        names = ", ".join(f"{rule_id}/{source}" for rule_id, source in sorted(missing_hashes))
         raise ValueError(f"Cannot find expected_sha256 field(s) in manifest: {names}")
+    missing_urls = set(source_urls) - seen_urls
+    if missing_urls:
+        names = ", ".join(f"{rule_id}/{source}" for rule_id, source in sorted(missing_urls))
+        raise ValueError(f"Cannot find url field(s) in manifest: {names}")
     return "\n".join(output) + "\n"
 
 
@@ -671,9 +809,129 @@ def write_staged_file(staging_dir: Path, relative_name: str, text: str) -> Path:
     return path
 
 
+def write_staged_bytes(staging_dir: Path, relative_name: str, data: bytes) -> Path:
+    path = staging_dir / relative_name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
 def atomic_replace(staged_path: Path, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     os.replace(staged_path, destination)
+
+
+def check_upstream_tracking(
+    rule_sets: list[RuleSet],
+    timeout: int,
+    *,
+    fetcher: Callable[[str, int], bytes] = fetch_text,
+) -> bool:
+    """Check moving tracking URLs without using them as reproducible build inputs."""
+    tracked = [
+        (rule_set, source)
+        for rule_set in rule_sets
+        for source in rule_set.sources
+        if source.tracking_url is not None
+    ]
+    if not tracked:
+        raise ValueError("No tracking_url sources are configured.")
+
+    drifted: list[str] = []
+    for rule_set, source in tracked:
+        assert source.tracking_url is not None
+        raw = fetcher(source.tracking_url, timeout)
+        actual = hashlib.sha256(raw).hexdigest()
+        label = f"{rule_set.rule_id}/{source.name}"
+        if actual == source.expected_sha256:
+            print(f"Tracking current: {label}")
+            continue
+        drifted.append(label)
+        print(
+            f"Tracking drift: {label}\n"
+            f"  reviewed: {source.expected_sha256}\n"
+            f"  upstream: {actual}\n"
+            f"  tracking: {source.tracking_url}",
+            file=sys.stderr,
+        )
+
+    if drifted:
+        print(
+            "Upstream tracking drift requires a reviewed commit pin, source hash, and generated diff. "
+            "Do not replace the immutable source URL with a moving branch URL.",
+            file=sys.stderr,
+        )
+        return False
+    print(f"Verified {len(tracked)} moving tracking source(s); reviewed pins are current.")
+    return True
+
+
+def prepare_refresh(
+    rule_sets: list[RuleSet],
+    timeout: int,
+    *,
+    source_commit: str | None,
+    selected_rule_ids: set[str] | None = None,
+    fetcher: Callable[[str, int], bytes] = fetch_text,
+) -> tuple[
+    list[RuleSet],
+    dict[str, dict[str, bytes]],
+    dict[str, bytes],
+    dict[tuple[str, str], str],
+]:
+    """Refresh selected snapshots and atomically repin every remote source."""
+    if source_commit is not None and not re.fullmatch(r"[0-9a-f]{40}", source_commit):
+        raise ValueError("--source-commit must be a 40-character lowercase hexadecimal commit")
+    if selected_rule_ids is None:
+        selected_rule_ids = {rule_set.rule_id for rule_set in rule_sets}
+    selected_remote = any(
+        rule_set.rule_id in selected_rule_ids and source.url is not None
+        for rule_set in rule_sets
+        for source in rule_set.sources
+    )
+    if selected_remote and source_commit is None:
+        raise ValueError("--source-commit is required when refreshing a selected remote source")
+
+    refreshed_sets: list[RuleSet] = []
+    source_overrides: dict[str, dict[str, bytes]] = {}
+    snapshot_updates: dict[str, bytes] = {}
+    source_url_updates: dict[tuple[str, str], str] = {}
+    for rule_set in rule_sets:
+        refreshed_sources: list[Source] = []
+        overrides: dict[str, bytes] = {}
+        for source in rule_set.sources:
+            refresh_snapshot = (
+                source.snapshot is not None and rule_set.rule_id in selected_rule_ids
+            )
+            refresh_remote = source.url is not None and source_commit is not None
+            if not refresh_snapshot and not refresh_remote:
+                refreshed_sources.append(source)
+                continue
+            if source.tracking_url is None:
+                raise ValueError(f"{rule_set.rule_id}/{source.name}: tracking_url is required")
+            if refresh_snapshot:
+                assert source.snapshot is not None
+                raw = fetcher(source.tracking_url, timeout)
+                snapshot_updates[source.snapshot] = raw
+                refreshed_source = source
+            else:
+                assert source.url is not None and source_commit is not None
+                refreshed_url = repin_raw_github_url(source.url, source_commit)
+                raw = fetcher(refreshed_url, timeout)
+                tracking_raw = fetcher(source.tracking_url, timeout)
+                if hashlib.sha256(raw).digest() != hashlib.sha256(tracking_raw).digest():
+                    raise ValueError(
+                        f"{rule_set.rule_id}/{source.name}: --source-commit does not match the "
+                        "current tracking URL; resolve and review the upstream head commit explicitly"
+                    )
+                source_url_updates[(rule_set.rule_id, source.name)] = refreshed_url
+                refreshed_source = dataclasses.replace(source, url=refreshed_url)
+            overrides[source.name] = raw
+            refreshed_sources.append(refreshed_source)
+        if overrides:
+            source_overrides[rule_set.rule_id] = overrides
+        refreshed_sets.append(dataclasses.replace(rule_set, sources=refreshed_sources))
+    return refreshed_sets, source_overrides, snapshot_updates, source_url_updates
 
 
 def main() -> int:
@@ -681,6 +939,10 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=MANIFEST)
     parser.add_argument("--only", action="append", help="Process only the named rule set id.")
     parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument(
+        "--source-commit",
+        help="Explicit 40-hex GitHub commit used to atomically repin every remote source during refresh.",
+    )
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--check", action="store_true", help="Verify pins and snapshots; never write.")
     modes.add_argument("--update", action="store_true", help="Write snapshots only when all pins match.")
@@ -689,21 +951,32 @@ def main() -> int:
         action="store_true",
         help="Refresh source pins and snapshots for PR review; never use as a production publish step.",
     )
+    modes.add_argument(
+        "--check-upstream",
+        action="store_true",
+        help="Compare moving tracking URLs with reviewed immutable pins; never write.",
+    )
     args = parser.parse_args()
 
     try:
         generated_dir, all_sets = load_manifest(args.manifest)
-        sets = all_sets
+        selected_sets = all_sets
+        wanted: set[str] = set()
         if args.only:
             wanted = set(args.only)
-            sets = [rule_set for rule_set in all_sets if rule_set.rule_id in wanted]
-            missing = wanted - {rule_set.rule_id for rule_set in sets}
+            selected_sets = [rule_set for rule_set in all_sets if rule_set.rule_id in wanted]
+            missing = wanted - {rule_set.rule_id for rule_set in selected_sets}
             if missing:
                 print(f"Unknown ruleset id(s): {', '.join(sorted(missing))}", file=sys.stderr)
                 return 2
-        if args.refresh_sources and args.only:
-            print("--refresh-sources cannot be combined with --only; refresh must be repository-wide.", file=sys.stderr)
+        if args.refresh_sources and not args.only:
+            print("--refresh-sources requires one or more explicit --only rule-set ids.", file=sys.stderr)
             return 2
+        if args.source_commit and not args.refresh_sources:
+            print("--source-commit is valid only with --refresh-sources.", file=sys.stderr)
+            return 2
+        if args.check_upstream:
+            return 0 if check_upstream_tracking(selected_sets, args.timeout) else 1
 
         mode = (
             "refresh"
@@ -712,8 +985,36 @@ def main() -> int:
             if args.update
             else "check"
         )
-        if not args.check and not args.update and not args.refresh_sources:
+        if not args.check and not args.update and not args.refresh_sources and not args.check_upstream:
             print("Defaulting to read-only check mode; pass --update to write reviewed pinned snapshots.")
+
+        source_overrides: dict[str, dict[str, bytes]] = {}
+        snapshot_updates: dict[str, bytes] = {}
+        source_url_updates: dict[tuple[str, str], str] = {}
+        refresh_keys: set[tuple[str, str]] = set()
+        if mode == "refresh":
+            print(
+                "Refreshing snapshots only for explicit rule-set ids: "
+                + ", ".join(sorted(wanted))
+            )
+            if args.source_commit:
+                print(
+                    "Atomically repinning every remote source to commit "
+                    f"{args.source_commit} and verifying it against each moving tracking URL."
+                )
+            sets, source_overrides, snapshot_updates, source_url_updates = prepare_refresh(
+                all_sets,
+                args.timeout,
+                source_commit=args.source_commit,
+                selected_rule_ids=wanted,
+            )
+            refresh_keys = {
+                (rule_id, source_name)
+                for rule_id, overrides in source_overrides.items()
+                for source_name in overrides
+            }
+        else:
+            sets = selected_sets
 
         generated_dir.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=".managed-rules-", dir=generated_dir.parent) as temporary:
@@ -725,7 +1026,13 @@ def main() -> int:
                 item = build_one(
                     rule_set,
                     args.timeout,
-                    enforce_expected_hashes=mode != "refresh",
+                    enforce_expected_hashes=True,
+                    source_overrides=source_overrides.get(rule_set.rule_id),
+                    allowed_hash_changes=(
+                        set(source_overrides.get(rule_set.rule_id, {}))
+                        if mode == "refresh"
+                        else None
+                    ),
                 )
                 built.append(item)
                 source_hashes.update(item.source_hashes)
@@ -739,16 +1046,30 @@ def main() -> int:
             generated_metadata = [item.metadata for item in built]
             index_items = (
                 read_index_metadata(generated_dir, all_sets, generated_metadata)
-                if args.only
+                if args.only and mode != "refresh"
                 else generated_metadata
             )
             readme_text = index_text(index_items)
             write_staged_file(staging_dir, "README.md", readme_text)
 
             staged_manifest: Path | None = None
+            staged_snapshots: dict[str, Path] = {}
             if mode == "refresh":
-                manifest_text = refreshed_manifest_text(args.manifest, source_hashes)
+                refreshed_hashes = {
+                    key: value for key, value in source_hashes.items() if key in refresh_keys
+                }
+                manifest_text = refreshed_manifest_text(
+                    args.manifest,
+                    refreshed_hashes,
+                    source_url_updates,
+                )
                 staged_manifest = write_staged_file(staging_dir, "managed-rules.yaml", manifest_text)
+                for index, (relative, data) in enumerate(sorted(snapshot_updates.items())):
+                    staged_snapshots[relative] = write_staged_bytes(
+                        staging_dir,
+                        f"snapshot-{index}",
+                        data,
+                    )
 
             if mode == "check":
                 mismatches: list[str] = []
@@ -792,6 +1113,9 @@ def main() -> int:
 
             if mode == "refresh":
                 assert staged_manifest is not None
+                for relative, staged_snapshot in staged_snapshots.items():
+                    destination = snapshot_path(relative, "refresh snapshot", require_file=False)
+                    atomic_replace(staged_snapshot, destination)
                 atomic_replace(staged_manifest, args.manifest)
                 print(
                     "Refreshed source pins and snapshots. Review every upstream and generated diff, "

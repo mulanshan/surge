@@ -38,3 +38,12 @@ repository's GitHub Raw origin and an immutable stable tag.
 External Controller and HTTP API credentials are runtime secrets. Examples in
 this repository use placeholders and environment variables; never commit real
 profile credentials or replace the examples with live values.
+
+Automated tooling must not enumerate ARP neighbors with a stored credential,
+put controller/API credentials in process arguments, disable TLS verification
+by default, or print raw failure bodies. `sensitive=0` profile output remains
+sensitive because controller/API settings may still be present.
+
+Third-party GitHub Actions must be pinned to a complete commit SHA. Dependabot
+may propose pin updates, but the diff and upstream release provenance still
+require review before merge.

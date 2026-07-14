@@ -5,7 +5,8 @@
 # Private tracker services that should stay DIRECT for PT connectivity.
 # Suggested policy: DIRECT
 # Sources:
-# - blackmatrix7 PrivateTracker: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
+# - blackmatrix7 PrivateTracker: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PrivateTracker/PrivateTracker.list
+#   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
 #   sha256: 910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 248

@@ -13,12 +13,14 @@
   "sources": [
     {
       "name": "Sukka Global non-IP",
-      "url": "https://ruleset.skk.moe/List/non_ip/global.conf",
+      "url": null,
+      "snapshot": "rule/Surge/upstream/sukka/non_ip/global.conf",
       "sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
       "expected_sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
-      "rule_count": 1265
+      "rule_count": 1265,
+      "tracking_url": "https://ruleset.skk.moe/List/non_ip/global.conf"
     }
   ],
   "domain_set_output": "rule/Surge/generated/global.domainset",

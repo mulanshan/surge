@@ -13,12 +13,14 @@
   "sources": [
     {
       "name": "Sukka Streaming non-IP",
-      "url": "https://ruleset.skk.moe/List/non_ip/stream.conf",
+      "url": null,
+      "snapshot": "rule/Surge/upstream/sukka/non_ip/stream.conf",
       "sha256": "32a7d987b76e66a31a57345ab0764e5f264ebaab6a6da405808c165c10c6d8f0",
       "expected_sha256": "32a7d987b76e66a31a57345ab0764e5f264ebaab6a6da405808c165c10c6d8f0",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
-      "rule_count": 321
+      "rule_count": 321,
+      "tracking_url": "https://ruleset.skk.moe/List/non_ip/stream.conf"
     }
   ],
   "domain_set_output": "rule/Surge/generated/streaming.domainset",

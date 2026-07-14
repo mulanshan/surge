@@ -7,16 +7,25 @@ generated rules derived from third-party sources.
 ## Generated Surge rules
 
 Files under `rule/Surge/generated/` are generated mirrors or derivative rule
-collections. Their source URLs and the SHA-256 of the retrieved source content
-are recorded in each `.list` header and adjacent `.list.json` file. The source
-manifest is `rule/Surge/sources/managed-rules.yaml`.
+collections. Their immutable source URL or repository snapshot, moving tracking
+URL, and SHA-256 are recorded in each `.list` header and adjacent `.list.json`
+file. The source manifest is `rule/Surge/sources/managed-rules.yaml`; exact
+Sukka publication snapshots are retained under `rule/Surge/upstream/sukka/`.
 
 The currently configured upstream projects include:
 
 | Upstream | Used for | Upstream license |
 | --- | --- | --- |
-| [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script) | Rules fetched from `raw.githubusercontent.com/blackmatrix7/ios_rule_script` | [GPL-2.0](https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE) |
-| [SukkaW/Surge](https://github.com/SukkaW/Surge) | Rules published through `ruleset.skk.moe` | [AGPL-3.0](https://github.com/SukkaW/Surge/blob/master/LICENSE) |
+| [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script) | Rules fetched from one reviewed 40-hex Git commit | [GPL-2.0-only](LICENSES/blackmatrix7-ios_rule_script-GPL-2.0-only.txt) |
+| [SukkaW/Surge](https://github.com/SukkaW/Surge) | Exact published `ruleset.skk.moe` bytes vendored as reviewed snapshots | [AGPL-3.0-only](LICENSES/SukkaW-Surge-AGPL-3.0-only.txt) |
+
+The bundled license texts were copied from upstream for redistribution
+compliance. Their reviewed provenance is:
+
+- blackmatrix7/ios_rule_script commit
+  `597afad2785163a2f5a3eedd86dd605f76bb95c4`, `LICENSE`;
+- SukkaW/Surge commit `bf2ae1c23877fa2ee6ebd8afdbab1680f9477466`,
+  `LICENSE`.
 
 Use, modification, and redistribution of generated files must comply with all
 applicable upstream license terms. Preserve source attribution, provenance

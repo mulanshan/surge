@@ -4,16 +4,22 @@
 # Default mode reads recent requests from the remote iPhone Surge controller.
 # Pass --input FILE to re-process a previously saved dump request JSON.
 set -euo pipefail
+if [[ $- == *x* ]]; then
+  set +x
+fi
 umask 077
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DEFAULT_PROFILE="${HOME}/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
 
-PROFILE="${SURGE_PROFILE:-$DEFAULT_PROFILE}"
+PROFILE="${SURGE_IOS_PROFILE:-${SURGE_PROFILE:-$DEFAULT_PROFILE}}"
 REMOTE_HOST="${SURGE_REMOTE_HOST:-}"
 REMOTE_PORT="${SURGE_REMOTE_PORT:-1132}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/reports/fanqie}"
+HTTP_CA="${SURGE_HTTP_CA:-}"
+HTTP_INSECURE="${SURGE_HTTP_INSECURE:-0}"
 INPUT_JSON=""
+KEEP_RAW=0
 
 usage() {
   cat <<'USAGE'
@@ -23,6 +29,7 @@ Usage:
 Options:
   -i, --input FILE      Re-process an existing Surge dump request JSON.
   -o, --out-dir DIR     Output directory. Default: reports/fanqie
+      --keep-raw        Retain a mode-0600 copy of the raw request JSON.
       --host HOST       Remote Surge host. Required without --input.
       --port PORT       Remote Surge HTTPS HTTP API port. Default: 1132
       --profile FILE    Surge profile used to read the HTTP API key.
@@ -30,16 +37,22 @@ Options:
 
 Environment:
   SURGE_PROFILE         DMIT.conf path override.
+  SURGE_IOS_PROFILE     iOS profile override; takes precedence over SURGE_PROFILE.
   SURGE_REMOTE_HOST     Remote host override.
   SURGE_REMOTE_PORT     Remote HTTPS HTTP API port override.
+  SURGE_HTTP_CA         CA bundle used to verify the Surge HTTPS certificate.
+  SURGE_HTTP_INSECURE   Set to 1 only for a temporary unverified diagnostic.
   OUT_DIR               Output directory override.
 
 Outputs:
-  *.requests.json       Raw request dump or a copy of --input.
   *.summary.tsv         Domain/rule/policy aggregation.
   *.candidate-rules.list
                         Only high-confidence new reject candidates.
   *.report.md           Human review report.
+
+Raw requests are not copied or retained by default. Use --keep-raw only when a
+review requires them, and delete the retained file as soon as it is no longer
+needed.
 USAGE
 }
 
@@ -52,6 +65,10 @@ while [ "$#" -gt 0 ]; do
     -o|--out-dir)
       OUT_DIR="${2:-}"
       shift 2
+      ;;
+    --keep-raw)
+      KEEP_RAW=1
+      shift
       ;;
     --host)
       REMOTE_HOST="${2:-}"
@@ -77,38 +94,110 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+if [[ "$HTTP_INSECURE" != "0" && "$HTTP_INSECURE" != "1" ]]; then
+  echo "SURGE_HTTP_INSECURE must be 0 or 1." >&2
+  exit 2
+fi
+if [[ "$HTTP_CA" == *$'\n'* || "$HTTP_CA" == *$'\r'* ]]; then
+  echo "SURGE_HTTP_CA must not contain a newline." >&2
+  exit 2
+fi
+
 mkdir -p "$OUT_DIR"
+chmod 700 "$OUT_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)-$$"
-RAW_JSON="$OUT_DIR/$STAMP.requests.json"
 SUMMARY_TSV="$OUT_DIR/$STAMP.summary.tsv"
 CANDIDATE_LIST="$OUT_DIR/$STAMP.candidate-rules.list"
 REPORT_MD="$OUT_DIR/$STAMP.report.md"
+RAW_JSON=""
+RAW_OUTPUT=""
+TEMP_RAW=""
+SOURCE_LABEL=""
+
+cleanup() {
+  if [[ -n "$TEMP_RAW" ]]; then
+    rm -f -- "$TEMP_RAW"
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' HUP INT TERM
+
+curl_config() {
+  local key="$1"
+  local escaped_key escaped_ca
+  escaped_key="${key//\\/\\\\}"
+  escaped_key="${escaped_key//\"/\\\"}"
+  printf 'header = "X-Key: %s"\n' "$escaped_key"
+  printf 'silent\nshow-error\nfail\nconnect-timeout = 5\nmax-time = 30\n'
+  if [[ "$HTTP_INSECURE" == "1" ]]; then
+    printf 'insecure\n'
+  elif [[ -n "$HTTP_CA" ]]; then
+    escaped_ca="${HTTP_CA//\\/\\\\}"
+    escaped_ca="${escaped_ca//\"/\\\"}"
+    printf 'cacert = "%s"\n' "$escaped_ca"
+  fi
+}
+
+valid_host() {
+  [[ "$1" =~ ^[-A-Za-z0-9._:]+$ || "$1" =~ ^\[[0-9A-Fa-f:]+\]$ ]]
+}
+
+valid_port() {
+  [[ "$1" =~ ^[0-9]+$ ]] && ((10#$1 >= 1 && 10#$1 <= 65535))
+}
 
 if [ -n "$INPUT_JSON" ]; then
   if [ ! -f "$INPUT_JSON" ]; then
     echo "Input JSON not found: $INPUT_JSON" >&2
     exit 1
   fi
-  cp "$INPUT_JSON" "$RAW_JSON"
+  RAW_JSON="$INPUT_JSON"
+  SOURCE_LABEL="user-provided input (not copied)"
+  if [[ $KEEP_RAW -eq 1 ]]; then
+    RAW_OUTPUT="$OUT_DIR/$STAMP.requests.json"
+    cp "$INPUT_JSON" "$RAW_OUTPUT"
+    chmod 600 "$RAW_OUTPUT"
+    RAW_JSON="$RAW_OUTPUT"
+    SOURCE_LABEL="retained raw capture (see raw_json output)"
+  fi
 else
   if [ -z "$REMOTE_HOST" ]; then
     echo "Remote Surge host is required. Set SURGE_REMOTE_HOST or pass --host." >&2
     exit 1
   fi
+  if ! valid_host "$REMOTE_HOST" || ! valid_port "$REMOTE_PORT"; then
+    echo "Remote Surge host or port is invalid." >&2
+    exit 2
+  fi
   if [ ! -f "$PROFILE" ]; then
     echo "Surge profile not found: $PROFILE" >&2
     exit 1
   fi
-  HTTP_KEY="$(sed -nE 's/^http-api[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1)"
+  HTTP_KEY="$(sed -nE 's/^http-api[[:space:]]*=[[:space:]]*([^@]+)@.*/\1/p' "$PROFILE" | head -1 | tr -d '\r')"
   if [ -z "$HTTP_KEY" ]; then
     echo "Cannot read http-api from profile." >&2
     exit 1
   fi
-  printf 'header = "X-Key: %s"\ninsecure\nsilent\nshow-error\nfail\n' "$HTTP_KEY" |
-    curl --noproxy '*' --config - "https://${REMOTE_HOST}:${REMOTE_PORT}/v1/requests/recent" > "$RAW_JSON"
+  if [[ -n "$HTTP_CA" && ! -r "$HTTP_CA" && "$HTTP_INSECURE" != "1" ]]; then
+    echo "SURGE_HTTP_CA is not readable." >&2
+    exit 1
+  fi
+  TEMP_RAW="$(mktemp "${TMPDIR:-/tmp}/surge-fanqie.requests.XXXXXX")"
+  chmod 600 "$TEMP_RAW"
+  RAW_JSON="$TEMP_RAW"
+  SOURCE_LABEL="temporary live capture (deleted after export)"
+  curl_config "$HTTP_KEY" |
+    curl -q --noproxy '*' --config - "https://${REMOTE_HOST}:${REMOTE_PORT}/v1/requests/recent" > "$RAW_JSON"
+  if [[ $KEEP_RAW -eq 1 ]]; then
+    RAW_OUTPUT="$OUT_DIR/$STAMP.requests.json"
+    mv "$TEMP_RAW" "$RAW_OUTPUT"
+    TEMP_RAW=""
+    RAW_JSON="$RAW_OUTPUT"
+    SOURCE_LABEL="retained raw capture (see raw_json output)"
+  fi
 fi
 
-python3 - "$ROOT_DIR" "$RAW_JSON" "$SUMMARY_TSV" "$CANDIDATE_LIST" "$REPORT_MD" <<'PY'
+python3 - "$ROOT_DIR" "$RAW_JSON" "$SUMMARY_TSV" "$CANDIDATE_LIST" "$REPORT_MD" "$SOURCE_LABEL" <<'PY'
 import re
 import sys
 from collections import Counter
@@ -133,6 +222,7 @@ raw_path = Path(sys.argv[2])
 summary_path = Path(sys.argv[3])
 candidate_path = Path(sys.argv[4])
 report_path = Path(sys.argv[5])
+source_label = sys.argv[6]
 
 rules_paths = [root / "rewrite" / "Surge" / "basic-adblock.sgmodule"]
 
@@ -194,7 +284,6 @@ for row in rows:
             "statuses": Counter(),
             "first": "",
             "last": "",
-            "sample": text,
         },
     )
     item["count"] += 1
@@ -266,7 +355,7 @@ with summary_path.open("w", encoding="utf-8") as f:
 candidates = [item["host"] for item in items if item["class"] == "candidate-reject"]
 with candidate_path.open("w", encoding="utf-8") as f:
     f.write("# Review before adding to the Basic AdBlock or an app-specific module\n")
-    f.write("# Generated from: " + str(raw_path) + "\n")
+    f.write("# Generated from: " + source_label + "\n")
     for host in candidates:
         f.write(f"DOMAIN,{host},REJECT\n")
 
@@ -298,7 +387,7 @@ report = [
     "# Fanqie Surge Candidate Report",
     "",
     f"- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-    f"- Source: `{raw_path}`",
+    f"- Source: {source_label}",
     f"- Requests: {len(rows)}",
     f"- Unique hosts: {len(items)}",
     f"- Time range: {time_range}",
@@ -347,8 +436,16 @@ print(f"time_range={time_range}")
 print(f"candidate_reject={classes['candidate-reject']}")
 print(f"observe={classes['observe']}")
 print(f"existing_rule={classes['existing-rule']}")
-print(f"raw_json={raw_path}")
 print(f"summary_tsv={summary_path}")
 print(f"candidate_rules={candidate_path}")
 print(f"report_md={report_path}")
 PY
+
+chmod 600 "$SUMMARY_TSV" "$CANDIDATE_LIST" "$REPORT_MD"
+if [[ -n "$RAW_OUTPUT" ]]; then
+  printf 'raw_json=%s\n' "$RAW_OUTPUT"
+elif [[ -n "$INPUT_JSON" ]]; then
+  printf 'raw_json=input-not-copied\n'
+else
+  printf 'raw_json=not-retained\n'
+fi
