@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "tags": [
+    {
+      "tag": "camscanner-self-v1.0.0",
+      "status": "retired-moved",
+      "observed_tag_commit": "7c0ce3d3bbc6a186c7efbc56eabc1c5fda166ba7",
+      "release": {
+        "name": "CamScanner self v1.0.0 (Retired moved tag)",
+        "draft": false,
+        "prerelease": true,
+        "required_marker": "⚠️ RETIRED MOVED TAG",
+        "body_sha256": "8807dc6fa484efd0181d869b57a84e8f27ad80735dfe9277f9923007dbb18e0e"
+      }
+    }
+  ]
+}

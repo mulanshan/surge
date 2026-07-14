@@ -137,7 +137,8 @@ The replacement release completed on 2026-07-13:
 - all five canonical module files stayed at their original `main` install URLs.
 
 The existing iOS module subscriptions were updated in place rather than
-reinstalled. Final effective-profile checks on `192.168.70.250` showed five
+reinstalled. Final effective-profile checks on the explicitly selected iOS
+Surge endpoint showed five
 references to `surge-self-v2026.07.13.1`, zero references to the retired tag,
 and 26 of 26 external resources ready.
 

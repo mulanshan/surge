@@ -11,12 +11,14 @@
   "sources": [
     {
       "name": "blackmatrix7 PayPal",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PayPal/PayPal.list",
+      "snapshot": null,
       "sha256": "4ffb6f94d2f1eff835c24b533c3d1d6e0c5a4cfbc32740fa9c32315ae218fd18",
       "expected_sha256": "4ffb6f94d2f1eff835c24b533c3d1d6e0c5a4cfbc32740fa9c32315ae218fd18",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 248
+      "rule_count": 248,
+      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list"
     }
   ],
   "domain_set_output": "rule/Surge/generated/paypal.domainset",

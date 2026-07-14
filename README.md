@@ -136,22 +136,15 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-self.sgmodule
 ```
 
-旧架构独立稳定版（回滚用）：
-
-```text
-https://raw.githubusercontent.com/mulanshan/surge/camscanner-self-v1.0.0/rewrite/Surge/camscanner-self.sgmodule
-```
-
 这是自有可审计的扫描全能王 / CamScanner 专用模块。正式显示名统一为“扫描全能王”；固定 URL
 保持不变，已安装设备直接更新即可。仓库里只维护这一个当前模块和一个响应脚本：
 
 - 模块：`rewrite/Surge/camscanner-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 
-`camscanner-self-v1.0.0` 基于 iPhone 真机测试通过的 `753c2cb` 固化，仍包含 Google、腾讯、
-AppsFlyer、Adjust 等旧架构全局规则与 MITM，只适合独立使用或回滚；它不代表当前“基础模块 + 专用模块”分层。
-当前 `main` 已切换到新架构。已安装“扫描全能王 Self v2”的设备更新原订阅后会显示为“扫描全能王”；
-旧架构“扫描全能王 Self”仍应停用。请同时启用“基础去广告模块”。本次脚本已固定到仓库级不可变 tag；模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
+旧标签 `camscanner-self-v1.0.0` 已标记为 `retired-moved`：远端引用不再指向原始发布状态，不能继续作为安装、校验或回滚地址。仍在使用该 URL 的设备应删除旧订阅，改用上面的 `main` 模块地址，并同时启用“基础去广告模块”。当前扫描全能王脚本属于受 release manifest 校验的统一 `surge-self-vYYYY.MM.DD[.N]` 发布链；回滚只能选择 manifest 中状态完整的 `superseded` bundle，不能复用或移动旧标签。详细迁移规则见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
+
+当前 `main` 已切换到“基础模块 + 专用模块”分层。已安装“扫描全能王 Self v2”的设备更新原订阅后会显示为“扫描全能王”；旧架构“扫描全能王 Self”仍应停用。模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
 
 当前 `main` 功能范围：
 
@@ -283,14 +276,15 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self
 
 ```bash
 scripts/generate-managed-surge-rules.py --check
+scripts/generate-managed-surge-rules.py --check-upstream
 ```
 
-接受并写入经过人工审查的 manifest 更新时，使用生成器的更新模式，并同时提交 manifest、规则文件和 JSON 元数据。详细流程见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
+14 个 Blackmatrix 输入固定到同一个完整 Git commit；7 个 Sukka 输入保存为仓库内精确字节快照。moving URL 只用于漂移告警，不参与可复现构建。接受更新时必须显式指定规则集；远端 GitHub 源还必须提供已审查的 40 位 commit，并同时提交 manifest、upstream snapshot、规则文件和 JSON 元数据。详细流程见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
 
 每个生成文件都会写入：
 
 - 规则用途和建议策略
-- 上游 URL
+- 不可变上游 URL或仓库内 snapshot，以及单独的 tracking URL
 - 上游内容 SHA-256
 - 上游规则数量
 - 合并后的唯一规则数量
@@ -419,10 +413,10 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/%E7%95%AA%E8%8
 
 脚本：[rule/Surge/scripts/export-fanqie-candidates.sh](rule/Surge/scripts/export-fanqie-candidates.sh)
 
-默认通过 iPhone Surge HTTPS HTTP API 读取最近请求并生成候选报告；设备地址必须由环境变量或 `--host` 明确提供，仓库不保存家庭 LAN 地址：
+默认通过 iPhone Surge HTTPS HTTP API 读取最近请求并生成候选报告；设备地址必须由环境变量或 `--host` 明确提供，仓库不保存家庭 LAN 地址。脚本默认从 iOS 的 `DMIT.conf` 读取独立 API key，也可用 `SURGE_IOS_PROFILE` 覆盖；不会复用 Mac `DMIT-Mac.conf` 的 key：
 
 ```bash
-SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-fanqie-candidates.sh
+SURGE_REMOTE_HOST=ios-surge.local rule/Surge/scripts/export-fanqie-candidates.sh
 ```
 
 也可以复盘之前保存的 `dump request` JSON：
@@ -431,7 +425,7 @@ SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-fanqie-candidates.sh
 rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-requests-20260606-151744.json
 ```
 
-输出会以仅当前用户可读的权限写入 `reports/fanqie/`，该目录已忽略，不会误提交到公开仓库。HTTP API key 通过标准输入交给 `curl`，不会作为命令行参数暴露。主要文件：
+输出目录会强制为 `0700`，报告文件强制为 `0600`；`reports/fanqie/` 已忽略，不会误提交到公开仓库。HTTP API key 通过标准输入交给 `curl`，不会作为命令行参数暴露；HTTPS 默认校验证书，可在系统尚未信任 Surge CA 时显式设置 `SURGE_HTTP_CA`。原始请求默认只在临时文件中处理并自动删除，`--input` 也不会再复制一份 raw；只有人工审查确实需要时才使用 `--keep-raw`，使用后应尽快删除。主要文件：
 
 - `*.summary.tsv`：域名、次数、规则、策略、是否拒绝的聚合表
 - `*.candidate-rules.list`：只包含高置信新候选，加入基础或专用模块前必须人工复核
@@ -447,7 +441,7 @@ rule/Surge/scripts/export-fanqie-candidates.sh --input /private/tmp/ios-surge-re
 扫描全能王也有独立的候选导出脚本：
 
 ```bash
-SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-camscanner-candidates.sh
+SURGE_REMOTE_HOST=ios-surge.local rule/Surge/scripts/export-camscanner-candidates.sh
 ```
 
 也可以复盘之前保存的 `dump request` JSON：
@@ -456,7 +450,7 @@ SURGE_REMOTE_HOST=192.168.1.50 rule/Surge/scripts/export-camscanner-candidates.s
 rule/Surge/scripts/export-camscanner-candidates.sh --input /private/tmp/ios-surge-requests.json
 ```
 
-输出会写入 `reports/camscanner/`，该目录已忽略，不会误提交到公开仓库。开发原则：
+输出采用与番茄脚本相同的 `0700`/`0600` 权限、TLS 校验和默认不保留 raw 策略，并写入已忽略的 `reports/camscanner/`。开发原则：
 
 - `purchase`、`receipt`、`order`、`payment`、`subscription`、`vip`、`premium`、`property`、`quota`、`account` 等购买/账号敏感路径一律跳过
 - 新域名先进入候选或观察，不直接整域拦截 `intsig.net`、`camscanner.com`

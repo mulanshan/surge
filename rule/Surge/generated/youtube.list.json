@@ -14,12 +14,14 @@
   "sources": [
     {
       "name": "blackmatrix7 YouTube",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/YouTube/YouTube.list",
+      "snapshot": null,
       "sha256": "42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d",
       "expected_sha256": "42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 190
+      "rule_count": 190,
+      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list"
     }
   ],
   "domain_set_output": "rule/Surge/generated/youtube.domainset",

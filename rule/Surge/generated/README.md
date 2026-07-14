@@ -15,11 +15,18 @@ Regenerate from already-reviewed, pinned sources:
 scripts/generate-managed-surge-rules.py --update
 ```
 
-Refresh upstream hashes and snapshots only on a review branch. Inspect the complete diff
-and merge it through a PR; this command does not publish anything by itself:
+Compare all moving tracking URLs with the reviewed build inputs:
 
 ```bash
-scripts/generate-managed-surge-rules.py --refresh-sources
+scripts/generate-managed-surge-rules.py --check-upstream
+```
+
+Refresh one reviewed snapshot on a branch, or atomically repin every remote source
+to an explicitly reviewed GitHub commit. Both modes require a rule-set scope:
+
+```bash
+scripts/generate-managed-surge-rules.py --refresh-sources --only global
+scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --source-commit <40hex>
 ```
 
 | ID | Compatibility file | Optimized files | Suggested policy | Unique rules |

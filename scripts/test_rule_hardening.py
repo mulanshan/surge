@@ -3,8 +3,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib.util
+import io
+import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -50,6 +54,7 @@ class GeneratorTests(unittest.TestCase):
         source = generator.Source(
             name="fixture",
             url="https://example.invalid/rules.list",
+            tracking_url=None,
             expected_sha256=hashlib.sha256(raw).hexdigest(),
             license="MIT",
             license_url="https://example.invalid/LICENSE",
@@ -171,6 +176,46 @@ sets:
             )
         self.assertIn(f"expected_sha256: {'a' * 64}", refreshed)
         self.assertIn("license: MIT", refreshed)
+
+    def test_tracking_url_is_checked_without_becoming_the_build_input(self):
+        reviewed = b"DOMAIN,reviewed.example\n"
+        upstream = b"DOMAIN,changed.example\n"
+        source = generator.Source(
+            name="fixture",
+            url="https://example.invalid/immutable/rules.list",
+            tracking_url="https://example.invalid/main/rules.list",
+            expected_sha256=hashlib.sha256(reviewed).hexdigest(),
+            license="MIT",
+            license_url="https://example.invalid/LICENSE",
+        )
+        rule_set = generator.RuleSet(
+            rule_id="fixture",
+            name="Fixture",
+            description="Fixture",
+            output="fixture.list",
+            domain_set_output=None,
+            non_domain_output=None,
+            suggested_policy="DIRECT",
+            suggested_options=[],
+            include_process_name=False,
+            include_rules=frozenset(),
+            exclude_rules=frozenset(),
+            sources=[source],
+        )
+
+        requested = []
+
+        def fetcher(url, _timeout):
+            requested.append(url)
+            return upstream
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            current = generator.check_upstream_tracking([rule_set], 1, fetcher=fetcher)
+        self.assertFalse(current)
+        self.assertIn("Tracking drift: fixture/fixture", stderr.getvalue())
+        self.assertEqual(requested, [source.tracking_url])
 
 
 class RepositoryInvariantTests(unittest.TestCase):
@@ -296,7 +341,7 @@ class RepositoryInvariantTests(unittest.TestCase):
             input_path = temporary_path / "requests.json"
             output_path = temporary_path / "out"
             input_path.write_text(request_data, encoding="utf-8")
-            subprocess.run(
+            result = subprocess.run(
                 [
                     str(ROOT / "rule/Surge/scripts/export-fanqie-candidates.sh"),
                     "--input",
@@ -310,8 +355,279 @@ class RepositoryInvariantTests(unittest.TestCase):
                 text=True,
             )
             candidates = next(output_path.glob("*.candidate-rules.list")).read_text(encoding="utf-8")
+            self.assertEqual(stat.S_IMODE(output_path.stat().st_mode), 0o700)
+            self.assertFalse(list(output_path.glob("*.requests.json")))
+            self.assertIn("raw_json=input-not-copied", result.stdout)
+            for exported in output_path.iterdir():
+                self.assertEqual(stat.S_IMODE(exported.stat().st_mode), 0o600)
         self.assertIn("DOMAIN,ad-foo.fqnovel.com,REJECT", candidates)
         self.assertNotIn("sub.adnxs.com", candidates)
+
+    def test_candidate_exporters_retain_raw_only_when_explicitly_requested(self):
+        request_data = '[{"URL":"https://ads.example.test/path","policyName":"DIRECT"}]\n'
+        exporters = [
+            "export-fanqie-candidates.sh",
+            "export-camscanner-candidates.sh",
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            input_path = temporary_path / "requests.json"
+            input_path.write_text(request_data, encoding="utf-8")
+            for exporter in exporters:
+                with self.subTest(exporter=exporter):
+                    output_path = temporary_path / exporter
+                    result = subprocess.run(
+                        [
+                            str(ROOT / "rule/Surge/scripts" / exporter),
+                            "--input",
+                            str(input_path),
+                            "--out-dir",
+                            str(output_path),
+                            "--keep-raw",
+                        ],
+                        cwd=ROOT,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
+                    raw_files = list(output_path.glob("*.requests.json"))
+                    self.assertEqual(len(raw_files), 1)
+                    self.assertIn(f"raw_json={raw_files[0]}", result.stdout)
+                    self.assertEqual(stat.S_IMODE(output_path.stat().st_mode), 0o700)
+                    for exported in output_path.iterdir():
+                        self.assertEqual(stat.S_IMODE(exported.stat().st_mode), 0o600)
+
+    def test_camscanner_export_never_persists_request_paths(self):
+        secret_path = "account/550e8400-e29b-41d4-a716-446655440000/SECRET-TOKEN"
+        request_data = (
+            '[{"URL":"https://api.camscanner.com/'
+            + secret_path
+            + '","policyName":"DIRECT"}]\n'
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            input_path = temporary_path / "requests.json"
+            output_path = temporary_path / "out"
+            input_path.write_text(request_data, encoding="utf-8")
+            subprocess.run(
+                [
+                    str(ROOT / "rule/Surge/scripts/export-camscanner-candidates.sh"),
+                    "--input",
+                    str(input_path),
+                    "--out-dir",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            exported_text = "\n".join(
+                path.read_text(encoding="utf-8") for path in output_path.iterdir()
+            )
+            self.assertNotIn(secret_path, exported_text)
+            self.assertNotIn("SECRET-TOKEN", exported_text)
+
+    def test_live_export_uses_verified_stdin_auth_and_deletes_temporary_raw(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            bin_path = temporary_path / "bin"
+            log_path = temporary_path / "log"
+            tmp_path = temporary_path / "tmp"
+            output_path = temporary_path / "out"
+            for path in (bin_path, log_path, tmp_path):
+                path.mkdir()
+            fake_curl = bin_path / "curl"
+            fake_curl.write_text(
+                "#!/bin/sh\n"
+                "config=\"$(cat)\"\n"
+                "printf '%s' \"$config\" > \"$SURGE_TEST_LOG/curl.config\"\n"
+                "printf '%s' \"$*\" > \"$SURGE_TEST_LOG/curl.args\"\n"
+                "printf '%s\\n' '[{\"URL\":\"https://ad-live.fqnovel.com/ad\",\"policyName\":\"DIRECT\"}]'\n",
+                encoding="utf-8",
+            )
+            fake_curl.chmod(0o700)
+            ios_profile = temporary_path / "DMIT.conf"
+            ios_profile.write_text(
+                "http-api = synthetic-export-key@0.0.0.0:1132\n",
+                encoding="utf-8",
+            )
+            env = {
+                **os.environ,
+                "PATH": f"{bin_path}:{os.environ['PATH']}",
+                "SURGE_TEST_LOG": str(log_path),
+                "TMPDIR": str(tmp_path),
+            }
+            result = subprocess.run(
+                [
+                    str(ROOT / "rule/Surge/scripts/export-fanqie-candidates.sh"),
+                    "--host",
+                    "ios-surge.local",
+                    "--profile",
+                    str(ios_profile),
+                    "--out-dir",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            config = (log_path / "curl.config").read_text(encoding="utf-8")
+            args = (log_path / "curl.args").read_text(encoding="utf-8")
+            self.assertIn("synthetic-export-key", config)
+            self.assertNotIn("insecure", config)
+            self.assertNotIn("synthetic-export-key", args)
+            self.assertTrue(args.startswith("-q "), args)
+            self.assertIn("raw_json=not-retained", result.stdout)
+            self.assertFalse(list(output_path.glob("*.requests.json")))
+            self.assertFalse(list(tmp_path.iterdir()))
+
+    def test_local_status_probe_has_no_credentialed_discovery_or_raw_cli_auth(self):
+        script = (ROOT / "local-surge-control/scripts/surge-status.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("arp -a", script)
+        self.assertNotIn("--remote", script)
+        self.assertNotIn("curl -k", script)
+        self.assertNotIn("FAIL: ${output}", script)
+        self.assertIn("curl -q --noproxy '*' --config -", script)
+        self.assertIn("set +x", script)
+        self.assertIn("SURGE_IOS_PROFILE", script)
+        self.assertIn("SURGE_MAC_PROFILE", script)
+        self.assertIn("DMIT-Mac.conf", script)
+        self.assertNotIn("wifi-access-http-auth", script)
+        for exporter in (
+            "export-fanqie-candidates.sh",
+            "export-camscanner-candidates.sh",
+        ):
+            exporter_text = (ROOT / "rule/Surge/scripts" / exporter).read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("curl -q --noproxy '*' --config -", exporter_text)
+            self.assertIn("set +x", exporter_text)
+
+    def test_local_status_probe_uses_each_device_profile_key_over_stdin(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            bin_path = temporary_path / "bin"
+            log_path = temporary_path / "log"
+            bin_path.mkdir()
+            log_path.mkdir()
+            fake_curl = bin_path / "curl"
+            fake_curl.write_text(
+                "#!/bin/sh\n"
+                "config=\"$(cat)\"\n"
+                "case \"$*\" in\n"
+                "  *127.0.0.1*) name=mac ;;\n"
+                "  *ios-surge.local*) name=ios ;;\n"
+                "  *) name=unknown ;;\n"
+                "esac\n"
+                "printf '%s' \"$config\" > \"$SURGE_TEST_LOG/$name.config\"\n"
+                "printf '%s' \"$*\" > \"$SURGE_TEST_LOG/$name.args\"\n"
+                "printf '%s\\n' '{\"events\":[]}' '200'\n",
+                encoding="utf-8",
+            )
+            fake_curl.chmod(0o700)
+            mac_profile = temporary_path / "DMIT-Mac.conf"
+            ios_profile = temporary_path / "DMIT.conf"
+            mac_profile.write_text(
+                "http-api = synthetic-mac-key@127.0.0.1:1132\n",
+                encoding="utf-8",
+            )
+            ios_profile.write_text(
+                "http-api = synthetic-ios-key@0.0.0.0:1132\n",
+                encoding="utf-8",
+            )
+            env = {
+                **os.environ,
+                "PATH": f"{bin_path}:{os.environ['PATH']}",
+                "SURGE_TEST_LOG": str(log_path),
+                "SURGE_MAC_PROFILE": str(mac_profile),
+                "SURGE_IOS_PROFILE": str(ios_profile),
+                "SURGE_IOS_HOST": "ios-surge.local",
+            }
+            result = subprocess.run(
+                [str(ROOT / "local-surge-control/scripts/surge-status.sh"), "all"],
+                cwd=ROOT,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("mac   https-http-api         OK", result.stdout)
+            self.assertIn("ios   https-http-api         OK", result.stdout)
+            mac_config = (log_path / "mac.config").read_text(encoding="utf-8")
+            ios_config = (log_path / "ios.config").read_text(encoding="utf-8")
+            self.assertIn("synthetic-mac-key", mac_config)
+            self.assertNotIn("synthetic-ios-key", mac_config)
+            self.assertIn("synthetic-ios-key", ios_config)
+            self.assertNotIn("synthetic-mac-key", ios_config)
+            self.assertNotIn("synthetic-mac-key", (log_path / "mac.args").read_text())
+            self.assertNotIn("synthetic-ios-key", (log_path / "ios.args").read_text())
+            self.assertTrue((log_path / "mac.args").read_text().startswith("-q "))
+            self.assertTrue((log_path / "ios.args").read_text().startswith("-q "))
+
+    def test_local_status_failure_is_nonzero_and_xtrace_hides_api_key(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            bin_path = temporary_path / "bin"
+            bin_path.mkdir()
+            fake_curl = bin_path / "curl"
+            fake_curl.write_text(
+                "#!/bin/sh\n"
+                "cat >/dev/null\n"
+                "printf '%s\\n' '{\"events\":[]}' '200'\n",
+                encoding="utf-8",
+            )
+            fake_curl.chmod(0o700)
+            profile = temporary_path / "DMIT-Mac.conf"
+            profile.write_text(
+                "http-api = synthetic-xtrace-secret@127.0.0.1:1132\n",
+                encoding="utf-8",
+            )
+            env = {
+                **os.environ,
+                "PATH": f"{bin_path}:{os.environ['PATH']}",
+                "SURGE_MAC_PROFILE": str(profile),
+            }
+            traced = subprocess.run(
+                [
+                    "bash",
+                    "-x",
+                    str(ROOT / "local-surge-control/scripts/surge-status.sh"),
+                    "mac",
+                ],
+                cwd=ROOT,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotIn("synthetic-xtrace-secret", traced.stderr)
+
+            failed = subprocess.run(
+                [str(ROOT / "local-surge-control/scripts/surge-status.sh"), "mac"],
+                cwd=ROOT,
+                env={**env, "SURGE_MAC_PROFILE": str(temporary_path / "missing.conf")},
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(failed.returncode, 1)
+            self.assertIn("FAIL: device profile is not readable", failed.stdout)
+
+            invalid_ca = subprocess.run(
+                [str(ROOT / "local-surge-control/scripts/surge-status.sh"), "mac"],
+                cwd=ROOT,
+                env={**env, "SURGE_HTTP_CA": "bad\ninsecure"},
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(invalid_ca.returncode, 2)
+            self.assertIn("must not contain a newline", invalid_ca.stderr)
 
 
 if __name__ == "__main__":

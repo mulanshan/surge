@@ -1,190 +1,174 @@
 #!/usr/bin/env bash
 set -u
+set -o pipefail
+if [[ $- == *x* ]]; then
+  set +x
+fi
+umask 077
 
-PROFILE="${SURGE_PROFILE:-${HOME}/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf}"
-SURGE_CLI="${SURGE_CLI:-/Applications/Surge.app/Contents/Applications/surge-cli}"
-CTRL_PORT="${SURGE_CONTROLLER_PORT:-6170}"
+PROFILE_DIR="${HOME}/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents"
+LEGACY_PROFILE="${SURGE_PROFILE:-}"
+IOS_PROFILE="${SURGE_IOS_PROFILE:-${LEGACY_PROFILE:-${PROFILE_DIR}/DMIT.conf}}"
+MAC_PROFILE="${SURGE_MAC_PROFILE:-${LEGACY_PROFILE:-${PROFILE_DIR}/DMIT-Mac.conf}}"
+ATV_PROFILE="${SURGE_ATV_PROFILE:-$IOS_PROFILE}"
 API_PORT="${SURGE_HTTP_API_PORT:-1132}"
 MAC_HOST="${SURGE_MAC_HOST:-127.0.0.1}"
 IOS_HOST="${SURGE_IOS_HOST:-}"
-IOS_HOST_HINTS="${SURGE_IOS_HOST_HINTS:-}"
 ATV_HOST="${SURGE_ATV_HOST:-}"
+HTTP_CA="${SURGE_HTTP_CA:-}"
+HTTP_INSECURE="${SURGE_HTTP_INSECURE:-0}"
+FAILURES=0
 
 target="${1:-all}"
 
-if [[ ! -r "$PROFILE" ]]; then
-  echo "Surge profile is not readable: $PROFILE" >&2
-  echo "Set SURGE_PROFILE to the shared Surge profile path." >&2
-  exit 1
+if [[ "$HTTP_INSECURE" != "0" && "$HTTP_INSECURE" != "1" ]]; then
+  echo "SURGE_HTTP_INSECURE must be 0 or 1." >&2
+  exit 2
+fi
+if [[ "$HTTP_CA" == *$'\n'* || "$HTTP_CA" == *$'\r'* ]]; then
+  echo "SURGE_HTTP_CA must not contain a newline." >&2
+  exit 2
 fi
 
 extract_secret() {
-  local key="$1"
-  sed -nE "s/^${key}[[:space:]]*=[[:space:]]*([^@]+)@.*/\\1/p" "$PROFILE" | head -1
+  local profile="$1"
+  local key="$2"
+  sed -nE "s/^${key}[[:space:]]*=[[:space:]]*([^@]+)@.*/\\1/p" "$profile" |
+    head -1 |
+    tr -d '\r'
 }
 
-CTRL_PASS="$(extract_secret external-controller-access)"
-HTTP_KEY="$(extract_secret http-api)"
+profile_has_setting() {
+  local profile="$1"
+  local key="$2"
+  grep -Eq "^${key}[[:space:]]*=" "$profile"
+}
 
 status_line() {
+  if [[ "$3" == FAIL:* ]]; then
+    FAILURES=$((FAILURES + 1))
+  fi
   printf '%-5s %-22s %s\n' "$1" "$2" "$3"
 }
 
-local_ipv4s() {
-  ifconfig 2>/dev/null | sed -nE 's/^[[:space:]]*inet ([0-9.]+) .*/\1/p'
+valid_host() {
+  [[ "$1" =~ ^[-A-Za-z0-9._:]+$ || "$1" =~ ^\[[0-9A-Fa-f:]+\]$ ]]
 }
 
-arp_ipv4s() {
-  arp -a 2>/dev/null | awk '$0 !~ /\(incomplete\)/' | sed -nE 's/.*\(([0-9.]+)\).*/\1/p'
+valid_port() {
+  [[ "$1" =~ ^[0-9]+$ ]] && ((10#$1 >= 1 && 10#$1 <= 65535))
 }
 
-is_local_host() {
-  local host="$1"
-  local ip
-  [[ "$host" == "127.0.0.1" || "$host" == "localhost" ]] && return 0
-  for ip in $(local_ipv4s); do
-    [[ "$host" == "$ip" ]] && return 0
-  done
-  return 1
-}
-
-candidate_hosts() {
-  {
-    if [[ -n "$IOS_HOST_HINTS" ]]; then
-      printf '%s\n' $IOS_HOST_HINTS
-    fi
-    arp_ipv4s
-  } | awk '
-    /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/ && !seen[$0]++
-  '
-}
-
-tcp_port_open() {
-  local host="$1"
-  local port="$2"
-  if ! command -v nc >/dev/null 2>&1; then
-    return 0
+curl_config() {
+  local http_key="$1"
+  local escaped_key escaped_ca
+  if [[ "$http_key" == *$'\n'* || "$http_key" == *$'\r'* ]]; then
+    return 1
   fi
-  if nc -h 2>&1 | grep -q -- '-G'; then
-    nc -G 1 -z "$host" "$port" >/dev/null 2>&1
-  else
-    nc -w 1 -z "$host" "$port" >/dev/null 2>&1
+  escaped_key="${http_key//\\/\\\\}"
+  escaped_key="${escaped_key//\"/\\\"}"
+  printf 'header = "X-Key: %s"\n' "$escaped_key"
+  printf 'silent\nshow-error\nconnect-timeout = 2\nmax-time = 6\n'
+  if [[ "$HTTP_INSECURE" == "1" ]]; then
+    printf 'insecure\n'
+  elif [[ -n "$HTTP_CA" ]]; then
+    escaped_ca="${HTTP_CA//\\/\\\\}"
+    escaped_ca="${escaped_ca//\"/\\\"}"
+    printf 'cacert = "%s"\n' "$escaped_ca"
   fi
 }
 
-verify_remote_host() {
-  local host="$1"
-  local output
-  local api_open=1
-  local controller_open=1
-  is_local_host "$host" && return 1
-
-  if command -v nc >/dev/null 2>&1; then
-    api_open=0
-    controller_open=0
-    tcp_port_open "$host" "$API_PORT" && api_open=1
-    tcp_port_open "$host" "$CTRL_PORT" && controller_open=1
-    [[ $api_open -eq 0 && $controller_open -eq 0 ]] && return 1
-  fi
-
-  if [[ -n "${HTTP_KEY}" && $api_open -eq 1 ]]; then
-    output="$(curl --noproxy '*' -k -fsS --connect-timeout 1 -m 2 -H "X-Key: ${HTTP_KEY}" "https://${host}:${API_PORT}/v1/events" 2>&1)"
-    [[ "$output" == *'"events"'* ]] && return 0
-  fi
-
-  if [[ -n "${CTRL_PASS}" && -x "$SURGE_CLI" && $controller_open -eq 1 ]]; then
-    output="$("$SURGE_CLI" --raw --remote "${CTRL_PASS}@${host}:${CTRL_PORT}" environment 2>&1)"
-    [[ "$output" == *'"result":"success"'* ]] && return 0
-  fi
-
-  return 1
-}
-
-discover_ios_host() {
-  local host
-  for host in $(candidate_hosts); do
-    if verify_remote_host "$host"; then
-      printf '%s\n' "$host"
-      return 0
-    fi
-  done
-  return 1
-}
-
-probe_controller() {
+probe_controller_boundary() {
   local label="$1"
-  local host="$2"
-  if [[ -z "${CTRL_PASS}" ]]; then
-    status_line "$label" "external-controller" "SKIP: missing external-controller-access in profile"
-    return
-  fi
-  if [[ ! -x "$SURGE_CLI" ]]; then
-    status_line "$label" "external-controller" "SKIP: surge-cli not executable at $SURGE_CLI"
-    return
-  fi
-
-  local output
-  output="$("$SURGE_CLI" --raw --remote "${CTRL_PASS}@${host}:${CTRL_PORT}" environment 2>&1)"
-  local rc=$?
-  if [[ $rc -eq 0 && "$output" == *'"result":"success"'* ]]; then
-    status_line "$label" "external-controller" "OK: ${host}:${CTRL_PORT}"
-  elif [[ "$output" == *"Authorization denied"* ]]; then
-    status_line "$label" "external-controller" "FAIL: auth denied at ${host}:${CTRL_PORT}"
+  local profile="$2"
+  if profile_has_setting "$profile" external-controller-access; then
+    status_line "$label" "external-controller" \
+      "SKIP: automated surge-cli remote auth exposes its credential in process arguments"
   else
-    status_line "$label" "external-controller" "FAIL: ${output}"
+    status_line "$label" "external-controller" "SKIP: not configured in profile"
   fi
 }
 
 probe_http_api() {
   local label="$1"
   local host="$2"
-  if [[ -z "${HTTP_KEY}" ]]; then
-    status_line "$label" "https-http-api" "SKIP: missing http-api in profile"
+  local profile="$3"
+  local http_key
+
+  http_key="$(extract_secret "$profile" http-api)"
+
+  if [[ -z "$http_key" ]]; then
+    status_line "$label" "https-http-api" "SKIP: http-api is not configured in profile"
+    return
+  fi
+  if ! valid_host "$host" || ! valid_port "$API_PORT"; then
+    status_line "$label" "https-http-api" "FAIL: invalid explicit host or port"
+    return
+  fi
+  if [[ -n "$HTTP_CA" && ! -r "$HTTP_CA" && "$HTTP_INSECURE" != "1" ]]; then
+    status_line "$label" "https-http-api" "FAIL: SURGE_HTTP_CA is not readable"
     return
   fi
 
-  local output
-  output="$(curl --noproxy '*' -k -fsS -m 6 -H "X-Key: ${HTTP_KEY}" "https://${host}:${API_PORT}/v1/events" 2>&1)"
-  local rc=$?
-  if [[ $rc -eq 0 && "$output" == *'"events"'* ]]; then
-    status_line "$label" "https-http-api" "OK: https://${host}:${API_PORT}/v1/events"
-  elif [[ "$output" == *"401"* ]]; then
-    status_line "$label" "https-http-api" "FAIL: auth denied at ${host}:${API_PORT}"
+  local response body http_code rc
+  response="$(
+    curl_config "$http_key" |
+      curl -q --noproxy '*' --config - --write-out $'\n%{http_code}' \
+        "https://${host}:${API_PORT}/v1/events" 2>/dev/null
+  )"
+  rc=$?
+  http_code="${response##*$'\n'}"
+  body="${response%$'\n'*}"
+
+  if [[ $rc -eq 0 && "$http_code" == "200" && "$body" == *'"events"'* ]]; then
+    if [[ "$HTTP_INSECURE" == "1" ]]; then
+      status_line "$label" "https-http-api" \
+        "OK: ${host}:${API_PORT} (TLS verification explicitly disabled)"
+    else
+      status_line "$label" "https-http-api" "OK: ${host}:${API_PORT} (TLS verified)"
+    fi
+  elif [[ "$http_code" == "401" || "$http_code" == "403" ]]; then
+    status_line "$label" "https-http-api" "FAIL: authentication denied at ${host}:${API_PORT}"
+  elif [[ "$http_code" =~ ^[0-9]{3}$ && "$http_code" != "000" ]]; then
+    status_line "$label" "https-http-api" "FAIL: HTTP ${http_code} at ${host}:${API_PORT}"
   else
-    status_line "$label" "https-http-api" "FAIL: ${output}"
+    status_line "$label" "https-http-api" \
+      "FAIL: TLS or transport check failed at ${host}:${API_PORT}; no response body was printed"
   fi
 }
 
 probe_device() {
   local label="$1"
   local host="$2"
-  probe_controller "$label" "$host"
-  probe_http_api "$label" "$host"
+  local profile="$3"
+  if [[ ! -r "$profile" ]]; then
+    status_line "$label" "profile" "FAIL: device profile is not readable; set the matching SURGE_*_PROFILE"
+    return
+  fi
+  probe_controller_boundary "$label" "$profile"
+  probe_http_api "$label" "$host" "$profile"
 }
 
 probe_ios() {
-  local host="${IOS_HOST}"
-  if [[ -z "$host" ]]; then
-    host="$(discover_ios_host || true)"
-  fi
-  if [[ -z "$host" ]]; then
-    status_line "ios" "auto-discovery" "FAIL: no reachable iOS Surge host found; set SURGE_IOS_HOST=<ip> to override"
+  if [[ -z "$IOS_HOST" ]]; then
+    status_line "ios" "host" \
+      "FAIL: set SURGE_IOS_HOST explicitly; credentialed ARP discovery is disabled"
     return
   fi
-  probe_device "ios" "$host"
+  probe_device "ios" "$IOS_HOST" "$IOS_PROFILE"
 }
 
 probe_atv() {
   if [[ -z "$ATV_HOST" ]]; then
-    status_line "atv" "host" "SKIP: set SURGE_ATV_HOST=<ip> for the current Apple TV"
+    status_line "atv" "host" "SKIP: set SURGE_ATV_HOST explicitly for Apple TV"
     return
   fi
-  probe_device "atv" "$ATV_HOST"
+  probe_device "atv" "$ATV_HOST" "$ATV_PROFILE"
 }
 
 case "$target" in
   mac)
-    probe_device "mac" "$MAC_HOST"
+    probe_device "mac" "$MAC_HOST" "$MAC_PROFILE"
     ;;
   ios|iphone)
     probe_ios
@@ -193,7 +177,7 @@ case "$target" in
     probe_atv
     ;;
   all)
-    probe_device "mac" "$MAC_HOST"
+    probe_device "mac" "$MAC_HOST" "$MAC_PROFILE"
     probe_ios
     probe_atv
     ;;
@@ -202,3 +186,7 @@ case "$target" in
     exit 2
     ;;
 esac
+
+if ((FAILURES > 0)); then
+  exit 1
+fi

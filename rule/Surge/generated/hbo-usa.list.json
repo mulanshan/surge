@@ -11,12 +11,14 @@
   "sources": [
     {
       "name": "blackmatrix7 HBOUSA",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/HBOUSA/HBOUSA.list",
+      "snapshot": null,
       "sha256": "9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256",
       "expected_sha256": "9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 11
+      "rule_count": 11,
+      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list"
     }
   ]
 }

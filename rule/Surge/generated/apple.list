@@ -7,19 +7,23 @@
 # excluded and routed by apple-tv first.
 # Suggested policy: DIRECT
 # Sources:
-# - blackmatrix7 Apple: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
-#   sha256: 12e20d225ae52011e28436e266df647bf2d4d94fdd97d971b5ec8b4e14626d05
+# - blackmatrix7 Apple: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Apple/Apple.list
+#   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
+#   sha256: f4697e27d7a3338f921f9b9cfb287e8b5ab12db4636cef730b82e88ac0420f85
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 53
-# - Sukka Apple domains: https://ruleset.skk.moe/List/non_ip/apple_services.conf
+# - Sukka Apple domains: snapshot:rule/Surge/upstream/sukka/non_ip/apple_services.conf
+#   tracking: https://ruleset.skk.moe/List/non_ip/apple_services.conf
 #   sha256: a40b1657d2bdec59c384c1526b6c07d08af6ce365f95cdba983fd9a2f8e891ac
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 25
-# - Sukka Apple China domains: https://ruleset.skk.moe/List/non_ip/apple_cn.conf
+# - Sukka Apple China domains: snapshot:rule/Surge/upstream/sukka/non_ip/apple_cn.conf
+#   tracking: https://ruleset.skk.moe/List/non_ip/apple_cn.conf
 #   sha256: 24840681bef485142223772bdba04aa8cdb2a955990e269fdfe389af81a5f8c0
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 9
-# - Sukka Apple IP: https://ruleset.skk.moe/List/ip/apple_services.conf
+# - Sukka Apple IP: snapshot:rule/Surge/upstream/sukka/ip/apple_services.conf
+#   tracking: https://ruleset.skk.moe/List/ip/apple_services.conf
 #   sha256: 6528a16c50ffe5f64cb6078bf3dd95d902138177d5d5e37fcdcaaf39f941fe27
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 10

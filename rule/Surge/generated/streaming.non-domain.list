@@ -5,7 +5,8 @@
 # Common streaming services currently routed to 自动 in the main profile.
 # Suggested policy: 自动
 # Sources:
-# - Sukka Streaming non-IP: https://ruleset.skk.moe/List/non_ip/stream.conf
+# - Sukka Streaming non-IP: snapshot:rule/Surge/upstream/sukka/non_ip/stream.conf
+#   tracking: https://ruleset.skk.moe/List/non_ip/stream.conf
 #   sha256: 32a7d987b76e66a31a57345ab0764e5f264ebaab6a6da405808c165c10c6d8f0
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 321

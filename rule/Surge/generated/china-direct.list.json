@@ -11,12 +11,14 @@
   "sources": [
     {
       "name": "blackmatrix7 China All No Resolve",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/China/China_All_No_Resolve.list",
+      "snapshot": null,
       "sha256": "24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4",
       "expected_sha256": "24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 3752
+      "rule_count": 3752,
+      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list"
     }
   ],
   "domain_set_output": "rule/Surge/generated/china-direct.domainset",
