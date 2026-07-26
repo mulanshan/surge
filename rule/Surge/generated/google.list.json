@@ -13,7 +13,7 @@
   "sources": [
     {
       "name": "blackmatrix7 Google",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Google/Google.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Google/Google.list",
       "snapshot": null,
       "sha256": "4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f",
       "expected_sha256": "4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f",

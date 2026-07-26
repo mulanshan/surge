@@ -14,7 +14,7 @@
   "sources": [
     {
       "name": "blackmatrix7 OpenAI",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/OpenAI/OpenAI.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/OpenAI/OpenAI.list",
       "snapshot": null,
       "sha256": "6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b",
       "expected_sha256": "6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b",

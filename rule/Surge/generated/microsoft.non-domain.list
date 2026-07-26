@@ -6,7 +6,7 @@
 # current profile to avoid split login routes.
 # Suggested policy: DIRECT
 # Sources:
-# - blackmatrix7 Microsoft: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Microsoft/Microsoft.list
+# - blackmatrix7 Microsoft: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Microsoft/Microsoft.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Microsoft/Microsoft.list
 #   sha256: a2854b28dc9f903a64933c74fff5b50166e9bbebc70fdfce18c592f75793ff14
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)

@@ -11,7 +11,7 @@
   "sources": [
     {
       "name": "blackmatrix7 China All No Resolve",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/China/China_All_No_Resolve.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/China/China_All_No_Resolve.list",
       "snapshot": null,
       "sha256": "24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4",
       "expected_sha256": "24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4",

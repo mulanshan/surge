@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
-BLACKMATRIX_COMMIT = "597afad2785163a2f5a3eedd86dd605f76bb95c4"
+BLACKMATRIX_COMMIT = "8f67b6419fe1cc2277e59347b0d59d26e160b023"
 
 
 def load_generator():

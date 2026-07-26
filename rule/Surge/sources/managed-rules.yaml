@@ -20,7 +20,7 @@ sets:
       - extended-matching
     sources:
       - name: blackmatrix7 Microsoft
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Microsoft/Microsoft.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Microsoft/Microsoft.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Microsoft/Microsoft.list
         expected_sha256: a2854b28dc9f903a64933c74fff5b50166e9bbebc70fdfce18c592f75793ff14
         license: GPL-2.0-only
@@ -35,7 +35,7 @@ sets:
     suggested_policy: DIRECT
     sources:
       - name: blackmatrix7 China All No Resolve
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/China/China_All_No_Resolve.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/China/China_All_No_Resolve.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/China/China_All_No_Resolve.list
         expected_sha256: 24b4e320bdddb98b0d27e7e1c2cfe1cadf063d0dc73caeb5c08d948aff0f24b4
         license: GPL-2.0-only
@@ -50,7 +50,7 @@ sets:
     suggested_policy: DIRECT
     sources:
       - name: blackmatrix7 PrivateTracker
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PrivateTracker/PrivateTracker.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/PrivateTracker/PrivateTracker.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrivateTracker/PrivateTracker.list
         expected_sha256: 910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f
         license: GPL-2.0-only
@@ -70,9 +70,9 @@ sets:
       - USER-AGENT,com.apple.tv*
     sources:
       - name: blackmatrix7 Apple
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Apple/Apple.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Apple/Apple.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
-        expected_sha256: f4697e27d7a3338f921f9b9cfb287e8b5ab12db4636cef730b82e88ac0420f85
+        expected_sha256: ae61f8ee38624b58714aef9a128257567e3ae71dde02519b46aef2aca786ae4a
         license: GPL-2.0-only
         license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
       - name: Sukka Apple domains
@@ -105,7 +105,7 @@ sets:
       - extended-matching
     sources:
       - name: blackmatrix7 Google
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Google/Google.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Google/Google.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
         expected_sha256: 4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f
         license: GPL-2.0-only
@@ -121,7 +121,7 @@ sets:
       - no-resolve
     sources:
       - name: blackmatrix7 OpenAI
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/OpenAI/OpenAI.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/OpenAI/OpenAI.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list
         expected_sha256: 6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b
         license: GPL-2.0-only
@@ -144,7 +144,7 @@ sets:
       - name: Sukka Telegram IP
         snapshot: rule/Surge/upstream/sukka/ip/telegram.conf
         tracking_url: https://ruleset.skk.moe/List/ip/telegram.conf
-        expected_sha256: 2edcf986ebe3631d4829d3e202e6500432e5e97feade50f9778aa2e96a0fcc05
+        expected_sha256: 9169818c17a4acbfe2c3c44fbcbb37b19a7151edc529f372eff8394ecdea3020
         license: AGPL-3.0-only
         license_url: https://ruleset.skk.moe/LICENSE
 
@@ -159,7 +159,7 @@ sets:
       - PROCESS-NAME,TV
     sources:
       - name: blackmatrix7 AppleTV
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/AppleTV/AppleTV.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/AppleTV/AppleTV.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
         expected_sha256: 1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd
         license: GPL-2.0-only
@@ -177,7 +177,7 @@ sets:
       - no-resolve
     sources:
       - name: blackmatrix7 YouTube
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/YouTube/YouTube.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/YouTube/YouTube.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
         expected_sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
         license: GPL-2.0-only
@@ -190,7 +190,7 @@ sets:
     suggested_policy: 绿云
     sources:
       - name: blackmatrix7 Netflix
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Netflix/Netflix.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Netflix/Netflix.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
         expected_sha256: aa03f015949e8f6f981d90a7d8b1acf7e88472ee48601632bd964b0bb740f8aa
         license: GPL-2.0-only
@@ -203,7 +203,7 @@ sets:
     suggested_policy: 流媒体
     sources:
       - name: blackmatrix7 Bahamut
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Bahamut/Bahamut.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Bahamut/Bahamut.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
         expected_sha256: 5c6618ac00734921dae209bb812c1b61cc88523e158b856548153d1d3d8df2fd
         license: GPL-2.0-only
@@ -218,7 +218,7 @@ sets:
     suggested_policy: 流媒体
     sources:
       - name: blackmatrix7 Disney
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Disney/Disney.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Disney/Disney.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Disney/Disney.list
         expected_sha256: d0cfd6aee89d9d3075aef9dfadd98a2a3c6a2dba487f5091c801d1bcd70e9884
         license: GPL-2.0-only
@@ -231,7 +231,7 @@ sets:
     suggested_policy: 流媒体
     sources:
       - name: blackmatrix7 HBOUSA
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/HBOUSA/HBOUSA.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/HBOUSA/HBOUSA.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/HBOUSA/HBOUSA.list
         expected_sha256: 9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256
         license: GPL-2.0-only
@@ -244,7 +244,7 @@ sets:
     suggested_policy: 流媒体
     sources:
       - name: blackmatrix7 PrimeVideo
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PrimeVideo/PrimeVideo.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/PrimeVideo/PrimeVideo.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PrimeVideo/PrimeVideo.list
         expected_sha256: 4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46
         license: GPL-2.0-only
@@ -276,7 +276,7 @@ sets:
     suggested_policy: 自动
     sources:
       - name: blackmatrix7 PayPal
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PayPal/PayPal.list
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/PayPal/PayPal.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/PayPal/PayPal.list
         expected_sha256: 4ffb6f94d2f1eff835c24b533c3d1d6e0c5a4cfbc32740fa9c32315ae218fd18
         license: GPL-2.0-only
