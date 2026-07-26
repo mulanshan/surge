@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
-  "tag": "surge-self-v2026.07.27",
-  "status": "superseded",
-  "release_commit": "19f1c80da01f8f6dedbabdd3f683f54ee0a8c74f",
-  "supersedes": "surge-self-v2026.07.13.4",
+  "tag": "surge-self-v2026.07.27.1",
+  "status": "active",
+  "supersedes": "surge-self-v2026.07.27",
   "scripts": [
     {
       "name": "YouTube",
       "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
-      "sha256": "49aa7510f97aa154f0b9f25573b6dbda697a268ae38494b00614f4f1846bf1f6"
+      "sha256": "469bea3013effda7d8254e1447e6a0c935316af6183a84bf9d8cb1964d5b779a"
     },
     {
       "name": "Instagram",

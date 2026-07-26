@@ -205,4 +205,62 @@ function textFilledItem(text, size) {
   assert.equal(Object.keys(result.output).length, 0);
 }
 
+// Caption translation (recovered feature): JSON player path only.
+const playerWithCaptions = JSON.stringify({
+  playabilityStatus: {},
+  captions: {
+    playerCaptionsTracklistRenderer: {
+      captionTracks: [
+        { baseUrl: "https://example.com/api/timedtext?v=1", languageCode: "en", vssId: ".en" },
+      ],
+    },
+  },
+});
+
+{
+  const result = execute(playerWithCaptions, "player", { captionLang: "zh-Hans" });
+  const payload = JSON.parse(result.output.body);
+  const tracks = payload.captions.playerCaptionsTracklistRenderer.captionTracks;
+  assert.equal(tracks.length, 2, "translated caption track must be appended");
+  assert.ok(tracks[1].baseUrl.endsWith("&tlang=zh-Hans"));
+  assert.equal(tracks[1].languageCode, "zh-Hans");
+  assert.ok(tracks.every((track) => track.isTranslatable === true));
+}
+
+{
+  const result = execute(playerWithCaptions, "player", {});
+  const payload = JSON.parse(result.output.body);
+  const tracks = payload.captions.playerCaptionsTracklistRenderer.captionTracks;
+  assert.equal(tracks.length, 1, "captionLang off must leave tracks untouched");
+  assert.equal("isTranslatable" in tracks[0], false);
+}
+
+{
+  const existing = JSON.stringify({
+    playabilityStatus: {},
+    captions: {
+      playerCaptionsTracklistRenderer: {
+        captionTracks: [
+          { baseUrl: "https://example.com/api/timedtext?v=1", languageCode: "zh-Hans", vssId: ".zh-Hans" },
+        ],
+      },
+    },
+  });
+  const result = execute(existing, "player", { captionLang: "zh-Hans" });
+  const payload = JSON.parse(result.output.body);
+  const tracks = payload.captions.playerCaptionsTracklistRenderer.captionTracks;
+  assert.equal(tracks.length, 1, "no duplicate track when target language already exists");
+}
+
+{
+  // Recovered renderer keys must be removed from JSON feeds.
+  const feed = JSON.stringify({
+    items: [{ promotedItemRenderer: { x: 1 } }, { videoRenderer: { videoId: "ok" } }],
+  });
+  const result = execute(feed, "browse", {});
+  const payload = JSON.parse(result.output.body);
+  assert.equal(payload.items.length, 1);
+  assert.ok(payload.items[0].videoRenderer);
+}
+
 console.log("YouTube Self tests passed");
