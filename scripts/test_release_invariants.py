@@ -277,8 +277,13 @@ class RemoteReleaseIntegrityTests(unittest.TestCase):
         self.assertIn("ref: ${{ github.event.repository.default_branch }}", workflow)
         self.assertNotIn("github.event_name == 'push' && github.ref", workflow)
         self.assertIn("github.event_name == 'push' || github.event_name == 'create'", workflow)
-        self.assertIn("# v7.0.0", workflow)
-        self.assertIn("# v6.3.0", workflow)
+        # Structural pinning invariant instead of hardcoded version comments
+        # (which rot on every dependabot bump): every action reference must be
+        # pinned to a full 40-hex commit and carry a version comment.
+        uses_lines = [line for line in workflow.splitlines() if "uses:" in line]
+        self.assertGreaterEqual(len(uses_lines), 2)
+        for line in uses_lines:
+            self.assertRegex(line, r"uses: [\w./-]+@[0-9a-f]{40} # v\d", line)
 
 
 class RepositoryInvariantTests(unittest.TestCase):
