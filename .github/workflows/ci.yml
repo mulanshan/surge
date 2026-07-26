@@ -57,9 +57,8 @@ jobs:
             echo "node $file"
             node "$file"
           done < <(find . -type f \( -name '*.test.js' -o -name '*.test.mjs' -o -name 'test.js' \) -not -path './.git/*' -print0)
-          if [[ "$found" -eq 0 ]]; then
-            echo "No JavaScript tests found."
-          fi
+          # Fail hard when the suite silently disappears (glob or rename drift).
+          test "$found" -eq 1
 
       - name: Check Python syntax and tests
         shell: bash
@@ -72,9 +71,8 @@ jobs:
             echo "python3 $file"
             python3 "$file"
           done < <(find . -type f \( -name 'test_*.py' -o -name '*_test.py' -o -name '*.test.py' \) -not -path './.git/*' -print0)
-          if [[ "$found" -eq 0 ]]; then
-            echo "No Python tests found."
-          fi
+          # Fail hard when the suite silently disappears (glob or rename drift).
+          test "$found" -eq 1
 
       - name: Check shell syntax
         shell: bash

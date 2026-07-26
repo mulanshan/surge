@@ -7,6 +7,7 @@ import contextlib
 import hashlib
 import importlib.util
 import io
+import json
 import os
 import stat
 import subprocess
@@ -218,19 +219,31 @@ sets:
         self.assertEqual(requested, [source.tracking_url])
 
 
+def optimized_rule_set_counts():
+    """Discover optimized (domain-set split) rule sets from generation metadata.
+
+    The generator records domain_set_rule_count / non_domain_rule_count in each
+    <id>.list.json. Cross-checking files against that metadata removes the old
+    hand-maintained expected-count ledger while keeping the equivalence gate:
+    the metadata claims a count, the checked-in files must match it, and the
+    split outputs must reconstruct the compatibility list exactly.
+    """
+    generated = ROOT / "rule/Surge/generated"
+    counts = {}
+    for meta_path in sorted(generated.glob("*.list.json")):
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        if meta.get("domain_set_output"):
+            counts[meta["id"]] = (
+                meta["domain_set_rule_count"],
+                meta["non_domain_rule_count"],
+            )
+    return counts
+
+
 class RepositoryInvariantTests(unittest.TestCase):
     def test_optimized_domain_sets_are_equivalent_to_compatibility_rulesets(self):
-        expected_counts = {
-            "microsoft": (664, 7),
-            "china-direct": (3691, 61),
-            "private-tracker": (241, 7),
-            "google": (685, 13),
-            "youtube": (179, 11),
-            "disney": (172, 1),
-            "streaming": (258, 63),
-            "paypal": (246, 2),
-            "global": (1255, 10),
-        }
+        expected_counts = optimized_rule_set_counts()
+        self.assertGreaterEqual(len(expected_counts), 9)
         generated = ROOT / "rule/Surge/generated"
         for rule_id, (domain_count, residual_count) in expected_counts.items():
             with self.subTest(rule_id=rule_id):
@@ -263,17 +276,8 @@ class RepositoryInvariantTests(unittest.TestCase):
                 self.assertEqual(reconstructed, compatibility)
 
     def test_domain_set_resources_stay_adjacent_with_policy_and_option_parity(self):
-        optimized_ids = [
-            "microsoft",
-            "china-direct",
-            "private-tracker",
-            "youtube",
-            "google",
-            "paypal",
-            "disney",
-            "streaming",
-            "global",
-        ]
+        optimized_ids = sorted(optimized_rule_set_counts())
+        self.assertGreaterEqual(len(optimized_ids), 9)
         section = (ROOT / "rule/Surge/generated/rule-section-managed.conf").read_text(
             encoding="utf-8"
         )
@@ -282,13 +286,13 @@ class RepositoryInvariantTests(unittest.TestCase):
             for line in section.splitlines()
             if line.startswith(("DOMAIN-SET,", "RULE-SET,"))
         ]
-        positions = []
+        positions = {}
         for rule_id in optimized_ids:
             with self.subTest(rule_id=rule_id):
                 domain_marker = f"/generated/{rule_id}.domainset,"
                 residual_marker = f"/generated/{rule_id}.non-domain.list,"
                 position = next(i for i, line in enumerate(rules) if domain_marker in line)
-                positions.append(position)
+                positions[rule_id] = position
                 self.assertIn(residual_marker, rules[position + 1])
                 domain_parts = rules[position].split(",")
                 residual_parts = rules[position + 1].split(",")
@@ -299,16 +303,66 @@ class RepositoryInvariantTests(unittest.TestCase):
                     [option for option in residual_parts[3:] if option != "no-resolve"],
                 )
                 self.assertNotIn(f"/generated/{rule_id}.list,", section)
-        self.assertEqual(positions, sorted(positions))
+        # The broad global fallback must stay the last optimized entry.
+        self.assertEqual(positions["global"], max(positions.values()))
+
+    def test_domain_rules_precede_ip_rules_in_managed_section(self):
+        # Sukka ordering invariant: domain-family rules must all appear before
+        # IP-family rules so matching never triggers avoidable DNS resolution.
+        section_lines = (
+            ROOT / "rule/Surge/generated/rule-section-managed.conf"
+        ).read_text(encoding="utf-8").splitlines()
+        ip_prefixes = ("IP-CIDR,", "IP-CIDR6,", "IP-ASN,", "GEOIP,")
+        domain_prefixes = ("DOMAIN-SET,", "RULE-SET,", "DOMAIN,", "DOMAIN-SUFFIX,", "DOMAIN-KEYWORD,")
+        first_ip = next(
+            (i for i, line in enumerate(section_lines) if line.startswith(ip_prefixes)),
+            len(section_lines),
+        )
+        last_domain = max(
+            (i for i, line in enumerate(section_lines) if line.startswith(domain_prefixes)),
+            default=-1,
+        )
+        self.assertLess(last_domain, first_ip)
 
     def test_apple_tv_precedes_apple_direct_and_overlap_markers_are_filtered(self):
         section = (ROOT / "rule/Surge/generated/rule-section-managed.conf").read_text(encoding="utf-8")
-        self.assertLess(section.index("generated/apple-tv.list"), section.index("generated/apple.list"))
-        apple = (ROOT / "rule/Surge/generated/apple.list").read_text(encoding="utf-8")
+        for split in ("apple-bm7", "apple-sukka"):
+            self.assertLess(
+                section.index("generated/apple-tv.list"),
+                section.index(f"generated/{split}.list"),
+            )
+        apple_bm7 = (ROOT / "rule/Surge/generated/apple-bm7.list").read_text(encoding="utf-8")
         for rule in ("PROCESS-NAME,TV", "USER-AGENT,AppleTV*", "USER-AGENT,com.apple.tv*"):
-            self.assertNotIn("\n" + rule + "\n", apple)
+            self.assertNotIn("\n" + rule + "\n", apple_bm7)
         apple_tv = (ROOT / "rule/Surge/generated/apple-tv.list").read_text(encoding="utf-8")
         self.assertIn("\nPROCESS-NAME,TV\n", apple_tv)
+        # License separation: each split output must carry exactly one license family.
+        apple_sukka = (ROOT / "rule/Surge/generated/apple-sukka.list").read_text(encoding="utf-8")
+        self.assertIn("GPL-2.0-only", apple_bm7)
+        self.assertNotIn("AGPL-3.0-only", apple_bm7)
+        self.assertIn("AGPL-3.0-only", apple_sukka)
+        self.assertNotIn("GPL-2.0-only", apple_sukka)
+
+    def test_fanqie_rule_copies_stay_identical(self):
+        # Three deployment copies of the same ruleset (Surge canonical, Surge
+        # Chinese-named alias, Loon) are maintained by hand; CI must fail the
+        # moment their effective rule lines diverge.
+        copies = [
+            ROOT / "rule/Surge/fanqie-novel-cn.list",
+            ROOT / "rule/Surge/番茄小说.list",
+            ROOT / "rule/Loon/fanqie-novel-cn.list",
+        ]
+        payloads = {
+            str(path.relative_to(ROOT)): [
+                line
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line and not line.startswith("#")
+            ]
+            for path in copies
+        }
+        baseline_name = str(copies[0].relative_to(ROOT))
+        for name, lines in payloads.items():
+            self.assertEqual(lines, payloads[baseline_name], f"{name} diverged from {baseline_name}")
 
     def test_fanqie_compatibility_list_matches_safe_basic_subset(self):
         basic_lines = (ROOT / "rewrite/Surge/basic-adblock.sgmodule").read_text(encoding="utf-8").splitlines()
