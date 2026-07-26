@@ -12,10 +12,10 @@
 #   rules: 14
 # - Sukka Telegram IP: snapshot:rule/Surge/upstream/sukka/ip/telegram.conf
 #   tracking: https://ruleset.skk.moe/List/ip/telegram.conf
-#   sha256: 2edcf986ebe3631d4829d3e202e6500432e5e97feade50f9778aa2e96a0fcc05
+#   sha256: 9169818c17a4acbfe2c3c44fbcbb37b19a7151edc529f372eff8394ecdea3020
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
-#   rules: 16
-# Total unique rules: 30
+#   rules: 15
+# Total unique rules: 29
 
 DOMAIN-SUFFIX,cdn-telegram.org
 DOMAIN-SUFFIX,graph.org
@@ -35,7 +35,6 @@ IP-CIDR,139.59.210.98/32,no-resolve
 IP-CIDR,149.154.160.0/20,no-resolve
 IP-CIDR,185.76.151.0/24,no-resolve
 IP-CIDR,194.221.250.50/32,no-resolve
-IP-CIDR,196.55.216.167/32,no-resolve
 IP-CIDR,91.105.192.0/23,no-resolve
 IP-CIDR,91.108.16.0/21,no-resolve
 IP-CIDR,91.108.4.0/22,no-resolve

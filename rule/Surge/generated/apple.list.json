@@ -17,10 +17,10 @@
   "sources": [
     {
       "name": "blackmatrix7 Apple",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/Apple/Apple.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Apple/Apple.list",
       "snapshot": null,
-      "sha256": "f4697e27d7a3338f921f9b9cfb287e8b5ab12db4636cef730b82e88ac0420f85",
-      "expected_sha256": "f4697e27d7a3338f921f9b9cfb287e8b5ab12db4636cef730b82e88ac0420f85",
+      "sha256": "ae61f8ee38624b58714aef9a128257567e3ae71dde02519b46aef2aca786ae4a",
+      "expected_sha256": "ae61f8ee38624b58714aef9a128257567e3ae71dde02519b46aef2aca786ae4a",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
       "rule_count": 53,

@@ -11,7 +11,7 @@
   "sources": [
     {
       "name": "blackmatrix7 PrimeVideo",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/597afad2785163a2f5a3eedd86dd605f76bb95c4/rule/Surge/PrimeVideo/PrimeVideo.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/PrimeVideo/PrimeVideo.list",
       "snapshot": null,
       "sha256": "4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46",
       "expected_sha256": "4f957e0888cc89f61b3f04402282f50a5cf11d4bde7240d2b330bc9e1ba6ca46",
