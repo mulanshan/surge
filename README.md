@@ -7,6 +7,15 @@
 
 原 `mulanshan/surge-rules` 里的分流规则已迁入本仓库；旧仓库已停止使用。新配置统一使用 `mulanshan/surge`。
 
+## 目录
+
+- [公开使用](#公开使用)
+- [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信)
+- [rule / Surge（规则）](#rule--surge)：[自托管生成镜像](#自托管生成镜像) · [AI / LLM / Coding](#ai--llm--coding) · [Apple 系统服务](#apple-系统服务) · [豆瓣](#豆瓣) · [TMDb](#tmdb) · [Docker / OCI](#docker--oci-镜像拉取) · [番茄小说](#番茄小说回国分流) · [示例配置](#示例配置)
+- [日志导出与候选规则开发](#日志导出与候选规则开发)
+- [授权与第三方来源](#授权与第三方来源)
+- 变更历史：[CHANGELOG.md](CHANGELOG.md)
+
 ## 公开使用
 
 本仓库直接作为公开 Surge 模块和规则仓库使用。`main` 保存通过 CI 和审查的最新模块定义与规则快照；脚本型稳定模块的 `script-path` 固定到不可变 tag，避免普通提交未经验证就改变设备正在执行的 JavaScript。手机和服务器继续使用 `https://raw.githubusercontent.com/mulanshan/surge/main/...` 模块地址，不需要重装模块。
@@ -15,7 +24,8 @@
 
 - 模块状态与真机验证矩阵：[docs/MODULE_STATUS.md](docs/MODULE_STATUS.md)
 - 分支、稳定 tag、发布和回滚流程：[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
-- 本次 Mac / iOS 运行态基线：[docs/RUNTIME_AUDIT_2026-07-13.md](docs/RUNTIME_AUDIT_2026-07-13.md)
+- 当前 Mac / iOS 运行态基线：[docs/RUNTIME_AUDIT_2026-07-27.md](docs/RUNTIME_AUDIT_2026-07-27.md)（历史快照：[2026-07-13](docs/RUNTIME_AUDIT_2026-07-13.md)）
+- 发布与变更历史：[CHANGELOG.md](CHANGELOG.md)
 - 安全问题报告：[SECURITY.md](SECURITY.md)
 
 ## rewrite / Surge
