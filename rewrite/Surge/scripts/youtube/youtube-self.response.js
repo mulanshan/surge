@@ -18,6 +18,10 @@ const DEFAULTS = {
   blockImmersive: false,
   blockShorts: false,
   enhancePlayer: true,
+  // BCP-47 language code for an auto-translated caption track appended to
+  // JSON player responses (web clients); "off" disables the feature. Binary
+  // protobuf player responses (iOS app) are not modified for captions.
+  captionLang: "off",
   debug: false,
 };
 
@@ -121,6 +125,17 @@ const AD_RENDERER_KEYS = [
   "searchPyvRenderer",
   "inFeedAdLayoutRenderer",
   "carouselAdRenderer",
+  // Recovered from the 2026-04 curated list; each names paid/promotional
+  // inventory only. Creator-intended commerce shelves (merchandiseShelf,
+  // shoppingShelf) and plain UI renderers stay out deliberately.
+  "actionCompanionAdRenderer",
+  "adVideoRenderer",
+  "compactPromotedItemRenderer",
+  "compactPromotedVideoRenderer",
+  "promotedItemRenderer",
+  "promotedSparklesTextSearchRenderer",
+  "videoMastheadAdV3Renderer",
+  "primetimePromoRenderer",
 ];
 
 function isAdRenderer(value) {
@@ -177,6 +192,36 @@ function enhanceJsonPlayer(payload) {
   payload.playabilityStatus.backgroundPlayerRender = {
     backgroundAbility: { active: true },
   };
+  addTranslatedCaptionTrack(payload);
+}
+
+// Append an auto-translated caption track (&tlang=) to JSON player responses.
+// Recovered from the archived 2026-04 implementation. JSON path only: caption
+// track structures in binary protobuf players are not mapped, so iOS app
+// responses pass through unchanged regardless of captionLang.
+function addTranslatedCaptionTrack(payload) {
+  const lang = String(config.captionLang || "off").trim();
+  if (lang === "off" || lang === "") return;
+
+  const captions = payload.captions && payload.captions.playerCaptionsTracklistRenderer;
+  const tracks = captions && captions.captionTracks;
+  if (!Array.isArray(tracks) || tracks.length === 0) return;
+
+  for (const track of tracks) {
+    track.isTranslatable = true;
+  }
+
+  if (tracks.some((track) => track.languageCode === lang)) return;
+  const base = tracks.find((track) => track.languageCode === "en") || tracks[0];
+  if (!base || !base.baseUrl) return;
+
+  tracks.push({
+    ...base,
+    baseUrl: `${base.baseUrl}&tlang=${encodeURIComponent(lang)}`,
+    languageCode: lang,
+    vssId: `.${lang}`,
+    name: { simpleText: `翻译 (${lang})` },
+  });
 }
 
 function cleanJson(text, endpoint) {

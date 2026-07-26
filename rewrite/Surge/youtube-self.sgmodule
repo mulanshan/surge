@@ -1,11 +1,11 @@
 #!name=YouTube
-#!desc=固定云端订阅，自有可审计 YouTube 去广告与后台播放唯一入口：处理播放广告，并按完整信息流条目清理首页、搜索及视频详情页赞助卡。不含第三方代码。
+#!desc=固定云端订阅，自有可审计 YouTube 去广告与后台播放唯一入口：处理播放广告，按完整信息流条目清理首页、搜索及视频详情页赞助卡，并支持网页端翻译字幕轨。不含第三方代码。
 #!author=mulanshan
 #!category=Enhance
 #!tag=YouTube
 #!openUrl=https://apps.apple.com/app/id544007664
-#!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n入口：处理 youtubei.googleapis.com / www.youtube.com 的 player、get_watch、next、browse、search、account/get_setting、account/get_setting_values。browse/search/next/get_watch.contents.next 按 protobuf rich item 整卡清理；guide/reel 仍原样放行。保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
+#!arguments=字幕翻译语言:off,启用调试模式:false
+#!arguments-desc=- 字幕翻译语言：BCP-47 语言码（如 zh-Hans），off 关闭；仅对网页端 JSON player 响应追加 &tlang= 翻译字幕轨，iOS App 的 protobuf 响应不受影响\n- 调试参数：[true, false]\n\n入口：处理 youtubei.googleapis.com / www|m|music.youtube.com 的 player、get_watch、next、browse、search、account/get_setting、account/get_setting_values。browse/search/next/get_watch.contents.next 按 protobuf rich item 整卡清理；guide/reel 仍原样放行。保留 googlevideo 初始化广告和 YouTube 广告统计拦截。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-07-27
@@ -18,7 +18,7 @@
 
 [Script]
 # 8 MiB ceiling: larger feeds pass through instead of retaining multiple large protobuf buffers in the iOS Network Extension.
-youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|www\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=8388608,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.27/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260727-1,argument="{\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
+youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googleapis\.com|(?:www|m|music)\.youtube\.com)\/youtubei\/v1\/(player|get_watch|next|browse|search|account\/get_setting(?:_values)?)(\?.*)?$,requires-body=1,max-size=8388608,binary-body-mode=1,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.07.27.1/rewrite/Surge/scripts/youtube/youtube-self.response.js?v=20260727-2,argument="{\"captionLang\":\"{{{字幕翻译语言}}}\",\"blockUpload\":false,\"blockImmersive\":false,\"blockShorts\":false,\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.*(?:[?&])oad(?:=|&|$) data-type=text data="" status-code=200
@@ -33,4 +33,4 @@ youtube.self.response = type=http-response,pattern=^https:\/\/(youtubei\.googlea
 ^https?:\/\/(?:www\.youtube\.com|youtubei\.googleapis\.com)\/youtubei\/v1\/player\/ad_break data-type=text data="" status-code=204
 
 [MITM]
-hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, s.youtube.com, *.googlevideo.com
+hostname = %APPEND% youtubei.googleapis.com, www.youtube.com, m.youtube.com, music.youtube.com, s.youtube.com, *.googlevideo.com
