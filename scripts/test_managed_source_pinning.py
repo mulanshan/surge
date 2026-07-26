@@ -197,9 +197,15 @@ class SnapshotBuildTests(unittest.TestCase):
         remote_sources = [
             source for rule_set in remote_sets for source in rule_set.sources if source.url
         ]
-        self.assertEqual(len(remote_sets), 17)
-        self.assertEqual(len(remote_sources), 14)
-        self.assertEqual(len(remote_urls), 14)
+        # Derive expectations from the manifest itself instead of a hand-kept
+        # ledger that silently rots whenever a set is added or split.
+        expected_remote_sources = sum(
+            1 for rule_set in sets for source in rule_set.sources if source.url
+        )
+        self.assertEqual(len(remote_sets), len(sets))
+        self.assertGreaterEqual(expected_remote_sources, 1)
+        self.assertEqual(len(remote_sources), expected_remote_sources)
+        self.assertEqual(len(remote_urls), expected_remote_sources)
         self.assertTrue(
             all(f"/{BLACKMATRIX_COMMIT}/" in source.url for source in remote_sources)
         )

@@ -1,31 +1,16 @@
 {
-  "id": "apple",
-  "name": "Apple",
-  "output": "rule/Surge/generated/apple.list",
-  "description": "Apple system, iCloud, CloudKit, App Store, Maps, China-specific Apple domains, and Apple-owned IP ranges for DIRECT routing. Apple TV process and user-agent rules are excluded and routed by apple-tv first.",
+  "id": "apple-sukka",
+  "name": "Apple (Sukka)",
+  "output": "rule/Surge/generated/apple-sukka.list",
+  "description": "Apple services, Apple China domains, and Apple-owned IP ranges from the vendored Sukka snapshots for DIRECT routing. Kept separate from the blackmatrix7 mirror because the two upstream licenses are mutually incompatible.",
   "suggested_policy": "DIRECT",
   "suggested_options": [
     "extended-matching"
   ],
   "included_rules": [],
-  "excluded_rules": [
-    "PROCESS-NAME,TV",
-    "USER-AGENT,AppleTV*",
-    "USER-AGENT,com.apple.tv*"
-  ],
-  "unique_rule_count": 78,
+  "excluded_rules": [],
+  "unique_rule_count": 35,
   "sources": [
-    {
-      "name": "blackmatrix7 Apple",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Apple/Apple.list",
-      "snapshot": null,
-      "sha256": "ae61f8ee38624b58714aef9a128257567e3ae71dde02519b46aef2aca786ae4a",
-      "expected_sha256": "ae61f8ee38624b58714aef9a128257567e3ae71dde02519b46aef2aca786ae4a",
-      "license": "GPL-2.0-only",
-      "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 53,
-      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list"
-    },
     {
       "name": "Sukka Apple domains",
       "url": null,
@@ -34,7 +19,7 @@
       "expected_sha256": "a40b1657d2bdec59c384c1526b6c07d08af6ce365f95cdba983fd9a2f8e891ac",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
-      "rule_count": 25,
+      "rule_count": 17,
       "tracking_url": "https://ruleset.skk.moe/List/non_ip/apple_services.conf"
     },
     {

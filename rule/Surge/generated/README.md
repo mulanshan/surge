@@ -34,7 +34,8 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | microsoft | `microsoft.list` | `microsoft.domainset` (664) + `microsoft.non-domain.list` (7) | `DIRECT` | 671 |
 | china-direct | `china-direct.list` | `china-direct.domainset` (3691) + `china-direct.non-domain.list` (61) | `DIRECT` | 3752 |
 | private-tracker | `private-tracker.list` | `private-tracker.domainset` (241) + `private-tracker.non-domain.list` (7) | `DIRECT` | 248 |
-| apple | `apple.list` | - | `DIRECT` | 78 |
+| apple-bm7 | `apple-bm7.list` | - | `DIRECT` | 53 |
+| apple-sukka | `apple-sukka.list` | - | `DIRECT` | 35 |
 | google | `google.list` | `google.domainset` (685) + `google.non-domain.list` (13) | `自动` | 698 |
 | openai | `openai.list` | - | `自动` | 35 |
 | telegram | `telegram.list` | - | `Proxy` | 29 |
