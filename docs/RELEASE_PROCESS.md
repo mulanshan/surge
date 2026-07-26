@@ -22,7 +22,13 @@ through a branch, CI, review, and an immutable release tag.
    upstream drift only because generation succeeded.
 3. Verify that response scripts do not issue network requests, read credentials,
    or log raw request/response bodies.
-4. Check the shared Surge profile with `surge-cli --check`.
+4. Check the shared Surge profile with `surge-cli --check`, and run
+   `python3 scripts/test_rule_list_syntax.py` (also enforced by CI) for the
+   rule payloads. Surge validates DOMAIN-SET/RULE-SET strictly — one invalid
+   line invalidates the whole set — and `surge-cli --check` does not cover
+   this: verified empirically on Surge Mac 6.7.0 (11730), it validates profile
+   syntax only and returns OK even when a referenced rule-set file contains
+   invalid lines or is missing.
 5. Update `releases/<tag>.json` with the exact current script SHA-256 values, then
    run `python3 scripts/verify-surge-release.py`.
 6. Open a pull request and wait for every required check to pass.
