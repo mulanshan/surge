@@ -14,10 +14,8 @@
  */
 
 const DEFAULTS = {
-  captionLang: "off",
-  lyricLang: "off",
-  blockUpload: true,
-  blockImmersive: true,
+  blockUpload: false,
+  blockImmersive: false,
   blockShorts: false,
   enhancePlayer: true,
   debug: false,
@@ -317,80 +315,6 @@ const AD_MARKERS = [
   "ad_icon_text.eml-fe",
   "ad_rating.eml-fe",
   "inline_injection_entrypoint_layout.eml",
-];
-
-const FEED_AD_CARD_MARKERS = [
-  "赞助",
-  "赞助商",
-  "赞助商广告",
-  "广告主",
-  "付费宣传",
-  "Sponsored",
-  "sponsored",
-  "Sponsor",
-  "sponsor",
-  "Promoted",
-  "promoted",
-  "Advertisement",
-  "advertisement",
-  "ad_badge.eml-fe",
-  "inline_injection_entrypoint_layout.eml",
-  "in_feed_ad",
-  "googleads",
-  "googleadservices",
-  "googleadservices.com",
-  "doubleclick.net",
-  "doubleclick",
-  "pagead",
-  "aclk",
-  "adclick",
-  "ad_click",
-  "clickserve",
-  "adurl",
-  "adview",
-  "ad_cpn",
-  "ad_type",
-];
-
-const FEED_AD_STRONG_CARD_MARKERS = [
-  "赞助",
-  "赞助商",
-  "赞助商广告",
-  "广告主",
-  "付费宣传",
-  "付费推广",
-  "推广内容",
-  "包含付费推广",
-  "Sponsored",
-  "sponsored",
-  "Sponsor",
-  "sponsor",
-  "Promoted",
-  "promoted",
-  "Advertisement",
-  "advertisement",
-  "Paid promotion",
-  "paid promotion",
-  "Includes paid promotion",
-  "ad_badge.eml-fe",
-  "ad_avatar.eml-fe",
-  "ad_button.eml-fe",
-  "ad_details_line.eml-fe",
-  "ad_icon_text.eml-fe",
-  "ad_rating.eml-fe",
-  "inline_injection_entrypoint_layout.eml",
-  "in_feed_ad",
-  "promotedSparklesWebRenderer",
-  "promotedVideoRenderer",
-  "displayAdRenderer",
-  "adSlotRenderer",
-  "inFeedAdLayoutRenderer",
-  "brandedContent",
-  "VISIT_SITE",
-  "visit_website",
-  "Visit site",
-  "Visit website",
-  "访问网站",
 ];
 
 const NEXT_AD_STRONG_MARKERS = [
@@ -1032,201 +956,12 @@ function markerHits(bytes) {
       "displayAdRenderer",
       "adSlotRenderer",
     ],
-    brand_sample: ["Aikido", "aikido"],
   };
   const hits = [];
   for (const [name, markers] of Object.entries(checks)) {
     if (bytesContainAnyMarker(bytes, markers)) hits.push(name);
   }
   return hits;
-}
-
-function isExactSponsorBadgeCard(payload) {
-  // Live logs proved badge_cn / sponsor_cn / brand_sample exist in browse.
-  // Require card-like size so we remove whole homepage cards, not tiny labels.
-  if (!payload || payload.length < 6000 || payload.length > 350000) return false;
-  const hasBadge = bytesContainAnyMarker(payload, ["赞助商广告"]);
-  const hasSponsor = bytesContainAnyMarker(payload, ["赞助商", "付费宣传", "付费推广"]);
-  const hasBrand = bytesContainAnyMarker(payload, ["Aikido", "aikido"]);
-  if (!hasBadge && !(hasSponsor && hasBrand) && !(hasBadge || (hasSponsor && hasBrand))) {
-    // keep clear condition below
-  }
-  if (!hasBadge && !(hasSponsor && hasBrand)) return false;
-  try {
-    const fields = parseFields(payload);
-    const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
-    if (lengthFields === 0) return false;
-    // Allow larger cards; only skip extremely wide shelves.
-    if (payload.length > 300000 && lengthFields > 40) return false;
-    return true;
-  } catch {
-    return payload.length <= 200000;
-  }
-}
-
-function isScreenshotStyleCtaAdCard(payload) {
-  // Prefer whole homepage cards, not tiny label fragments.
-  if (!payload || payload.length < 6000 || payload.length > 220000) return false;
-
-  const hasWatch = bytesContainAnyMarker(payload, ["观看", "Watch"]);
-  const hasLearn = bytesContainAnyMarker(payload, [
-    "了解详情",
-    "立即购买",
-    "Learn more",
-    "Shop now",
-    "Install",
-    "安装",
-    "访问网站",
-    "Visit site",
-    "Visit website",
-    "VISIT_SITE",
-  ]);
-  const hasAdUi = bytesContainAnyMarker(payload, [
-    "ad_badge.eml-fe",
-    "ad_button.eml-fe",
-    "ad_details_line.eml-fe",
-    "ad_icon_text.eml-fe",
-    "inline_injection_entrypoint_layout.eml",
-    "in_feed_ad",
-    "promotedVideoRenderer",
-    "promotedSparklesWebRenderer",
-    "displayAdRenderer",
-    "adSlotRenderer",
-    "inFeedAdLayoutRenderer",
-  ]);
-  const hasSponsorText = bytesContainAnyMarker(payload, [
-    "赞助商广告",
-    "赞助商",
-    "付费宣传",
-    "付费推广",
-    "Sponsored",
-    "sponsored",
-  ]);
-  const hasBrand = bytesContainAnyMarker(payload, ["Aikido", "aikido"]);
-
-  const strong =
-    hasSponsorText ||
-    hasBrand ||
-    (hasAdUi && hasLearn) ||
-    (hasAdUi && hasWatch && hasLearn);
-  if (!strong) return false;
-
-  try {
-    const fields = parseFields(payload);
-    const lengthFields = fields.filter((field) => field.wireType === WIRE_LENGTH).length;
-    if (lengthFields < 2) return false;
-    if (payload.length > 200000 && lengthFields > 40) return false;
-    return true;
-  } catch {
-    return payload.length <= 160000;
-  }
-}
-
-function scoreSponsorNode(payload) {
-  if (!payload) return -1;
-  // Ignore tiny label fragments and giant shelves; we want whole feed cards.
-  if (payload.length < 6000 || payload.length > 220000) return -1;
-
-  let score = 0;
-  if (bytesContainAnyMarker(payload, ["赞助商广告"])) score += 10;
-  if (bytesContainAnyMarker(payload, ["赞助商"])) score += 5;
-  if (bytesContainAnyMarker(payload, ["付费宣传", "付费推广"])) score += 5;
-  if (bytesContainAnyMarker(payload, ["Aikido", "aikido"])) score += 6;
-  if (
-    bytesContainAnyMarker(payload, [
-      "ad_badge.eml-fe",
-      "ad_button.eml-fe",
-      "ad_details_line.eml-fe",
-      "inline_injection_entrypoint_layout.eml",
-      "in_feed_ad",
-      "promotedVideoRenderer",
-      "promotedSparklesWebRenderer",
-      "displayAdRenderer",
-      "adSlotRenderer",
-      "inFeedAdLayoutRenderer",
-    ])
-  ) {
-    score += 6;
-  }
-  if (
-    bytesContainAnyMarker(payload, [
-      "访问网站",
-      "了解详情",
-      "立即购买",
-      "Learn more",
-      "Shop now",
-      "Visit site",
-      "Visit website",
-      "Install",
-      "安装",
-    ])
-  ) {
-    score += 4;
-  }
-  if (bytesContainAnyMarker(payload, ["观看", "Watch"])) score += 1;
-
-  // Sweet spot for a single homepage card.
-  if (payload.length >= 10000 && payload.length <= 120000) score += 4;
-  else if (payload.length <= 180000) score += 2;
-
-  // Need a clear commercial signal, not just "观看".
-  if (score < 8) return -1;
-  return score;
-}
-
-function isLikelyFeedAdCard(payload) {
-  return isExactSponsorBadgeCard(payload) || isScreenshotStyleCtaAdCard(payload);
-}
-
-function cleanFeedAdCardsProtobuf(bytes, depth) {
-  if (depth <= 0) return bytes;
-
-  let changed = false;
-  const out = [];
-
-  for (const field of parseFields(bytes)) {
-    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
-      out.push(field);
-      continue;
-    }
-
-    try {
-      // Recurse first.
-      const nested = cleanFeedAdCardsProtobuf(field.payload, depth - 1);
-      if (nested !== field.payload) {
-        // If nested deletion emptied/hollowed a card-sized ad container, drop parent.
-        if (
-          field.payload.length >= 8000 &&
-          field.payload.length <= 220000 &&
-          (isLikelyFeedAdCard(field.payload) || scoreSponsorNode(field.payload) >= 8)
-        ) {
-          feedAdCardsRemoved += 1;
-          changed = true;
-          continue;
-        }
-        out.push({ raw: encodeLengthField(field.fieldNo, nested) });
-        changed = true;
-        continue;
-      }
-
-      // Delete whole card-level sponsor nodes.
-      if (isLikelyFeedAdCard(field.payload) && field.payload.length >= 6000) {
-        feedAdCardsRemoved += 1;
-        changed = true;
-        continue;
-      }
-
-      out.push(field);
-    } catch {
-      out.push(field);
-    }
-  }
-
-  return changed ? rebuildFields(out) : bytes;
-}
-
-function payloadHasExactSponsorBadge(payload) {
-  return !!(payload && bytesContainAnyMarker(payload, ["赞助商广告"]));
 }
 
 // Current YouTube iOS browse protobufs place homepage cards in:
@@ -1279,16 +1014,16 @@ function isDirectFeedAdItem(payload) {
   }
 
   // Text fallback for layouts whose technical EML marker has moved into an
-  // unknown protobuf field. Keep it limited to explicit sponsorship labels.
+  // unknown protobuf field. Structural guards: require a card-sized payload
+  // (tiny fragments are labels, not whole removable items) and only exact
+  // badge strings. Generic lowercase words like "sponsored"/"advertisement"
+  // appear in organic titles and descriptions and risk deleting real videos.
+  if (payload.length < 4096) return false;
   return bytesContainAnyMarker(payload, [
     "赞助商广告",
-    "赞助商",
     "付费宣传",
     "付费推广",
     "Sponsored",
-    "sponsored",
-    "Advertisement",
-    "advertisement",
   ]);
 }
 
@@ -1393,157 +1128,6 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
     `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
   );
   return output;
-}
-
-function forceRemoveBestSponsorNode(bytes, depth) {
-  // Find the best sponsor-like node, then remove the nearest suitable parent
-  // item/card so the homepage does not leave a blank shell.
-  let best = null;
-
-  function walk(nodeBytes, d, trail) {
-    if (d <= 0 || !nodeBytes || nodeBytes.length === 0) return;
-    let fields;
-    try {
-      fields = parseFields(nodeBytes);
-    } catch {
-      return;
-    }
-    for (const field of fields) {
-      if (field.wireType !== WIRE_LENGTH || !field.payload) continue;
-      const path = trail.concat([
-        {
-          size: nodeBytes.length,
-          fieldNo: field.fieldNo,
-          payloadSize: field.payload.length,
-          head: field.payload[0],
-          mid: field.payload[Math.floor(field.payload.length / 2)],
-          tail: field.payload[field.payload.length - 1],
-          score: scoreSponsorNode(field.payload),
-          isLikely: isLikelyFeedAdCard(field.payload),
-        },
-      ]);
-      const score = scoreSponsorNode(field.payload);
-      if (score >= 8) {
-        // Choose a parent item size that looks like a whole feed card.
-        let target = path[path.length - 1];
-        for (let i = path.length - 1; i >= 0; i -= 1) {
-          const cand = path[i];
-          // Prefer larger card-sized ancestors so blank shells are less likely.
-          if (cand.payloadSize >= 12000 && cand.payloadSize <= 260000) {
-            target = cand;
-            if (cand.score >= 8 || cand.isLikely) break;
-          } else if (cand.payloadSize >= 8000 && cand.payloadSize <= 220000 && target === path[path.length - 1]) {
-            target = cand;
-          }
-        }
-        const candidate = {
-          score,
-          size: target.payloadSize,
-          head: target.head,
-          mid: target.mid,
-          tail: target.tail,
-          leafSize: field.payload.length,
-        };
-        if (
-          !best ||
-          candidate.score > best.score ||
-          (candidate.score === best.score && candidate.size < best.size)
-        ) {
-          best = candidate;
-        }
-      }
-      walk(field.payload, d - 1, path);
-    }
-  }
-
-  walk(bytes, depth, []);
-  if (!best) return { removed: 0, bytes };
-
-  function sameNode(payload) {
-    return (
-      payload &&
-      payload.length === best.size &&
-      payload[0] === best.head &&
-      payload[Math.floor(payload.length / 2)] === best.mid &&
-      payload[payload.length - 1] === best.tail
-    );
-  }
-
-  function removeOnce(nodeBytes, d) {
-    if (d <= 0) return { changed: false, bytes: nodeBytes, removed: 0 };
-    let fields;
-    try {
-      fields = parseFields(nodeBytes);
-    } catch {
-      return { changed: false, bytes: nodeBytes, removed: 0 };
-    }
-    const out = [];
-    let changed = false;
-    let removed = 0;
-    for (const field of fields) {
-      if (changed) {
-        out.push(field);
-        continue;
-      }
-      if (field.wireType !== WIRE_LENGTH || !field.payload) {
-        out.push(field);
-        continue;
-      }
-      if (sameNode(field.payload)) {
-        changed = true;
-        removed = 1;
-        continue;
-      }
-      const child = removeOnce(field.payload, d - 1);
-      if (child.changed) {
-        out.push({ raw: encodeLengthField(field.fieldNo, child.bytes) });
-        changed = true;
-        removed = child.removed;
-      } else {
-        out.push(field);
-      }
-    }
-    return {
-      changed,
-      removed,
-      bytes: changed ? rebuildFields(out) : nodeBytes,
-    };
-  }
-
-  const result = removeOnce(bytes, depth);
-  return { removed: result.removed || 0, bytes: result.bytes };
-}
-
-function cleanAdMarkedNestedProtobuf(bytes, depth) {
-  if (depth <= 0) return bytes;
-
-  let changed = false;
-  const out = [];
-  for (const field of parseFields(bytes)) {
-    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
-      out.push(field);
-      continue;
-    }
-
-    if (bytesContainAdMarker(field.payload)) {
-      changed = true;
-      continue;
-    }
-
-    try {
-      const payload = cleanAdMarkedNestedProtobuf(field.payload, depth - 1);
-      if (payload !== field.payload) {
-        out.push({ raw: encodeLengthField(field.fieldNo, payload) });
-        changed = true;
-      } else {
-        out.push(field);
-      }
-    } catch {
-      out.push(field);
-    }
-  }
-
-  return changed ? rebuildFields(out) : bytes;
 }
 
 function cleanProtobuf(bytes, endpoint) {
