@@ -157,4 +157,52 @@ cleanItem.set(new TextEncoder().encode("ordinary-feed-item"));
   assert.equal(Object.keys(result.output).length, 0);
 }
 
+// Text-fallback structural guards. Community reports against the same
+// protobuf-rewrite approach (Maasea/sgmodule issues, 2026: get_watch layout
+// changes, new serving domains, YouTube Music breakage) show the failure mode
+// is usually silent over- or under-matching, so the fallback must never fire
+// on organic text or on sub-card fragments.
+function textFilledItem(text, size) {
+  const item = new Uint8Array(size);
+  item.set(new TextEncoder().encode(text));
+  return item;
+}
+
+{
+  // Organic card mentioning "sponsored" in lowercase prose must survive.
+  const organicCard = textFilledItem("weekly sponsored segment review episode", 8192);
+  const section = encodeLengthField(
+    50195462,
+    concatBytes(encodeLengthField(1, organicCard), encodeLengthField(1, cleanItem)),
+  );
+  const result = execute(section, "browse");
+  assertNoLogs(result, "organic sponsored-text passthrough");
+  assert.equal(Object.keys(result.output).length, 0);
+}
+
+{
+  // Card-sized payload carrying the exact sponsor badge must be removed.
+  const badgeCard = textFilledItem("赞助商广告", 8192);
+  const section = encodeLengthField(
+    50195462,
+    concatBytes(encodeLengthField(1, badgeCard), encodeLengthField(1, cleanItem)),
+  );
+  const result = execute(section, "browse");
+  assertNoLogs(result, "badge card cleanup");
+  assert.ok(result.output && result.output.body instanceof Uint8Array, "badge cleanup bytes must be returned");
+  assert.ok(result.output.body.length < section.length);
+}
+
+{
+  // Sub-card fragments with badge text stay untouched (size guard).
+  const badgeFragment = textFilledItem("赞助商广告", 512);
+  const section = encodeLengthField(
+    50195462,
+    concatBytes(encodeLengthField(1, badgeFragment), encodeLengthField(1, cleanItem)),
+  );
+  const result = execute(section, "browse");
+  assertNoLogs(result, "badge fragment passthrough");
+  assert.equal(Object.keys(result.output).length, 0);
+}
+
 console.log("YouTube Self tests passed");
