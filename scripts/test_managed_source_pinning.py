@@ -19,7 +19,11 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
+RULE_TEMPLATE = ROOT / "rule/Surge/generated/rule-section-managed.conf"
+ROOT_README = ROOT / "README.md"
+RELEASE_PROCESS = ROOT / "docs/RELEASE_PROCESS.md"
 BLACKMATRIX_COMMIT = "ccc2d6b711007324bacb55cdfbbf7e36ad48145a"
+CLAUDE_SHA256 = "870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378"
 
 
 def load_generator():
@@ -58,7 +62,7 @@ class ManifestInvariantTests(unittest.TestCase):
     def test_all_sources_have_tracking_and_reproducible_build_inputs(self) -> None:
         _generated, sets = generator.load_manifest(MANIFEST)
         sources = [source for rule_set in sets for source in rule_set.sources]
-        self.assertEqual(len(sources), 21)
+        self.assertEqual(len(sources), 22)
         self.assertTrue(all(source.tracking_url for source in sources))
         self.assertEqual(sum(source.snapshot is not None for source in sources), 7)
 
@@ -76,6 +80,39 @@ class ManifestInvariantTests(unittest.TestCase):
             if parts[:2] == ("blackmatrix7", "ios_rule_script"):
                 blackmatrix_refs.add(parts[2])
         self.assertEqual(blackmatrix_refs, {BLACKMATRIX_COMMIT})
+
+    def test_claude_routes_use_a_reviewed_generated_source(self) -> None:
+        _generated, sets = generator.load_manifest(MANIFEST)
+        by_id = {rule_set.rule_id: rule_set for rule_set in sets}
+        claude = by_id["claude"]
+
+        self.assertEqual(claude.output, "claude.list")
+        self.assertEqual(claude.suggested_policy, "hinet")
+        self.assertEqual(claude.suggested_options, ["extended-matching", "no-resolve"])
+        self.assertEqual(len(claude.sources), 1)
+        source = claude.sources[0]
+        self.assertIn(f"/{BLACKMATRIX_COMMIT}/", source.url)
+        self.assertIn("/master/", source.tracking_url)
+        self.assertEqual(source.expected_sha256, CLAUDE_SHA256)
+        self.assertEqual(source.license, "GPL-2.0-only")
+
+        template = RULE_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn(
+            "RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/"
+            "rule/Surge/generated/claude.list,hinet,extended-matching,no-resolve",
+            template,
+        )
+        self.assertNotIn("Claude/Anthropic domains are covered by ai.list", template)
+
+    def test_managed_source_counts_and_claude_docs_stay_current(self) -> None:
+        readme = ROOT_README.read_text(encoding="utf-8")
+        release_process = RELEASE_PROCESS.read_text(encoding="utf-8")
+
+        self.assertIn("15 个 Blackmatrix 输入", readme)
+        self.assertNotIn("14 个 Blackmatrix 输入", readme)
+        self.assertIn("generated/claude.list", readme)
+        self.assertNotIn("包括 Gemini、Claude、Cursor", readme)
+        self.assertIn("all 22 moving tracking URLs", release_process)
 
     def assert_manifest_error(self, source_lines: str, pattern: str) -> None:
         with tempfile.TemporaryDirectory() as temporary:

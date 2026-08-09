@@ -17,10 +17,11 @@ mirroring is not required for these API-based checks.
 - Surge CLI is usually not in `PATH`; its standard path is
   `/Applications/Surge.app/Contents/Applications/surge-cli`.
 - Detached-profile defaults in the iCloud Surge directory are `DMIT.conf` for
-  iOS, `DMIT-Mac.conf` for Mac, and `DMIT-Common.dconf` for shared content. Use
-  `SURGE_IOS_PROFILE` and `SURGE_MAC_PROFILE` for device-specific overrides.
+  iOS, `DMIT-Mac.conf` for Mac, `DMIT-ATV.conf` for Apple TV, and
+  `DMIT-Common.dconf` for shared content. Use `SURGE_IOS_PROFILE`,
+  `SURGE_MAC_PROFILE`, and `SURGE_ATV_PROFILE` for device-specific overrides.
   `SURGE_PROFILE` remains a legacy compatibility override for old setups where
-  both devices intentionally use one profile.
+  all three devices intentionally use one profile.
 - Device addresses are runtime values, not repository configuration. Set
   `SURGE_IOS_HOST` or `SURGE_ATV_HOST` to a host that the user explicitly
   identified.
@@ -30,8 +31,8 @@ mirroring is not required for these API-based checks.
   `http-api = key@host:port` and `http-api-tls = true`.
 - Read credentials from the profile at runtime. Never hard-code, print, log, or
   place them in a command-line argument.
-- Mac and iOS use separate HTTP API and External Controller credentials. Never
-  assume a key read from one device profile authenticates to the other device.
+- Mac, iOS, and Apple TV each use their matching profile credential; never
+  reuse one device's HTTP API or External Controller credential for another.
 - `wifi-access-http-auth` is also authentication material. Check only whether
   it is configured; never print its value.
 
@@ -40,20 +41,26 @@ mirroring is not required for these API-based checks.
 Run the bundled probe before drawing conclusions:
 
 ```bash
-SURGE_IOS_HOST=ios-surge.local local-surge-control/scripts/surge-status.sh all
+SURGE_IOS_HOST=ios-surge.local SURGE_ATV_HOST=apple-tv-surge.local \
+  local-surge-control/scripts/surge-status.sh all
 SURGE_IOS_HOST=ios-surge.local local-surge-control/scripts/surge-status.sh ios
+SURGE_ATV_HOST=apple-tv-surge.local local-surge-control/scripts/surge-status.sh atv
 local-surge-control/scripts/surge-status.sh mac
 ```
 
 The helper checks the HTTPS HTTP API with `GET /v1/events`. It passes the
 `X-Key` header to `curl` through standard input, verifies TLS by default, never
 loads a user `curlrc`, prints no response body on failure, returns nonzero when
-any requested device check fails, and never performs credentialed host
-discovery. Use `SURGE_HTTP_CA=/path/to/trusted-ca.pem` when the Surge CA is not
-already trusted by the system.
+a required or explicitly targeted device check fails, and never performs
+credentialed host discovery. Use `SURGE_HTTP_CA=/path/to/trusted-ca.pem` when
+the Surge CA is not already trusted by the system.
 
-For `all`, the helper reads the Mac key from `DMIT-Mac.conf` and the iOS key
-from `DMIT.conf`. It does not reuse one device's credential for the other.
+For `all`, the helper always checks Mac and iOS, so `SURGE_IOS_HOST` is
+required. It checks Apple TV only when `SURGE_ATV_HOST` is explicitly set. A
+missing `SURGE_ATV_HOST` is an intentional `SKIP` and does not make `all` fail.
+The helper reads the Mac key from `DMIT-Mac.conf`, the iOS key from `DMIT.conf`,
+and the Apple TV key from `DMIT-ATV.conf`; it does not reuse one device's
+credential for another.
 
 `SURGE_HTTP_INSECURE=1` is an explicit, temporary diagnostic escape hatch. A
 successful result in that mode is reported as unverified and must not be used
@@ -265,24 +272,26 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
 
 ## Change Workflow
 
-1. Set the two device-profile paths and confirm setting presence without
+1. Set the three device-profile paths and confirm setting presence without
    printing values:
 
    ```bash
    SURGE_IOS_PROFILE="${SURGE_IOS_PROFILE:-$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf}"
    SURGE_MAC_PROFILE="${SURGE_MAC_PROFILE:-$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT-Mac.conf}"
-   for profile in "$SURGE_IOS_PROFILE" "$SURGE_MAC_PROFILE"; do
+   SURGE_ATV_PROFILE="${SURGE_ATV_PROFILE:-$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT-ATV.conf}"
+   for profile in "$SURGE_IOS_PROFILE" "$SURGE_MAC_PROFILE" "$SURGE_ATV_PROFILE"; do
      sed -nE 's/^(http-api|http-api-tls|external-controller-access|wifi-access-http-auth)[[:space:]]*=.*/\1 = configured/p' "$profile"
    done
    ```
 
-2. Back up both device profiles and the shared `DMIT-Common.dconf` before
+2. Back up all three device profiles and the shared `DMIT-Common.dconf` before
    editing.
 3. Change only the required line or split device-specific `[General]` settings
    into detached profiles.
-4. Run `"$SURGE_CLI" --check` separately for `DMIT.conf` and `DMIT-Mac.conf`.
+4. Run `"$SURGE_CLI" --check` separately for `DMIT.conf`, `DMIT-Mac.conf`, and
+   `DMIT-ATV.conf`.
 5. Reload through the HTTPS API when available.
-6. Verify positive and negative authentication without printing either
+6. Verify positive and negative authentication without printing any
    credential or raw response.
 7. Report Mac, iPhone, and Apple TV status separately.
 

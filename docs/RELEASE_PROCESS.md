@@ -228,7 +228,7 @@ protection, release manifest, checksum, and remote-integrity workflow.
 It must fail when the checked-in files do not match the reviewed source hashes or
 normalized output. Updating a source is an explicit maintenance operation:
 
-1. Run `--check-upstream` to compare all 21 moving tracking URLs with the
+1. Run `--check-upstream` to compare all 22 moving tracking URLs with the
    reviewed inputs. Tracking URLs are monitoring inputs only.
 2. For a commit-backed source, resolve and review the exact upstream commit.
    Refresh with `--only <set> --source-commit <40hex>`; the generator atomically

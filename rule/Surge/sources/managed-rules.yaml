@@ -138,6 +138,22 @@ sets:
         license: GPL-2.0-only
         license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
+  - id: claude
+    name: Claude
+    description: Claude and Anthropic service baseline. Kept separate from the hand-curated AI supplements so production routing never consumes an unreviewed moving branch.
+    output: claude.list
+    suggested_policy: hinet
+    suggested_options:
+      - extended-matching
+      - no-resolve
+    sources:
+      - name: blackmatrix7 Claude
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Claude/Claude.list
+        tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Claude/Claude.list
+        expected_sha256: 870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
+
   - id: telegram
     name: Telegram
     description: Telegram non-IP and IP rules from Sukka ruleset.
