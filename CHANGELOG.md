@@ -3,6 +3,21 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-08-09
+
+Unreleased stability hardening:
+
+- Added a reproducible Claude/Anthropic managed rule set pinned to Blackmatrix
+  commit `ccc2d6b` and SHA-256, while retaining the active `hinet` policy.
+- Isolated Mac, iOS, and Apple TV HTTP API credentials in the status helper;
+  Apple TV now defaults to `DMIT-ATV.conf`, with legacy single-profile behavior
+  and explicit profile overrides covered by behavior tests.
+- Runtime gate: merge and verify the hosted `generated/claude.list` first, then
+  replace the active moving Claude URL one-for-one, reload, and read back each
+  explicit target. Repository checks alone do not complete that rollout.
+- Device gate: iPhone and Apple TV verification remains pending until their
+  current trusted LAN addresses are explicitly supplied.
+
 ## 2026-07-27
 
 Repository-wide audit remediation (PRs #15–#21), bundles `surge-self-v2026.07.27`

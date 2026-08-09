@@ -291,7 +291,7 @@ scripts/generate-managed-surge-rules.py --check
 scripts/generate-managed-surge-rules.py --check-upstream
 ```
 
-14 个 Blackmatrix 输入固定到同一个完整 Git commit；7 个 Sukka 输入保存为仓库内精确字节快照。moving URL 只用于漂移告警，不参与可复现构建。接受更新时必须显式指定规则集；远端 GitHub 源还必须提供已审查的 40 位 commit，并同时提交 manifest、upstream snapshot、规则文件和 JSON 元数据。详细流程见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
+15 个 Blackmatrix 输入固定到同一个完整 Git commit；7 个 Sukka 输入保存为仓库内精确字节快照。moving URL 只用于漂移告警，不参与可复现构建。接受更新时必须显式指定规则集；远端 GitHub 源还必须提供已审查的 40 位 commit，并同时提交 manifest、upstream snapshot、规则文件和 JSON 元数据。详细流程见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
 
 每个生成文件都会写入：
 
@@ -311,23 +311,25 @@ scripts/generate-managed-surge-rules.py --check-upstream
 
 ### AI / LLM / Coding
 
-文件：[rule/Surge/ai.list](rule/Surge/ai.list)
+文件：[rule/Surge/generated/openai.list](rule/Surge/generated/openai.list)、[rule/Surge/generated/claude.list](rule/Surge/generated/claude.list) 和 [rule/Surge/ai.list](rule/Surge/ai.list)
 
 ```ini
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/openai.list,Ai,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/claude.list,hinet,extended-matching,no-resolve
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/ai.list,Ai,extended-matching,no-resolve
 ```
 
-AI 规则按两层保存：
+AI 规则按三层保存：
 
 - `rule/Surge/generated/openai.list`：OpenAI / ChatGPT / GPT 专用，单独保留，方便以后按日志独立调整。
-- `rule/Surge/ai.list`：非 OpenAI 的 AI 服务合并入口，包括 Gemini、Claude、Cursor、Windsurf、Perplexity、OpenRouter、Hugging Face、xAI/Grok 等。
+- `rule/Surge/generated/claude.list`：Claude / Anthropic 的可复现基线，从完整 commit 和 SHA-256 生成；建议继续使用当前已验证的 `hinet` 策略。
+- `rule/Surge/ai.list`：其他非 OpenAI AI 服务的自维护入口，包含 Gemini、Cursor、Windsurf、Perplexity、OpenRouter、Hugging Face、xAI/Grok 和 Claude 补充域名。
 
-建议这两条都放在 Google、Microsoft、GitHub 等大规则前面。这样 OpenAI/GPT 的命中不会被通用
-AI、Google 或 global 规则抢走，其他 AI 服务也只有一个自有规则入口。
+建议这三条都放在 Google、Microsoft、GitHub 等大规则前面。这样 OpenAI/GPT 和 Claude/Anthropic 的命中不会被通用
+AI、Google 或 global 规则抢走，同时保留小范围自维护补充。
 
 旧路径 `rule/Surge/generated/gemini.list` 只作为兼容文件保留，避免 Apple TV 等设备在 iCloud profile
-同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口仍然是 `rule/Surge/ai.list`。
+同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口为上述三个受审入口。
 
 ### Apple 系统服务
 

@@ -141,6 +141,23 @@ class Surge68DocumentationContractTest(unittest.TestCase):
         self.assertIn("HTTPS API only", helper)
         self.assertIn("--password-stdin", helper)
 
+    def test_atv_default_profile_and_all_semantics_are_documented(self) -> None:
+        for name, text in self.docs.items():
+            with self.subTest(document=name):
+                self.assertIn("DMIT-ATV.conf", text)
+                self.assertIn("SURGE_ATV_PROFILE", text)
+                self.assertRegex(
+                    text,
+                    r"A\s+missing\s+`SURGE_ATV_HOST`\s+is\s+an\s+intentional\s+"
+                    r"`SKIP`\s+and\s+does\s+not\s+make\s+`all`\s+fail\.",
+                )
+                self.assertRegex(
+                    text,
+                    r"(?s)(?:Mac|macOS).{0,320}iOS.{0,320}"
+                    r"(?:Apple TV|tvOS).{0,320}(?:matching|separate)"
+                    r"[^.\n]*credential",
+                )
+
     def test_ntp_warning_documents_the_confirmed_upstream_boundary(self) -> None:
         skill = self.docs["skill"]
         reference = self.docs["reference"]

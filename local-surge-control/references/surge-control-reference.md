@@ -222,7 +222,7 @@ into the repository:
 ```bash
 export SURGE_IOS_PROFILE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT.conf"
 export SURGE_MAC_PROFILE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT-Mac.conf"
-export SURGE_ATV_PROFILE="$SURGE_IOS_PROFILE" # override if tvOS has its own profile
+export SURGE_ATV_PROFILE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT-ATV.conf"
 export SURGE_IOS_HOST="ios-surge.local"
 export SURGE_ATV_HOST="apple-tv-surge.local"
 export SURGE_HTTP_API_PORT="1132"
@@ -230,12 +230,18 @@ export SURGE_HTTP_CA="$HOME/.config/surge/http-api-ca.pem" # only if system trus
 local-surge-control/scripts/surge-status.sh all
 ```
 
+For `all`, Mac and iOS are always checked, and `SURGE_IOS_HOST` is required.
+Apple TV is checked only when `SURGE_ATV_HOST` is explicitly set. A missing
+`SURGE_ATV_HOST` is an intentional `SKIP` and does not make `all` fail. Mac,
+iOS, and Apple TV each use their matching profile credential; never reuse one
+device's credential for another.
+
 `SURGE_PROFILE` remains a compatibility override for an older single-profile
-setup. Do not set it in the detached setup above: Mac and iOS have independent
-HTTP API and External Controller credentials, and the helper must read each
-credential from its matching device profile. Shared content belongs in
-`DMIT-Common.dconf`, but that file may still contain sensitive proxy or routing
-configuration and must not be printed wholesale.
+setup. Do not set it in the detached setup above: Mac, iOS, and Apple TV have
+independent HTTP API and External Controller credentials, and the helper must
+read each credential from its matching device profile. Shared content belongs
+in `DMIT-Common.dconf`, but that file may still contain sensitive proxy or
+routing configuration and must not be printed wholesale.
 
 Never commit live credentials (including `wifi-access-http-auth`), a private
 network inventory, CA private keys, or raw request/event/profile output.

@@ -38,6 +38,7 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | apple-sukka | `apple-sukka.list` | - | `DIRECT` | 35 |
 | google | `google.list` | `google.domainset` (685) + `google.non-domain.list` (13) | `自动` | 698 |
 | openai | `openai.list` | - | `自动` | 35 |
+| claude | `claude.list` | - | `hinet` | 3 |
 | telegram | `telegram.list` | - | `Proxy` | 29 |
 | apple-tv | `apple-tv.list` | - | `流媒体` | 10 |
 | youtube | `youtube.list` | `youtube.domainset` (179) + `youtube.non-domain.list` (11) | `自动` | 190 |

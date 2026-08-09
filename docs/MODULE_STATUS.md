@@ -56,6 +56,8 @@ scripts used by a stable module are pinned to an immutable repository tag.
 - The effective profile contains 205 top-level rules, including nine adjacent
   `DOMAIN-SET` / residual `RULE-SET` pairs with the original policies and order.
 - All 36 external resources are ready: 9 domain sets, 21 rule sets, and 6 scripts.
+  This live inventory is separate from the 22 managed-source tracking inputs;
+  replacing the Claude URL is one-for-one and does not add a runtime resource.
 - Controlled Microsoft, YouTube, and PayPal requests completed successfully and
   matched `microsoft.domainset`, `youtube.domainset`, and `paypal.domainset`.
 - The official module API could not refresh the installed cloud definition, so
