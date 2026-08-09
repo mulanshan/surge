@@ -5,7 +5,7 @@
 # YouTube service rules kept separate because the current profile routes them to 自动.
 # Suggested policy: 自动
 # Sources:
-# - blackmatrix7 YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/YouTube/YouTube.list
+# - blackmatrix7 YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/YouTube/YouTube.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 #   sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)

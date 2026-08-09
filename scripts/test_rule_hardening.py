@@ -15,6 +15,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 
 sys.dont_write_bytecode = True
@@ -33,6 +35,10 @@ def load_module(name: str, path: Path):
 
 
 generator = load_module("managed_rule_generator", ROOT / "scripts/generate-managed-surge-rules.py")
+repository_checker = load_module(
+    "managed_rule_repository_checker",
+    ROOT / ".github/scripts/check_repository.py",
+)
 common = load_module(
     "surge_candidate_common",
     ROOT / "rule/Surge/scripts/surge_candidate_common.py",
@@ -45,10 +51,64 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(generator.normalize_rule_line("IP-CIDR,192.0.2.0/24"), expected)
         self.assertEqual(generator.normalize_rule_line("ip-cidr,192.0.2.0/24"), expected)
 
+    def test_single_ip_rules_are_canonicalized_to_host_prefixes(self):
+        self.assertEqual(
+            generator.normalize_rule_line("IP-CIDR,8.8.8.8"),
+            "IP-CIDR,8.8.8.8/32,no-resolve",
+        )
+        self.assertEqual(
+            generator.normalize_rule_line("IP-CIDR6,2404:6800::"),
+            "IP-CIDR6,2404:6800::/128,no-resolve",
+        )
+        self.assertEqual(
+            generator.normalize_rule_line("IP-CIDR,192.168.1.5/24"),
+            "IP-CIDR,192.168.1.5/24,no-resolve",
+        )
+
     def test_policy_and_unknown_options_are_rejected(self):
         for line in ("DOMAIN,example.com,DIRECT", "DOMAIN,example.com,unknown"):
             with self.subTest(line=line), self.assertRaisesRegex(ValueError, "policy"):
                 generator.normalize_rule_line(line)
+
+    def test_invalid_or_mismatched_cidr_networks_are_rejected(self):
+        invalid = (
+            "IP-CIDR,999.999.999.999/99",
+            "IP-CIDR,192.0.2.0/33",
+            "IP-CIDR,2001:db8::/32",
+            "IP-CIDR6,not-an-ipv6/64",
+            "IP-CIDR6,2001:db8::/129",
+            "IP-CIDR6,192.0.2.0/24",
+        )
+        for line in invalid:
+            with self.subTest(line=line), self.assertRaisesRegex(ValueError, "CIDR"):
+                generator.normalize_rule_line(line)
+
+    def test_non_split_ruleset_rejects_an_empty_payload(self):
+        raw = b"# no usable rules\nPROCESS-NAME,filtered\n"
+        source = generator.Source(
+            name="fixture",
+            url="https://example.invalid/rules.list",
+            tracking_url=None,
+            expected_sha256=hashlib.sha256(raw).hexdigest(),
+            license="MIT",
+            license_url="https://example.invalid/LICENSE",
+        )
+        rule_set = generator.RuleSet(
+            rule_id="empty-fixture",
+            name="Empty fixture",
+            description="Fixture",
+            output="empty-fixture.list",
+            domain_set_output=None,
+            non_domain_output=None,
+            suggested_policy="DIRECT",
+            suggested_options=[],
+            include_process_name=False,
+            include_rules=frozenset(),
+            exclude_rules=frozenset(),
+            sources=[source],
+        )
+        with self.assertRaisesRegex(ValueError, "contains no usable rules"):
+            generator.build_one(rule_set, 1, fetcher=lambda _url, _timeout: raw)
 
     def test_source_hash_is_a_hard_gate_and_exclusions_apply(self):
         raw = b"PROCESS-NAME,TV\nUSER-AGENT,AppleTV*\nDOMAIN,tv.apple.com\n"
@@ -219,6 +279,70 @@ sets:
         self.assertEqual(requested, [source.tracking_url])
 
 
+class GeneratedArtifactTests(unittest.TestCase):
+    def test_repository_check_rejects_unregistered_generated_artifacts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_root = Path(temporary)
+            generated = temporary_root / "rule/Surge/generated"
+            generated.mkdir(parents=True)
+            rule_set = SimpleNamespace(
+                rule_id="fixture",
+                output="fixture.list",
+                domain_set_output=None,
+                non_domain_output=None,
+                sources=[],
+            )
+            rules = generated / "fixture.list"
+            rules.write_text("DOMAIN,fixture.example\n", encoding="utf-8")
+            (generated / "fixture.list.json").write_text(
+                json.dumps(
+                    {
+                        "id": "fixture",
+                        "output": "rule/Surge/generated/fixture.list",
+                        "domain_set_output": None,
+                        "non_domain_output": None,
+                        "sources": [],
+                        "unique_rule_count": 1,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (generated / "README.md").write_text("fixture\n", encoding="utf-8")
+            (generated / "rule-section-managed.conf").write_text("fixture\n", encoding="utf-8")
+            (generated / "unregistered.list").write_text(
+                "DOMAIN,unregistered.example\n",
+                encoding="utf-8",
+            )
+            fake_generator = SimpleNamespace(
+                load_manifest=lambda _manifest: (generated, [rule_set]),
+            )
+
+            with (
+                mock.patch.object(repository_checker, "ROOT", temporary_root),
+                mock.patch.object(repository_checker, "load_generator", return_value=fake_generator),
+                self.assertRaisesRegex(SystemExit, "unregistered generated artifact"),
+            ):
+                repository_checker.check_generated_rules()
+
+
+class RefreshWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        self.workflow = (ROOT / ".github/workflows/rules-drift.yml").read_text(encoding="utf-8")
+
+    def test_refresh_uses_a_unique_branch_without_force_or_reset(self):
+        self.assertIn(
+            "UPDATE_BRANCH: codex/managed-rules-refresh-${{ github.run_id }}-${{ github.run_attempt }}",
+            self.workflow,
+        )
+        self.assertIn("BASE_BRANCH: ${{ github.event.repository.default_branch }}", self.workflow)
+        self.assertNotIn("git switch -C", self.workflow)
+        self.assertNotIn("--force", self.workflow)
+
+    def test_pull_request_body_cannot_execute_markdown_backticks(self):
+        self.assertNotRegex(self.workflow, r"<<\s*EOF")
+        self.assertIn("printf '`%s`", self.workflow)
+
+
 def optimized_rule_set_counts():
     """Discover optimized (domain-set split) rule sets from generation metadata.
 
@@ -342,6 +466,21 @@ class RepositoryInvariantTests(unittest.TestCase):
         self.assertNotIn("AGPL-3.0-only", apple_bm7)
         self.assertIn("AGPL-3.0-only", apple_sukka)
         self.assertNotIn("GPL-2.0-only", apple_sukka)
+
+    def test_sukka_attribution_marker_is_excluded_from_every_policy_set(self):
+        marker = "DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe"
+        for output in ("apple-sukka", "telegram", "streaming", "global"):
+            with self.subTest(output=output):
+                payload = (ROOT / f"rule/Surge/generated/{output}.list").read_text(
+                    encoding="utf-8"
+                )
+                metadata = json.loads(
+                    (ROOT / f"rule/Surge/generated/{output}.list.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                self.assertNotIn(f"\n{marker}\n", payload)
+                self.assertIn(marker, metadata["excluded_rules"])
 
     def test_fanqie_rule_copies_stay_identical(self):
         # Three deployment copies of the same ruleset (Surge canonical, Surge

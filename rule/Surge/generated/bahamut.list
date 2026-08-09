@@ -5,7 +5,7 @@
 # Bahamut kept separate because the current profile routes it to 流媒体.
 # Suggested policy: 流媒体
 # Sources:
-# - blackmatrix7 Bahamut: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/Bahamut/Bahamut.list
+# - blackmatrix7 Bahamut: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Bahamut/Bahamut.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list
 #   sha256: 5c6618ac00734921dae209bb812c1b61cc88523e158b856548153d1d3d8df2fd
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)

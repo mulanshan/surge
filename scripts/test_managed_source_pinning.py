@@ -3,20 +3,23 @@
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import hashlib
 import importlib.util
+import io
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
-BLACKMATRIX_COMMIT = "8f67b6419fe1cc2277e59347b0d59d26e160b023"
+BLACKMATRIX_COMMIT = "ccc2d6b711007324bacb55cdfbbf7e36ad48145a"
 
 
 def load_generator():
@@ -119,8 +122,51 @@ class ManifestInvariantTests(unittest.TestCase):
             "snapshot must be a repository-relative path|snapshot must stay under",
         )
 
+    def test_generated_directory_cannot_escape_repository_with_parent_components(self) -> None:
+        source = (
+            "        url: https://raw.githubusercontent.com/example/project/"
+            "0123456789abcdef0123456789abcdef01234567/rules.list\n"
+            "        tracking_url: https://raw.githubusercontent.com/example/project/main/rules.list\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "manifest.yaml"
+            path.write_text(
+                minimal_manifest(source).replace(
+                    "generated_dir: rule/Surge/generated",
+                    "generated_dir: ../outside",
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "generated_dir must stay inside"):
+                generator.load_manifest(path)
+
 
 class SnapshotBuildTests(unittest.TestCase):
+    def write_snapshot_manifest(self, temporary_root: Path) -> tuple[Path, Path]:
+        snapshot = "rule/Surge/upstream/sukka/ip/telegram.conf"
+        digest = hashlib.sha256((ROOT / snapshot).read_bytes()).hexdigest()
+        generated = temporary_root / "generated"
+        manifest = temporary_root / "manifest.yaml"
+        manifest.write_text(
+            "version: 3\n"
+            f"generated_dir: {generated.relative_to(ROOT)}\n"
+            "sets:\n"
+            "  - id: fixture\n"
+            "    name: Fixture\n"
+            "    description: Fixture\n"
+            "    output: fixture.list\n"
+            "    suggested_policy: DIRECT\n"
+            "    sources:\n"
+            "      - name: fixture\n"
+            f"        snapshot: {snapshot}\n"
+            "        tracking_url: https://example.invalid/tracking.list\n"
+            f"        expected_sha256: {digest}\n"
+            "        license: MIT\n"
+            "        license_url: https://example.invalid/LICENSE\n",
+            encoding="utf-8",
+        )
+        return manifest, generated
+
     def test_snapshot_bytes_are_the_build_input_and_hash_gate(self) -> None:
         snapshot = "rule/Surge/upstream/sukka/non_ip/apple_cn.conf"
         raw = (ROOT / snapshot).read_bytes()
@@ -246,6 +292,89 @@ class SnapshotBuildTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("requires one or more explicit --only", result.stderr)
+
+    def test_check_mode_does_not_create_a_staging_directory(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            temporary_root = Path(temporary)
+            manifest, generated = self.write_snapshot_manifest(temporary_root)
+            generated.mkdir()
+            _generated_dir, sets = generator.load_manifest(manifest)
+            item = generator.build_one(sets[0], 1)
+            (generated / sets[0].output).write_text(item.list_text, encoding="utf-8")
+            (generated / f"{sets[0].output}.json").write_text(item.metadata_text, encoding="utf-8")
+            (generated / "README.md").write_text(generator.index_text([item.metadata]), encoding="utf-8")
+
+            with (
+                mock.patch.object(sys, "argv", [str(GENERATOR), "--manifest", str(manifest), "--check"]),
+                mock.patch.object(
+                    generator.tempfile,
+                    "TemporaryDirectory",
+                    side_effect=OSError("check mode attempted to create staging"),
+                ) as staging,
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                result = generator.main()
+
+            self.assertEqual(result, 0)
+            staging.assert_not_called()
+
+    def test_refresh_rolls_back_all_outputs_when_one_replace_fails(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
+            temporary_root = Path(temporary)
+            manifest, generated = self.write_snapshot_manifest(temporary_root)
+            generated.mkdir()
+            _generated_dir, sets = generator.load_manifest(manifest)
+            old_files = {
+                generated / "fixture.list": b"old rules\n",
+                generated / "fixture.list.json": b"old metadata\n",
+                generated / "README.md": b"old index\n",
+                manifest: manifest.read_bytes(),
+            }
+            for path, data in old_files.items():
+                path.write_bytes(data)
+
+            original_replace = generator.atomic_replace
+            replace_count = 0
+
+            def fail_second_replace(staged_path: Path, destination: Path) -> None:
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("synthetic replace failure")
+                original_replace(staged_path, destination)
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with (
+                mock.patch.object(
+                    sys,
+                    "argv",
+                    [
+                        str(GENERATOR),
+                        "--manifest",
+                        str(manifest),
+                        "--refresh-sources",
+                        "--only",
+                        "fixture",
+                    ],
+                ),
+                mock.patch.object(
+                    generator,
+                    "prepare_refresh",
+                    return_value=(sets, {}, {}, {}),
+                ),
+                mock.patch.object(generator, "atomic_replace", side_effect=fail_second_replace),
+                contextlib.redirect_stdout(stdout),
+                contextlib.redirect_stderr(stderr),
+            ):
+                result = generator.main()
+
+            self.assertEqual(result, 1)
+            self.assertIn("synthetic replace failure", stderr.getvalue())
+            self.assertGreaterEqual(replace_count, 2)
+            for path, data in old_files.items():
+                self.assertEqual(path.read_bytes(), data, f"partial refresh changed {path}")
 
 
 if __name__ == "__main__":

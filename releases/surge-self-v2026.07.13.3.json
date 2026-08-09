@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tag": "surge-self-v2026.07.13.3",
-  "status": "superseded",
+  "integrity": "intact",
+  "distribution": "inactive",
+  "live_device_validation": "not-recorded",
+  "rollback_eligible": false,
   "release_commit": "fb9ad28190e738dd39ffb7ddbadb5b324365af38",
   "supersedes": "surge-self-v2026.07.13.2",
   "superseded_by": "surge-self-v2026.07.13.4",

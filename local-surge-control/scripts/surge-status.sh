@@ -83,7 +83,7 @@ probe_controller_boundary() {
   local profile="$2"
   if profile_has_setting "$profile" external-controller-access; then
     status_line "$label" "external-controller" \
-      "SKIP: automated surge-cli remote auth exposes its credential in process arguments"
+      "SKIP: helper uses HTTPS API only; use the secure surge-cli prompt or --password-stdin separately"
   else
     status_line "$label" "external-controller" "SKIP: not configured in profile"
   fi

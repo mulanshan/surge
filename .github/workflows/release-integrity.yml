@@ -8,7 +8,7 @@ on:
     tags:
       - "*-self-v*"
   release:
-    types: [published, prereleased, edited, unpublished, deleted]
+    types: [created, published, prereleased, released, edited, unpublished, deleted]
   schedule:
     - cron: "43 4 * * *"
   workflow_dispatch:

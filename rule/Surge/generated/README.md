@@ -48,4 +48,4 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | prime-video | `prime-video.list` | - | `流媒体` | 18 |
 | streaming | `streaming.list` | `streaming.domainset` (258) + `streaming.non-domain.list` (63) | `自动` | 321 |
 | paypal | `paypal.list` | `paypal.domainset` (246) + `paypal.non-domain.list` (2) | `自动` | 248 |
-| global | `global.list` | `global.domainset` (1255) + `global.non-domain.list` (10) | `Proxy` | 1265 |
+| global | `global.list` | `global.domainset` (1259) + `global.non-domain.list` (10) | `Proxy` | 1269 |

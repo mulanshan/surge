@@ -8,23 +8,25 @@
     "extended-matching"
   ],
   "included_rules": [],
-  "excluded_rules": [],
-  "unique_rule_count": 1265,
+  "excluded_rules": [
+    "DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe"
+  ],
+  "unique_rule_count": 1269,
   "sources": [
     {
       "name": "Sukka Global non-IP",
       "url": null,
       "snapshot": "rule/Surge/upstream/sukka/non_ip/global.conf",
-      "sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
-      "expected_sha256": "a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578",
+      "sha256": "0a48f1f27effe13fa8e3f55e347a59c4d40778adf62e6c18448b59a8a4e4b5d8",
+      "expected_sha256": "0a48f1f27effe13fa8e3f55e347a59c4d40778adf62e6c18448b59a8a4e4b5d8",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
-      "rule_count": 1265,
+      "rule_count": 1269,
       "tracking_url": "https://ruleset.skk.moe/List/non_ip/global.conf"
     }
   ],
   "domain_set_output": "rule/Surge/generated/global.domainset",
   "non_domain_output": "rule/Surge/generated/global.non-domain.list",
-  "domain_set_rule_count": 1255,
+  "domain_set_rule_count": 1259,
   "non_domain_rule_count": 10
 }

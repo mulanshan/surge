@@ -15,7 +15,7 @@
   "sources": [
     {
       "name": "blackmatrix7 AppleTV",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/8f67b6419fe1cc2277e59347b0d59d26e160b023/rule/Surge/AppleTV/AppleTV.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/AppleTV/AppleTV.list",
       "snapshot": null,
       "sha256": "1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd",
       "expected_sha256": "1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd",

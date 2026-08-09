@@ -7,9 +7,11 @@
 # Sources:
 # - Sukka Global non-IP: snapshot:rule/Surge/upstream/sukka/non_ip/global.conf
 #   tracking: https://ruleset.skk.moe/List/non_ip/global.conf
-#   sha256: a5e601b9884af59626fd23022387a05607a5352403c7b70d1d45a54ba7d66578
+#   sha256: 0a48f1f27effe13fa8e3f55e347a59c4d40778adf62e6c18448b59a8a4e4b5d8
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
-#   rules: 1265
+#   rules: 1269
+# Excluded overlapping rules:
+# - DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe
 # Artifact: residual Surge RULE-SET (all rules not representable by DOMAIN-SET).
 # Total residual rules: 10
 

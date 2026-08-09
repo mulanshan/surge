@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
@@ -20,6 +21,7 @@ MODULE_DIR = ROOT / "rewrite/Surge"
 MANIFEST = ROOT / "rule/Surge/sources/managed-rules.yaml"
 GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 WORKFLOW_DIR = ROOT / ".github/workflows"
+WORKFLOW_CONTRACT_CHECKER = ROOT / "scripts/check_workflow_contracts.rb"
 SCRIPT_PATH_RE = re.compile(r"(?:^|,)script-path=([^,\s]+)")
 STABLE_REF_RE = re.compile(r"surge-self-v\d{4}\.\d{2}\.\d{2}(?:\.\d+)?")
 ACTION_USE_RE = re.compile(r"^\s*uses:\s*([^\s#]+)")
@@ -34,6 +36,12 @@ CANONICAL_MODULE_NAMES = {
 }
 RETIRED_MODULE_FILES = {
     "instagram-feed-self.sgmodule",
+}
+# These two frozen files intentionally preserve an old public URL while active
+# AI rules are maintained in rule/Surge/ai.list. They are not generator inputs.
+GENERATED_COMPATIBILITY_ARTIFACTS = {
+    "gemini.list",
+    "gemini.list.json",
 }
 
 
@@ -130,6 +138,24 @@ def check_supply_chain_files() -> None:
                     f"{workflow.relative_to(ROOT)}:{line_number}: {action}"
                 )
 
+    if not WORKFLOW_CONTRACT_CHECKER.is_file():
+        fail("missing scripts/check_workflow_contracts.rb")
+    try:
+        workflow_contracts = subprocess.run(
+            ["ruby", str(WORKFLOW_CONTRACT_CHECKER), str(WORKFLOW_DIR)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        fail(f"cannot run structured workflow checker: {exc}")
+    if workflow_contracts.returncode:
+        fail(
+            "structured workflow contract failed: "
+            + (workflow_contracts.stderr.strip() or workflow_contracts.stdout.strip())
+        )
+
     if not (ROOT / ".github/dependabot.yml").is_file():
         fail("missing .github/dependabot.yml for pinned Action updates")
 
@@ -147,11 +173,23 @@ def check_supply_chain_files() -> None:
         "workflow_dispatch:",
         "rule_set:",
         "source_commit:",
+        "BASE_BRANCH: ${{ github.event.repository.default_branch }}",
+        "UPDATE_BRANCH: codex/managed-rules-refresh-${{ github.run_id }}-${{ github.run_attempt }}",
+        "ref: ${{ github.event.repository.default_branch }}",
+        'git switch -c "$UPDATE_BRANCH" "origin/$BASE_BRANCH"',
+        'git push origin "HEAD:refs/heads/$UPDATE_BRANCH"',
+        '--base "$BASE_BRANCH"',
         '--refresh-sources --only "$RULE_SET"',
         "rule/Surge/upstream/*",
+        "printf '`%s`",
     ):
         if required not in refresh_text:
             fail(f"managed-source refresh workflow is missing safety invariant: {required}")
+    for forbidden in ("git switch -C", "--force", "gh pr list"):
+        if forbidden in refresh_text:
+            fail(f"managed-source refresh workflow contains unsafe branch reuse: {forbidden}")
+    if re.search(r"<<\s*EOF", refresh_text):
+        fail("managed-source refresh workflow contains an unquoted executable heredoc")
 
     required_licenses = {
         ROOT / "LICENSES/blackmatrix7-ios_rule_script-GPL-2.0-only.txt": (
@@ -181,11 +219,29 @@ def rule_lines(path: Path) -> list[str]:
 def check_generated_rules() -> None:
     generator = load_generator()
     generated_dir, rule_sets = generator.load_manifest(MANIFEST)
-    expected_outputs: set[str] = set()
+    expected_outputs = {
+        "README.md",
+        "rule-section-managed.conf",
+        *GENERATED_COMPATIBILITY_ARTIFACTS,
+    }
     for rule_set in rule_sets:
         expected_outputs.add(rule_set.output)
+        expected_outputs.add(f"{rule_set.output}.json")
         if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
             expected_outputs.update([rule_set.domain_set_output, rule_set.non_domain_output])
+    symlinks = sorted(path.name for path in generated_dir.iterdir() if path.is_symlink())
+    if symlinks:
+        fail("generated artifacts must be regular files, not symlinks: " + ", ".join(symlinks))
+    unexpected_entries = sorted(path.name for path in generated_dir.iterdir() if not path.is_file())
+    if unexpected_entries:
+        fail(
+            "generated directory must be flat; unexpected non-file entry(s): "
+            + ", ".join(unexpected_entries)
+        )
+    actual_outputs = {path.name for path in generated_dir.iterdir() if path.is_file()}
+    unregistered = sorted(actual_outputs - expected_outputs)
+    if unregistered:
+        fail(f"unregistered generated artifact(s): {', '.join(unregistered)}")
     missing = sorted(name for name in expected_outputs if not (generated_dir / name).is_file())
     if missing:
         fail(f"missing generated rulesets: {', '.join(missing)}")

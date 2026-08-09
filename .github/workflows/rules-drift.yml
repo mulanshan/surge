@@ -26,16 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      UPDATE_BRANCH: codex/managed-rules-refresh
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+      UPDATE_BRANCH: codex/managed-rules-refresh-${{ github.run_id }}-${{ github.run_attempt }}
       GH_TOKEN: ${{ github.token }}
       RULE_SET: ${{ inputs.rule_set }}
       SOURCE_COMMIT: ${{ inputs.source_commit }}
 
     steps:
-      - name: Check out main
+      - name: Check out default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -47,10 +48,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$UPDATE_BRANCH" != "main"
-          git fetch origin main
-          git fetch origin "+refs/heads/$UPDATE_BRANCH:refs/remotes/origin/$UPDATE_BRANCH" || true
-          git switch -C "$UPDATE_BRANCH" origin/main
+          test "$UPDATE_BRANCH" != "$BASE_BRANCH"
+          git fetch origin "$BASE_BRANCH"
+          git switch -c "$UPDATE_BRANCH" "origin/$BASE_BRANCH"
 
       - name: Refresh explicitly reviewed sources and snapshots
         shell: bash
@@ -100,36 +100,29 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add rule/Surge/sources/managed-rules.yaml rule/Surge/generated rule/Surge/upstream
           git commit -m "chore: refresh reviewed managed Surge sources"
-          git push --force-with-lease origin "HEAD:refs/heads/$UPDATE_BRANCH"
+          git push origin "HEAD:refs/heads/$UPDATE_BRANCH"
 
-      - name: Open or update pull request
+      - name: Open pull request
         if: steps.changes.outputs.changed == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          existing="$(gh pr list --base main --head "$UPDATE_BRANCH" --state open --json number --jq '.[0].number // empty')"
-          if [[ -n "$existing" ]]; then
-            echo "Updated existing pull request #$existing." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
           body_file="$(mktemp)"
           trap 'rm -f "$body_file"' EXIT
-          cat > "$body_file" <<EOF
-          This manually approved maintenance branch refreshed rule set
-          `${RULE_SET}` after reviewing its moving tracking source.
-
-          Source commit (when required): `${SOURCE_COMMIT:-snapshot-only}`
-
-          Before merging, review the complete manifest and generated-rule diff,
-          including source SHA-256 changes, rule counts, additions, removals,
-          routing overlap, snapshot bytes, immutable commit provenance, and
-          third-party licensing. This workflow never writes directly to `main`.
-
-          Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
-          EOF
+          {
+            printf '%s\n' 'This manually approved maintenance branch refreshed rule set'
+            printf '`%s` after reviewing its moving tracking source.\n\n' "$RULE_SET"
+            printf 'Source commit (when required): `%s`\n\n' "${SOURCE_COMMIT:-snapshot-only}"
+            printf '%s\n' \
+              'Before merging, review the complete manifest and generated-rule diff,' \
+              'including source SHA-256 changes, rule counts, additions, removals,' \
+              'routing overlap, snapshot bytes, immutable commit provenance, and'
+            printf 'third-party licensing. This workflow never writes directly to `%s`.\n\n' "$BASE_BRANCH"
+            printf 'Workflow run: %s/%s/actions/runs/%s\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+          } > "$body_file"
           gh pr create \
-            --base main \
+            --base "$BASE_BRANCH" \
             --head "$UPDATE_BRANCH" \
             --title "chore: review managed Surge source refresh" \
             --body-file "$body_file"

@@ -1,9 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tag": "surge-self-v2026.07.13.4",
-  "status": "superseded",
+  "integrity": "intact",
+  "distribution": "inactive",
+  "live_device_validation": "passed",
+  "live_device_evidence": "CHANGELOG.md#native-domain-set-and-youtube-log-hardening-rollout",
+  "live_device_evidence_sha256": "206233667d2fc28087b26024821eb4ecf96dca46921de3b53adc32ec8c91cce5",
+  "rollback_eligible": true,
+  "rollback_evidence": "docs/MODULE_STATUS.md#rollback-certification-evidence-for-surge-self-v202607134",
+  "rollback_evidence_sha256": "8bac14c827804334df8e1582874761fd737fd7c7f5591c5fadddc137b1edca01",
   "release_commit": "f235e8b94e207261ec0005043d97a301d62fc337",
   "supersedes": "surge-self-v2026.07.13.3",
+  "superseded_by": "surge-self-v2026.07.27",
   "scripts": [
     {
       "name": "YouTube",

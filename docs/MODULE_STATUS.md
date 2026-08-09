@@ -22,14 +22,34 @@ scripts used by a stable module are pinned to an immutable repository tag.
 - `limited`: the module is stable only within the explicitly documented technical
   boundary. It must not be presented as covering pinned native APIs.
 
-## Current stable bundle
+## Current distribution and validated baseline
 
-- Tag: `surge-self-v2026.07.13.4`
-- Supported runtime used for release verification:
+- Active distribution: `surge-self-v2026.07.27.1`. Its manifest records
+  `live_device_validation: pending`; active identifies the canonical module pin
+  and must not be interpreted as stable or rollback-eligible.
+- Last live-device-validated bundle: `surge-self-v2026.07.13.4`. It is inactive
+  and explicitly `rollback_eligible: true`.
+- Supported runtime used for the `.07.13.4` validation:
   - Surge Mac 6.6.0 (11270)
   - Surge iOS 5.19.0 (3727)
 - The public module install URLs remain under `main`; each script-backed module
-  pins its `script-path` to the immutable tag above.
+  currently pins its `script-path` to the active `.07.27.1` distribution. The
+  pending 07-27 live-device regression is recorded in `CHANGELOG.md` and must be
+  completed before that bundle is described as stable.
+
+## Rollback certification evidence for surge-self-v2026.07.13.4
+
+- Certification scope: the complete six-script bundle recorded by the immutable
+  `.07.13.4` manifest, including the current module paths for YouTube, Instagram,
+  Amap, CamScanner, JD, and WeChat.
+- Integrity basis: the release verifier reconstructs every recorded script from
+  `release_commit` and checks its SHA-256 before the bundle can remain eligible.
+- Runtime basis: the final Surge Mac 6.6.0 and Surge iOS 5.19.0 rollout is recorded
+  in the append-only live-device evidence section referenced by the manifest.
+- Eligibility decision: `.07.13.4` is the last complete, live-device-passed bundle
+  available as an emergency rollback target. Its eligibility must be revoked in a
+  separate release transaction if a later runtime or module contract makes this
+  compatibility evidence obsolete.
 
 ## Current iOS rollout evidence
 

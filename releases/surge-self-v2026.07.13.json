@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tag": "surge-self-v2026.07.13",
-  "status": "retired-moved",
+  "integrity": "retired-moved",
+  "distribution": "retired",
+  "live_device_validation": "not-recorded",
+  "rollback_eligible": false,
   "release_commit": "bb945a88292326503a92e112f600a25766d20a92",
   "observed_tag_commit": "144f112be4cc2230a05bd0446d87331be69b46bb",
   "superseded_by": "surge-self-v2026.07.13.1",

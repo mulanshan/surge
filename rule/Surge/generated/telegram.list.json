@@ -8,15 +8,17 @@
     "extended-matching"
   ],
   "included_rules": [],
-  "excluded_rules": [],
+  "excluded_rules": [
+    "DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe"
+  ],
   "unique_rule_count": 29,
   "sources": [
     {
       "name": "Sukka Telegram non-IP",
       "url": null,
       "snapshot": "rule/Surge/upstream/sukka/non_ip/telegram.conf",
-      "sha256": "ab9988f4305564ba6a577b392bd4e6c62dbd286ef1828e95e2fbe082f38e1b25",
-      "expected_sha256": "ab9988f4305564ba6a577b392bd4e6c62dbd286ef1828e95e2fbe082f38e1b25",
+      "sha256": "bccbd162554d2cb56b16cdd59fbc2d1abec645bd53c9db18460137ffccbbc2a2",
+      "expected_sha256": "bccbd162554d2cb56b16cdd59fbc2d1abec645bd53c9db18460137ffccbbc2a2",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 14,
@@ -26,8 +28,8 @@
       "name": "Sukka Telegram IP",
       "url": null,
       "snapshot": "rule/Surge/upstream/sukka/ip/telegram.conf",
-      "sha256": "9169818c17a4acbfe2c3c44fbcbb37b19a7151edc529f372eff8394ecdea3020",
-      "expected_sha256": "9169818c17a4acbfe2c3c44fbcbb37b19a7151edc529f372eff8394ecdea3020",
+      "sha256": "62025cb8bdd07176a628886d32f487458bb270228062a460aee4f70c20a75d55",
+      "expected_sha256": "62025cb8bdd07176a628886d32f487458bb270228062a460aee4f70c20a75d55",
       "license": "AGPL-3.0-only",
       "license_url": "https://ruleset.skk.moe/LICENSE",
       "rule_count": 15,

@@ -23,7 +23,7 @@
 需要立即刷新时，在 Surge 里更新外部资源或重新加载配置。抓包、请求导出和本地分析报告默认写入 `reports/`、`rule/Surge/reports/` 或临时目录，这些路径已加入 `.gitignore`，避免误把日志和请求内容提交到公开仓库。
 
 - 模块状态与真机验证矩阵：[docs/MODULE_STATUS.md](docs/MODULE_STATUS.md)
-- 分支、稳定 tag、发布和回滚流程：[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
+- 分支、不可变 tag、发布和回滚流程：[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
 - 当前 Mac / iOS 运行态基线：[docs/RUNTIME_AUDIT_2026-07-27.md](docs/RUNTIME_AUDIT_2026-07-27.md)（历史快照：[2026-07-13](docs/RUNTIME_AUDIT_2026-07-13.md)）
 - 发布与变更历史：[CHANGELOG.md](CHANGELOG.md)
 - 安全问题报告：[SECURITY.md](SECURITY.md)
@@ -52,7 +52,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自稳定 tag `surge-self-v2026.07.27.1`，YouTube query 版本为 `v=20260727-2`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance` 和抓包/调试模块应停用。更新后确认脚本来自当前分发 tag `surge-self-v2026.07.27.1`，YouTube query 版本为 `v=20260727-2`。该 tag 的 manifest 仍记录真机回归 `pending`，因此“当前分发”不表示已经稳定验收。
 
 能力边界（SSAP）：YouTube 自 2024 年起试验并逐步扩大服务端广告注入（SSAI，社区称 SSAP），把广告直接拼进视频流。本模块与所有 protobuf 改写路线一样，只能拦截客户端插入的广告；命中 SSAP 实验的账号或设备会出现"模块开着但仍有广告"，这是预期行为而非模块故障。
 
@@ -154,7 +154,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 - 模块：`rewrite/Surge/camscanner-self.sgmodule`
 - 脚本：`rewrite/Surge/scripts/camscanner/camscanner-self.response.js`
 
-旧标签 `camscanner-self-v1.0.0` 已标记为 `retired-moved`：远端引用不再指向原始发布状态，不能继续作为安装、校验或回滚地址。仍在使用该 URL 的设备应删除旧订阅，改用上面的 `main` 模块地址，并同时启用“基础去广告模块”。当前扫描全能王脚本属于受 release manifest 校验的统一 `surge-self-vYYYY.MM.DD[.N]` 发布链；回滚只能选择 manifest 中状态完整的 `superseded` bundle，不能复用或移动旧标签。详细迁移规则见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
+旧标签 `camscanner-self-v1.0.0` 已标记为 `retired-moved`：远端引用不再指向原始发布状态，不能继续作为安装、校验或回滚地址。仍在使用该 URL 的设备应删除旧订阅，改用上面的 `main` 模块地址，并同时启用“基础去广告模块”。当前扫描全能王脚本属于受 release manifest 校验的统一 `surge-self-vYYYY.MM.DD[.N]` 发布链；回滚只能选择 manifest 中显式标记 `rollback_eligible: true` 的完整 bundle，不能复用或移动旧标签。详细迁移规则见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
 
 当前 `main` 已切换到“基础模块 + 专用模块”分层。已安装“扫描全能王 Self v2”的设备更新原订阅后会显示为“扫描全能王”；旧架构“扫描全能王 Self”仍应停用。模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
 

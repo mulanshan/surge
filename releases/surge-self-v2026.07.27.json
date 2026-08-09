@@ -1,9 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tag": "surge-self-v2026.07.27",
-  "status": "superseded",
+  "integrity": "intact",
+  "distribution": "inactive",
+  "live_device_validation": "pending",
+  "rollback_eligible": false,
   "release_commit": "19f1c80da01f8f6dedbabdd3f683f54ee0a8c74f",
   "supersedes": "surge-self-v2026.07.13.4",
+  "superseded_by": "surge-self-v2026.07.27.1",
   "scripts": [
     {
       "name": "YouTube",

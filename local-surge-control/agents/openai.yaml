@@ -1,4 +1,4 @@
 interface:
   display_name: "Local Surge Control"
   short_description: "Securely inspect explicit Mac and iOS/tvOS Surge endpoints."
-  default_prompt: "Use $local-surge-control to inspect Mac Surge and an explicit iPhone or Apple TV target through the TLS-verified HTTPS API with each device's detached profile."
+  default_prompt: "Use $local-surge-control to securely inspect or troubleshoot Mac Surge and an explicit iPhone or Apple TV target with Surge CLI 6.8 or the TLS-verified HTTPS API."

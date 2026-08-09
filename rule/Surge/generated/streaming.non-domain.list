@@ -7,9 +7,11 @@
 # Sources:
 # - Sukka Streaming non-IP: snapshot:rule/Surge/upstream/sukka/non_ip/stream.conf
 #   tracking: https://ruleset.skk.moe/List/non_ip/stream.conf
-#   sha256: 32a7d987b76e66a31a57345ab0764e5f264ebaab6a6da405808c165c10c6d8f0
+#   sha256: e35f4e37b3e1a39c6c2a1c09750299c4318feb72b65a6e79a18b4a2b39f44ce6
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
 #   rules: 321
+# Excluded overlapping rules:
+# - DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe
 # Artifact: residual Surge RULE-SET (all rules not representable by DOMAIN-SET).
 # Total residual rules: 63
 

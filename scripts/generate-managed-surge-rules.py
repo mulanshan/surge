@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import textwrap
@@ -286,6 +288,18 @@ def normalize_rule_line(
                 f"{context}: unknown option or policy {parts[2]!r}; generated rules must be policy-free"
             )
         parts[2] = option
+    if rule_type in {"IP-CIDR", "IP-CIDR6"}:
+        family = 4 if rule_type == "IP-CIDR" else 6
+        label = "IPv4" if family == 4 else "IPv6"
+        try:
+            network = ipaddress.ip_network(parts[1], strict=False)
+        except ValueError as exc:
+            raise ValueError(f"{context}: invalid {label} CIDR {parts[1]!r}") from exc
+        if network.version != family:
+            raise ValueError(f"{context}: invalid {label} CIDR {parts[1]!r}")
+        if "/" not in parts[1]:
+            address = ipaddress.ip_address(parts[1])
+            parts[1] = f"{address.compressed}/{network.max_prefixlen}"
     if rule_type in {"IP-CIDR", "IP-CIDR6"} and len(parts) == 2:
         parts.append("no-resolve")
     parts[0] = rule_type
@@ -298,9 +312,9 @@ def load_manifest(path: Path) -> tuple[Path, list[RuleSet]]:
     if data.get("version") != 3:
         raise ValueError("manifest: version must be 3")
     generated_dir_value = require_string(data, "generated_dir", "manifest")
-    generated_dir = ROOT / generated_dir_value
+    generated_dir = (ROOT / generated_dir_value).resolve()
     try:
-        generated_dir.relative_to(ROOT)
+        generated_dir.relative_to(ROOT.resolve())
     except ValueError as exc:
         raise ValueError("manifest: generated_dir must stay inside the repository") from exc
     if not isinstance(data.get("sets"), list) or not data["sets"]:
@@ -599,6 +613,8 @@ def build_one(
         source_meta.append(metadata)
 
     ordered = sorted(entries, key=rule_sort_key)
+    if not ordered:
+        raise ValueError(f"{rule_set.rule_id}: contains no usable rules")
     header_lines = [
         f"# NAME: {rule_set.name}",
         f"# ID: {rule_set.rule_id}",
@@ -821,6 +837,46 @@ def atomic_replace(staged_path: Path, destination: Path) -> None:
     os.replace(staged_path, destination)
 
 
+def replace_files_transactionally(
+    replacements: list[tuple[Path, Path]],
+    staging_dir: Path,
+) -> None:
+    """Replace a set of files and restore every prior destination on failure."""
+    destinations = [destination for _staged, destination in replacements]
+    if len(destinations) != len(set(destinations)):
+        raise ValueError("transaction contains duplicate destinations")
+
+    rollback_dir = staging_dir / ".rollback"
+    rollback_dir.mkdir()
+    applied: list[tuple[Path, Path | None]] = []
+    try:
+        for index, (staged_path, destination) in enumerate(replacements):
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            backup: Path | None = None
+            if destination.exists():
+                backup = rollback_dir / str(index)
+                shutil.copy2(destination, backup)
+            applied.append((destination, backup))
+            atomic_replace(staged_path, destination)
+    except OSError as exc:
+        rollback_errors: list[str] = []
+        for destination, backup in reversed(applied):
+            try:
+                if backup is None:
+                    if destination.exists():
+                        destination.unlink()
+                else:
+                    os.replace(backup, destination)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"{destination}: {rollback_exc}")
+        if rollback_errors:
+            raise OSError(
+                f"file transaction failed ({exc}); rollback also failed: "
+                + "; ".join(rollback_errors)
+            ) from exc
+        raise
+
+
 def check_upstream_tracking(
     rule_sets: list[RuleSet],
     timeout: int,
@@ -1016,44 +1072,108 @@ def main() -> int:
         else:
             sets = selected_sets
 
+        built: list[GeneratedRuleSet] = []
+        source_hashes: dict[tuple[str, str], str] = {}
+        for rule_set in sets:
+            print(f"Fetching {rule_set.rule_id} -> {rule_set.output}")
+            item = build_one(
+                rule_set,
+                args.timeout,
+                enforce_expected_hashes=True,
+                source_overrides=source_overrides.get(rule_set.rule_id),
+                allowed_hash_changes=(
+                    set(source_overrides.get(rule_set.rule_id, {}))
+                    if mode == "refresh"
+                    else None
+                ),
+            )
+            built.append(item)
+            source_hashes.update(item.source_hashes)
+
+        generated_metadata = [item.metadata for item in built]
+        index_items = (
+            read_index_metadata(generated_dir, all_sets, generated_metadata)
+            if args.only and mode != "refresh"
+            else generated_metadata
+        )
+        readme_text = index_text(index_items)
+
+        if mode == "check":
+            mismatches: list[str] = []
+            for rule_set, item in zip(sets, built):
+                if not compare_candidate(generated_dir / rule_set.output, item.list_text):
+                    mismatches.append(rule_set.output)
+                if item.domain_set_text is not None and rule_set.domain_set_output is not None:
+                    if not compare_candidate(
+                        generated_dir / rule_set.domain_set_output, item.domain_set_text
+                    ):
+                        mismatches.append(rule_set.domain_set_output)
+                if item.non_domain_text is not None and rule_set.non_domain_output is not None:
+                    if not compare_candidate(
+                        generated_dir / rule_set.non_domain_output, item.non_domain_text
+                    ):
+                        mismatches.append(rule_set.non_domain_output)
+                if not compare_candidate(generated_dir / f"{rule_set.output}.json", item.metadata_text):
+                    mismatches.append(f"{rule_set.output}.json")
+            if not compare_candidate(generated_dir / "README.md", readme_text):
+                mismatches.append("README.md")
+            if mismatches:
+                print("Generated snapshots are stale: " + ", ".join(mismatches), file=sys.stderr)
+                print("Run --update after reviewing pinned inputs.", file=sys.stderr)
+                return 1
+            print(f"Verified {len(built)} pinned rulesets; no files changed.")
+            return 0
+
         generated_dir.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=".managed-rules-", dir=generated_dir.parent) as temporary:
             staging_dir = Path(temporary)
-            built: list[GeneratedRuleSet] = []
-            source_hashes: dict[tuple[str, str], str] = {}
-            for rule_set in sets:
-                print(f"Fetching {rule_set.rule_id} -> {rule_set.output}")
-                item = build_one(
-                    rule_set,
-                    args.timeout,
-                    enforce_expected_hashes=True,
-                    source_overrides=source_overrides.get(rule_set.rule_id),
-                    allowed_hash_changes=(
-                        set(source_overrides.get(rule_set.rule_id, {}))
-                        if mode == "refresh"
-                        else None
-                    ),
+            replacements: list[tuple[Path, Path]] = []
+            for rule_set, item in zip(sets, built):
+                replacements.append(
+                    (
+                        write_staged_file(staging_dir, rule_set.output, item.list_text),
+                        generated_dir / rule_set.output,
+                    )
                 )
-                built.append(item)
-                source_hashes.update(item.source_hashes)
-                write_staged_file(staging_dir, rule_set.output, item.list_text)
                 if item.domain_set_text is not None and rule_set.domain_set_output is not None:
-                    write_staged_file(staging_dir, rule_set.domain_set_output, item.domain_set_text)
+                    replacements.append(
+                        (
+                            write_staged_file(
+                                staging_dir,
+                                rule_set.domain_set_output,
+                                item.domain_set_text,
+                            ),
+                            generated_dir / rule_set.domain_set_output,
+                        )
+                    )
                 if item.non_domain_text is not None and rule_set.non_domain_output is not None:
-                    write_staged_file(staging_dir, rule_set.non_domain_output, item.non_domain_text)
-                write_staged_file(staging_dir, f"{rule_set.output}.json", item.metadata_text)
-
-            generated_metadata = [item.metadata for item in built]
-            index_items = (
-                read_index_metadata(generated_dir, all_sets, generated_metadata)
-                if args.only and mode != "refresh"
-                else generated_metadata
+                    replacements.append(
+                        (
+                            write_staged_file(
+                                staging_dir,
+                                rule_set.non_domain_output,
+                                item.non_domain_text,
+                            ),
+                            generated_dir / rule_set.non_domain_output,
+                        )
+                    )
+                replacements.append(
+                    (
+                        write_staged_file(
+                            staging_dir,
+                            f"{rule_set.output}.json",
+                            item.metadata_text,
+                        ),
+                        generated_dir / f"{rule_set.output}.json",
+                    )
+                )
+            replacements.append(
+                (
+                    write_staged_file(staging_dir, "README.md", readme_text),
+                    generated_dir / "README.md",
+                )
             )
-            readme_text = index_text(index_items)
-            write_staged_file(staging_dir, "README.md", readme_text)
 
-            staged_manifest: Path | None = None
-            staged_snapshots: dict[str, Path] = {}
             if mode == "refresh":
                 refreshed_hashes = {
                     key: value for key, value in source_hashes.items() if key in refresh_keys
@@ -1063,60 +1183,22 @@ def main() -> int:
                     refreshed_hashes,
                     source_url_updates,
                 )
-                staged_manifest = write_staged_file(staging_dir, "managed-rules.yaml", manifest_text)
                 for index, (relative, data) in enumerate(sorted(snapshot_updates.items())):
-                    staged_snapshots[relative] = write_staged_bytes(
-                        staging_dir,
-                        f"snapshot-{index}",
-                        data,
+                    replacements.append(
+                        (
+                            write_staged_bytes(staging_dir, f"snapshot-{index}", data),
+                            snapshot_path(relative, "refresh snapshot", require_file=False),
+                        )
                     )
-
-            if mode == "check":
-                mismatches: list[str] = []
-                for rule_set, item in zip(sets, built):
-                    if not compare_candidate(generated_dir / rule_set.output, item.list_text):
-                        mismatches.append(rule_set.output)
-                    if item.domain_set_text is not None and rule_set.domain_set_output is not None:
-                        if not compare_candidate(
-                            generated_dir / rule_set.domain_set_output, item.domain_set_text
-                        ):
-                            mismatches.append(rule_set.domain_set_output)
-                    if item.non_domain_text is not None and rule_set.non_domain_output is not None:
-                        if not compare_candidate(
-                            generated_dir / rule_set.non_domain_output, item.non_domain_text
-                        ):
-                            mismatches.append(rule_set.non_domain_output)
-                    if not compare_candidate(generated_dir / f"{rule_set.output}.json", item.metadata_text):
-                        mismatches.append(f"{rule_set.output}.json")
-                if not compare_candidate(generated_dir / "README.md", readme_text):
-                    mismatches.append("README.md")
-                if mismatches:
-                    print("Generated snapshots are stale: " + ", ".join(mismatches), file=sys.stderr)
-                    print("Run --update after reviewing pinned inputs.", file=sys.stderr)
-                    return 1
-                print(f"Verified {len(built)} pinned rulesets; no files changed.")
-                return 0
-
-            for rule_set in sets:
-                atomic_replace(staging_dir / rule_set.output, generated_dir / rule_set.output)
-                if rule_set.domain_set_output is not None and rule_set.non_domain_output is not None:
-                    atomic_replace(
-                        staging_dir / rule_set.domain_set_output,
-                        generated_dir / rule_set.domain_set_output,
+                replacements.append(
+                    (
+                        write_staged_file(staging_dir, "managed-rules.yaml", manifest_text),
+                        args.manifest,
                     )
-                    atomic_replace(
-                        staging_dir / rule_set.non_domain_output,
-                        generated_dir / rule_set.non_domain_output,
-                    )
-                atomic_replace(staging_dir / f"{rule_set.output}.json", generated_dir / f"{rule_set.output}.json")
-            atomic_replace(staging_dir / "README.md", generated_dir / "README.md")
+                )
 
+            replace_files_transactionally(replacements, staging_dir)
             if mode == "refresh":
-                assert staged_manifest is not None
-                for relative, staged_snapshot in staged_snapshots.items():
-                    destination = snapshot_path(relative, "refresh snapshot", require_file=False)
-                    atomic_replace(staged_snapshot, destination)
-                atomic_replace(staged_manifest, args.manifest)
                 print(
                     "Refreshed source pins and snapshots. Review every upstream and generated diff, "
                     "then open a PR; nothing was published."
