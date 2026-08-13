@@ -5,7 +5,7 @@
 # Google common services. AI-specific Google entries should stay before this ruleset.
 # Suggested policy: 自动
 # Sources:
-# - blackmatrix7 Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Google/Google.list
+# - blackmatrix7 Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/Google/Google.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
 #   sha256: 4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)

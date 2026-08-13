@@ -1705,7 +1705,12 @@ class RepositoryInvariantTests(unittest.TestCase):
         self.assertTrue(checker.is_file(), "missing structured workflow contract checker")
         with tempfile.TemporaryDirectory() as temporary:
             workflow_dir = Path(temporary)
-            for name in ("ci.yml", "release-integrity.yml", "rules-drift.yml"):
+            for name in (
+                "ci.yml",
+                "pinned-upstream-drift.yml",
+                "release-integrity.yml",
+                "rules-drift.yml",
+            ):
                 source = ROOT / ".github/workflows" / name
                 (workflow_dir / name).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
@@ -1737,6 +1742,7 @@ class RepositoryInvariantTests(unittest.TestCase):
     def test_release_workflow_requires_real_events_conditions_and_commands(self) -> None:
         checker = ROOT / "scripts/check_workflow_contracts.rb"
         source = ROOT / ".github/workflows/release-integrity.yml"
+        pinned_source = ROOT / ".github/workflows/pinned-upstream-drift.yml"
         rules_source = ROOT / ".github/workflows/rules-drift.yml"
         ci_source = ROOT / ".github/workflows/ci.yml"
         mutations = {
@@ -1791,6 +1797,9 @@ class RepositoryInvariantTests(unittest.TestCase):
                 changed = mutate(original)
                 self.assertNotEqual(changed, original, f"mutation did not apply: {name}")
                 (workflow_dir / source.name).write_text(changed, encoding="utf-8")
+                (workflow_dir / pinned_source.name).write_text(
+                    pinned_source.read_text(encoding="utf-8"), encoding="utf-8"
+                )
                 (workflow_dir / rules_source.name).write_text(
                     rules_source.read_text(encoding="utf-8"), encoding="utf-8"
                 )
@@ -1808,6 +1817,7 @@ class RepositoryInvariantTests(unittest.TestCase):
     def test_rules_workflow_allows_only_the_isolated_update_branch_push(self) -> None:
         checker = ROOT / "scripts/check_workflow_contracts.rb"
         release_source = ROOT / ".github/workflows/release-integrity.yml"
+        pinned_source = ROOT / ".github/workflows/pinned-upstream-drift.yml"
         rules_source = ROOT / ".github/workflows/rules-drift.yml"
         ci_source = ROOT / ".github/workflows/ci.yml"
         original = rules_source.read_text(encoding="utf-8")
@@ -1822,6 +1832,9 @@ class RepositoryInvariantTests(unittest.TestCase):
             workflow_dir = Path(temporary)
             (workflow_dir / release_source.name).write_text(
                 release_source.read_text(encoding="utf-8"), encoding="utf-8"
+            )
+            (workflow_dir / pinned_source.name).write_text(
+                pinned_source.read_text(encoding="utf-8"), encoding="utf-8"
             )
             (workflow_dir / rules_source.name).write_text(changed, encoding="utf-8")
             (workflow_dir / ci_source.name).write_text(
@@ -1873,7 +1886,11 @@ class RepositoryInvariantTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary:
             workflow_dir = Path(temporary)
-            for workflow_name in ("release-integrity.yml", "rules-drift.yml"):
+            for workflow_name in (
+                "pinned-upstream-drift.yml",
+                "release-integrity.yml",
+                "rules-drift.yml",
+            ):
                 source = ROOT / ".github/workflows" / workflow_name
                 (workflow_dir / workflow_name).write_text(
                     source.read_text(encoding="utf-8"), encoding="utf-8"
@@ -1941,7 +1958,11 @@ class RepositoryInvariantTests(unittest.TestCase):
                 changed = mutate(original)
                 self.assertNotEqual(changed, original, f"mutation did not apply: {name}")
                 workflow_dir = Path(temporary)
-                for workflow_name in ("release-integrity.yml", "rules-drift.yml"):
+                for workflow_name in (
+                    "pinned-upstream-drift.yml",
+                    "release-integrity.yml",
+                    "rules-drift.yml",
+                ):
                     source = ROOT / ".github/workflows" / workflow_name
                     (workflow_dir / workflow_name).write_text(
                         source.read_text(encoding="utf-8"), encoding="utf-8"

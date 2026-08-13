@@ -14,7 +14,7 @@
   "sources": [
     {
       "name": "blackmatrix7 Claude",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Claude/Claude.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/Claude/Claude.list",
       "snapshot": null,
       "sha256": "870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378",
       "expected_sha256": "870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378",

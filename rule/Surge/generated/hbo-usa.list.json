@@ -11,7 +11,7 @@
   "sources": [
     {
       "name": "blackmatrix7 HBOUSA",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/HBOUSA/HBOUSA.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/HBOUSA/HBOUSA.list",
       "snapshot": null,
       "sha256": "9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256",
       "expected_sha256": "9f812ff7114e67e4640d747d60dc8f994d62538a4d731e0415f2860d408d7256",

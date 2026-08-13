@@ -11,7 +11,7 @@
   "sources": [
     {
       "name": "blackmatrix7 PrivateTracker",
-      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/PrivateTracker/PrivateTracker.list",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/PrivateTracker/PrivateTracker.list",
       "snapshot": null,
       "sha256": "910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f",
       "expected_sha256": "910ad846c9a866e523372d02dd8d9518fa96256f337f19d34174c5d07699397f",

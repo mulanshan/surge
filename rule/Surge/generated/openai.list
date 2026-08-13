@@ -6,7 +6,7 @@
 # rule/Surge/ai.list.
 # Suggested policy: 自动
 # Sources:
-# - blackmatrix7 OpenAI: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/OpenAI/OpenAI.list
+# - blackmatrix7 OpenAI: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/OpenAI/OpenAI.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/OpenAI/OpenAI.list
 #   sha256: 6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)

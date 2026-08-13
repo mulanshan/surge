@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: pinned-upstream-drift
@@ -21,6 +22,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -28,4 +31,66 @@ jobs:
           python-version: "3.12"
 
       - name: Compare tracking URLs with reviewed immutable pins
-        run: python3 scripts/generate-managed-surge-rules.py --check-upstream --timeout 60
+        id: drift
+        shell: bash
+        run: |
+          details_file="$RUNNER_TEMP/pinned-upstream-drift-details.txt"
+          set +e
+          python3 scripts/generate-managed-surge-rules.py --check-upstream --timeout 60 > "$details_file" 2>&1
+          status=$?
+          set -e
+          cat "$details_file"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [[ "$status" -ne 0 && "$status" -ne 3 ]]; then
+            exit "$status"
+          fi
+
+      - name: Maintain one upstream drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRIFT_STATUS: ${{ steps.drift.outputs.status }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="[Maintenance] Reviewed upstream rules drift"
+          details_file="$RUNNER_TEMP/pinned-upstream-drift-details.txt"
+          issue_numbers_file="$RUNNER_TEMP/pinned-upstream-drift-issues.txt"
+          gh api --paginate --method GET \
+            "repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" \
+            --jq ".[] | select(.pull_request == null and .title == \"$title\") | .number" \
+            > "$issue_numbers_file"
+          sort -n -o "$issue_numbers_file" "$issue_numbers_file"
+          issues=()
+          while IFS= read -r issue_number; do
+            [[ -n "$issue_number" ]] && issues+=("$issue_number")
+          done < "$issue_numbers_file"
+          issue="${issues[0]:-}"
+          if [[ "$DRIFT_STATUS" == 3 ]]; then
+            body="$RUNNER_TEMP/pinned-upstream-drift-body.md"
+            fingerprint="$(sha256sum "$details_file" | awk '{print $1}')"
+            marker="<!-- upstream-drift:$fingerprint -->"
+            {
+              printf '%s\n\n' "$marker"
+              printf '%s\n\n' 'Moving tracking sources differ from the reviewed immutable pins.'
+              printf '%s\n\n' 'This is a maintenance signal, not a production rule failure. Review the upstream commit and normalized generated diff before refreshing pins.'
+              printf '```text\n'
+              cat "$details_file"
+              printf '\n```\n\n'
+              printf 'Latest workflow run: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            } > "$body"
+            if [[ -n "$issue" ]]; then
+              existing="$(gh issue view "$issue" --json body --jq .body)"
+              if [[ "$existing" != *"$marker"* ]]; then
+                gh issue edit "$issue" --body-file "$body"
+              fi
+            else
+              gh issue create --title "$title" --body-file "$body"
+            fi
+            for duplicate in "${issues[@]:1}"; do
+              gh issue close "$duplicate" --comment "Closing duplicate; this workflow maintains #$issue as the canonical upstream drift issue."
+            done
+          else
+            for stale_issue in "${issues[@]}"; do
+              gh issue close "$stale_issue" --comment 'All moving tracking sources now match the reviewed immutable pins.'
+            done
+          fi
