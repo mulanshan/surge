@@ -71,6 +71,7 @@ MARKER_PATTERNS = (
     re.compile(r"mad3_by_5ukk4w", re.IGNORECASE),
 )
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+UPSTREAM_DRIFT_EXIT = 3
 
 
 class SourceHashMismatch(ValueError):
@@ -1032,7 +1033,7 @@ def main() -> int:
             print("--source-commit is valid only with --refresh-sources.", file=sys.stderr)
             return 2
         if args.check_upstream:
-            return 0 if check_upstream_tracking(selected_sets, args.timeout) else 1
+            return 0 if check_upstream_tracking(selected_sets, args.timeout) else UPSTREAM_DRIFT_EXIT
 
         mode = (
             "refresh"

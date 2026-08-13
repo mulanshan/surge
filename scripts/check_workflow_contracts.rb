@@ -84,6 +84,15 @@ def executable_lines(run)
   end
 end
 
+def exact_executable_lines(run)
+  run.lines.each_with_object([]) do |line, lines|
+    normalized = line.strip
+    next if normalized.empty? || normalized.start_with?("#")
+
+    lines << normalized
+  end
+end
+
 def require_run_lines(step_value, workflow_name, step_name, required, forbidden = [])
   run = step_value["run"]
   require_contract(run.is_a?(String), "#{workflow_name} step #{step_name} must have a run block")
@@ -138,7 +147,7 @@ def require_exact_run_lines(step_value, workflow_name, step_name, expected)
   run = step_value["run"]
   require_contract(run.is_a?(String), "#{workflow_name} step #{step_name} must have a run block")
   require_contract(
-    executable_lines(run) == expected,
+    exact_executable_lines(run) == expected,
     "#{workflow_name} step #{step_name} commands changed"
   )
 end
@@ -447,6 +456,163 @@ def check_release_workflow(directory)
   check_bash_blocks(verify, name)
 end
 
+def check_pinned_upstream_drift_workflow(directory)
+  name = "pinned-upstream-drift.yml"
+  workflow = load_workflow(directory, name)
+  require_exact_mapping_keys(
+    workflow,
+    %w[concurrency jobs name on permissions],
+    "#{name} top-level keys changed"
+  )
+  require_contract(workflow["name"] == "Pinned upstream drift", "#{name} workflow name changed")
+  trigger = events(workflow, name)
+  require_contract(
+    trigger.keys.sort == %w[schedule workflow_dispatch],
+    "#{name} must run only on schedule and workflow_dispatch"
+  )
+  schedule = trigger["schedule"]
+  require_contract(
+    schedule == [{ "cron" => "29 2 * * *" }],
+    "#{name} schedule changed"
+  )
+  require_contract(
+    workflow["permissions"] == { "contents" => "read", "issues" => "write" },
+    "#{name} permissions changed"
+  )
+  require_contract(
+    workflow["concurrency"] == {
+      "group" => "pinned-upstream-drift",
+      "cancel-in-progress" => true
+    },
+    "#{name} concurrency changed"
+  )
+
+  check = job(workflow, name, "check")
+  require_exact_mapping_keys(
+    check,
+    %w[if runs-on steps timeout-minutes],
+    "#{name} check job keys changed"
+  )
+  require_contract(
+    check["if"] == "github.repository == 'mulanshan/surge'",
+    "#{name} repository guard changed"
+  )
+  require_contract(check["runs-on"] == "ubuntu-latest", "#{name} runner changed")
+  require_contract(check["timeout-minutes"] == 10, "#{name} timeout changed")
+  require_exact_steps(
+    check,
+    name,
+    [
+      "Check out repository",
+      "Set up Python",
+      "Compare tracking URLs with reviewed immutable pins",
+      "Maintain one upstream drift issue"
+    ]
+  )
+  require_contract(!check.key?("continue-on-error"), "#{name} job must not mask errors")
+  require_exact_action_step(
+    step(check, name, "Check out repository"),
+    name,
+    "Check out repository",
+    CHECKOUT_ACTION,
+    { "persist-credentials" => false }
+  )
+  require_exact_action_step(
+    step(check, name, "Set up Python"),
+    name,
+    "Set up Python",
+    SETUP_PYTHON_ACTION,
+    { "python-version" => "3.12" }
+  )
+  compare = step(check, name, "Compare tracking URLs with reviewed immutable pins")
+  require_exact_step_keys(compare, name, compare["name"], %w[id name run shell])
+  require_contract(compare["id"] == "drift", "#{name} drift step id changed")
+  require_contract(compare["shell"] == "bash", "#{name} drift step shell changed")
+  require_exact_run_lines(
+    compare,
+    name,
+    compare["name"],
+    [
+      'details_file="$RUNNER_TEMP/pinned-upstream-drift-details.txt"',
+      "set +e",
+      'python3 scripts/generate-managed-surge-rules.py --check-upstream --timeout 60 > "$details_file" 2>&1',
+      "status=$?",
+      "set -e",
+      'cat "$details_file"',
+      'echo "status=$status" >> "$GITHUB_OUTPUT"',
+      'if [[ "$status" -ne 0 && "$status" -ne 3 ]]; then',
+      'exit "$status"',
+      "fi"
+    ]
+  )
+  require_contract(!compare.key?("continue-on-error"), "#{name} drift step must not mask errors")
+
+  issue = step(check, name, "Maintain one upstream drift issue")
+  require_exact_step_keys(issue, name, issue["name"], %w[env name run shell])
+  require_contract(issue["shell"] == "bash", "#{name} issue step shell changed")
+  require_exact_step_env(
+    issue,
+    name,
+    issue["name"],
+    {
+      "GH_TOKEN" => "${{ github.token }}",
+      "DRIFT_STATUS" => "${{ steps.drift.outputs.status }}"
+    }
+  )
+  require_exact_run_lines(
+    issue,
+    name,
+    issue["name"],
+    [
+      "set -euo pipefail",
+      'title="[Maintenance] Reviewed upstream rules drift"',
+      'details_file="$RUNNER_TEMP/pinned-upstream-drift-details.txt"',
+      'issue_numbers_file="$RUNNER_TEMP/pinned-upstream-drift-issues.txt"',
+      "gh api --paginate --method GET \\",
+      '"repos/$GITHUB_REPOSITORY/issues?state=open&per_page=100" \\',
+      '--jq ".[] | select(.pull_request == null and .title == \\"$title\\") | .number" \\',
+      '> "$issue_numbers_file"',
+      'sort -n -o "$issue_numbers_file" "$issue_numbers_file"',
+      "issues=()",
+      "while IFS= read -r issue_number; do",
+      '[[ -n "$issue_number" ]] && issues+=("$issue_number")',
+      'done < "$issue_numbers_file"',
+      'issue="${issues[0]:-}"',
+      'if [[ "$DRIFT_STATUS" == 3 ]]; then',
+      'body="$RUNNER_TEMP/pinned-upstream-drift-body.md"',
+      'fingerprint="$(sha256sum "$details_file" | awk \'{print $1}\')"',
+      'marker="<!-- upstream-drift:$fingerprint -->"',
+      "{",
+      'printf \'%s\\n\\n\' "$marker"',
+      "printf '%s\\n\\n' 'Moving tracking sources differ from the reviewed immutable pins.'",
+      "printf '%s\\n\\n' 'This is a maintenance signal, not a production rule failure. Review the upstream commit and normalized generated diff before refreshing pins.'",
+      "printf '```text\\n'",
+      'cat "$details_file"',
+      "printf '\\n```\\n\\n'",
+      'printf \'Latest workflow run: %s/%s/actions/runs/%s\\n\' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"',
+      '} > "$body"',
+      'if [[ -n "$issue" ]]; then',
+      'existing="$(gh issue view "$issue" --json body --jq .body)"',
+      'if [[ "$existing" != *"$marker"* ]]; then',
+      'gh issue edit "$issue" --body-file "$body"',
+      "fi",
+      "else",
+      'gh issue create --title "$title" --body-file "$body"',
+      "fi",
+      'for duplicate in "${issues[@]:1}"; do',
+      'gh issue close "$duplicate" --comment "Closing duplicate; this workflow maintains #$issue as the canonical upstream drift issue."',
+      "done",
+      "else",
+      'for stale_issue in "${issues[@]}"; do',
+      "gh issue close \"$stale_issue\" --comment 'All moving tracking sources now match the reviewed immutable pins.'",
+      "done",
+      "fi"
+    ]
+  )
+  require_contract(!issue.key?("continue-on-error"), "#{name} issue step must not mask errors")
+  check_bash_blocks(check, name)
+end
+
 def check_rules_workflow(directory)
   name = "rules-drift.yml"
   workflow = load_workflow(directory, name)
@@ -657,18 +823,18 @@ def check_rules_workflow(directory)
       "printf '%s\\n' 'This manually approved maintenance branch refreshed rule set'",
       %q!printf '`%s` after reviewing its moving tracking source.\n\n' "$RULE_SET"!,
       %q!printf 'Source commit (when required): `%s`\n\n' "${SOURCE_COMMIT:-snapshot-only}"!,
-      "printf '%s\\n'",
-      "'Before merging, review the complete manifest and generated-rule diff,'",
-      "'including source SHA-256 changes, rule counts, additions, removals,'",
+      "printf '%s\\n' \\",
+      "'Before merging, review the complete manifest and generated-rule diff,' \\",
+      "'including source SHA-256 changes, rule counts, additions, removals,' \\",
       "'routing overlap, snapshot bytes, immutable commit provenance, and'",
       %q!printf 'third-party licensing. This workflow never writes directly to `%s`.\n\n' "$BASE_BRANCH"!,
-      "printf 'Workflow run: %s/%s/actions/runs/%s\\n'",
+      "printf 'Workflow run: %s/%s/actions/runs/%s\\n' \\",
       '"$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"',
       '} > "$body_file"',
-      "gh pr create",
-      '--base "$BASE_BRANCH"',
-      '--head "$UPDATE_BRANCH"',
-      '--title "chore: review managed Surge source refresh"',
+      "gh pr create \\",
+      '--base "$BASE_BRANCH" \\',
+      '--head "$UPDATE_BRANCH" \\',
+      '--title "chore: review managed Surge source refresh" \\',
       '--body-file "$body_file"'
     ]
   )
@@ -678,6 +844,7 @@ end
 begin
   workflow_dir = Pathname.new(ARGV.fetch(0, ".github/workflows")).expand_path
   check_ci_workflow(workflow_dir)
+  check_pinned_upstream_drift_workflow(workflow_dir)
   check_release_workflow(workflow_dir)
   check_rules_workflow(workflow_dir)
   puts "workflow YAML contracts OK"

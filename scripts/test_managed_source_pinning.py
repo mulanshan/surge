@@ -22,7 +22,7 @@ GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 RULE_TEMPLATE = ROOT / "rule/Surge/generated/rule-section-managed.conf"
 ROOT_README = ROOT / "README.md"
 RELEASE_PROCESS = ROOT / "docs/RELEASE_PROCESS.md"
-BLACKMATRIX_COMMIT = "ccc2d6b711007324bacb55cdfbbf7e36ad48145a"
+BLACKMATRIX_COMMIT = "86ada72372ec0586be75901f47d5ccca6e28c655"
 CLAUDE_SHA256 = "870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378"
 
 
@@ -329,6 +329,19 @@ class SnapshotBuildTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("requires one or more explicit --only", result.stderr)
+
+    def test_check_upstream_cli_uses_a_distinct_drift_exit_code(self) -> None:
+        with mock.patch.object(
+            generator,
+            "check_upstream_tracking",
+            return_value=False,
+        ):
+            with mock.patch.object(
+                sys,
+                "argv",
+                [str(GENERATOR), "--check-upstream", "--only", "microsoft"],
+            ):
+                self.assertEqual(generator.main(), 3)
 
     def test_check_mode_does_not_create_a_staging_directory(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT) as temporary:

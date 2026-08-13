@@ -3,6 +3,19 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-08-13
+
+Upstream drift notification hardening:
+
+- Classified reviewed-source drift separately from generator or network errors.
+  Scheduled checks now maintain one deduplicated maintenance issue for ordinary
+  drift while genuine execution failures still fail the workflow.
+- Reviewed the latest Blackmatrix Apple tracking change as ordering-only after
+  normalization, then refreshed the immutable Blackmatrix commit pins through
+  the existing generated-rule workflow.
+- Added structured workflow contracts and regression tests so drift cannot be
+  silenced with `continue-on-error` or by swallowing unexpected exit statuses.
+
 ## 2026-08-09
 
 Unreleased stability hardening:

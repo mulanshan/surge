@@ -6,7 +6,7 @@
 # needed. The active profile currently routes it to 流媒体.
 # Suggested policy: 流媒体
 # Sources:
-# - blackmatrix7 Netflix: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Netflix/Netflix.list
+# - blackmatrix7 Netflix: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/Netflix/Netflix.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list
 #   sha256: aa03f015949e8f6f981d90a7d8b1acf7e88472ee48601632bd964b0bb740f8aa
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
