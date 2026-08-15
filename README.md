@@ -10,7 +10,7 @@
 ## 目录
 
 - [公开使用](#公开使用)
-- [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信)
+- [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信) · [小红书与微博候选](#小红书与微博候选)
 - [rule / Surge（规则）](#rule--surge)：[自托管生成镜像](#自托管生成镜像) · [AI / LLM / Coding](#ai--llm--coding) · [Apple 系统服务](#apple-系统服务) · [豆瓣](#豆瓣) · [TMDb](#tmdb) · [Docker / OCI](#docker--oci-镜像拉取) · [番茄小说](#番茄小说回国分流) · [示例配置](#示例配置)
 - [日志导出与候选规则开发](#日志导出与候选规则开发)
 - [授权与第三方来源](#授权与第三方来源)
@@ -271,6 +271,29 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self
 
 当前按微信 `8.0.75` 设计，模块状态为 `candidate`；详细调研、社区方案比较和真机回归清单见
 [docs/WECHAT_SELF_RESEARCH.md](docs/WECHAT_SELF_RESEARCH.md)。
+
+### 小红书与微博（候选）
+
+这两个模块已按 YouTube 的“自有单模块 + 单响应脚本 + 不可变发布”模式进入候选区：
+
+- 小红书：[rewrite/Surge/candidates/xiaohongshu-self.sgmodule](rewrite/Surge/candidates/xiaohongshu-self.sgmodule)
+- 微博：[rewrite/Surge/candidates/weibo-self.sgmodule](rewrite/Surge/candidates/weibo-self.sgmodule)
+
+小红书候选版只清理白名单信息流、搜索结果、笔记和开屏响应中的明确结构化广告；
+不改保存/水印开关、搜索提示或系统配置。微博候选版只清理白名单 Feed、搜索、详情和评论容器中的明确广告，
+并精确空响应广告开屏接口；账号、会员、私信、通知和钱包接口不在匹配范围内。
+
+当前基线是小红书 `9.43`、微博 `16.8.1`。只有合成测试通过，没有这两个 App 版本的 iPhone
+真机回归，因此不提供稳定订阅地址，也不应直接从 `main` 安装候选文件。它们的脚本当前固定到待注册的
+`surge-self-v2026.08.15`；必须先完成 manifest 注册、tag 创建与候选真机验证。
+
+两者都不加载第三方脚本，不伪造会员、皮肤、App 图标或账号权益，不记录原始请求/响应。
+运行时脚本由本仓库自主编写并按 [MIT License](LICENSE) 开源；社区实现只用于确认端点家族、
+功能边界和误杀风险，不复制、合并或执行其源码。尚无一方真机结构证据的保存解锁、搜索 UI 删改和账号相邻能力均不纳入首个候选版。
+社区方案、当前版本证据、未采用能力与真机门禁分别见：
+
+- [docs/XIAOHONGSHU_SELF_RESEARCH.md](docs/XIAOHONGSHU_SELF_RESEARCH.md)
+- [docs/WEIBO_SELF_RESEARCH.md](docs/WEIBO_SELF_RESEARCH.md)
 
 ## rule / Surge
 

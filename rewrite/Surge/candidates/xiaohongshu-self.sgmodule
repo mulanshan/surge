@@ -1,0 +1,27 @@
+#!name=小红书 (候选)
+#!desc=自有可审计小红书去广告候选模块：仅清理白名单 Feed、搜索结果、笔记和开屏响应中具有明确结构标志的广告。当前仅供候选 tag 真机验证，不是稳定发布。
+#!author=mulanshan
+#!category=Candidate
+#!tag=小红书
+#!openUrl=https://apps.apple.com/cn/app/id741292507
+#!arguments=清理明确广告:true,启用调试模式:false
+#!arguments-desc=- 清理明确广告：[true, false]，只删除具有非空 ads_info / is_ad 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改保存/水印开关、搜索提示、系统配置、会员或账号状态，不上传请求/响应。小红书 9.43 尚未完成真机回归。
+#!system=ios
+#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
+#!date=2026-08-15
+
+[Rule]
+DOMAIN,ads-img-qc.xhscdn.com,REJECT
+DOMAIN,ads-video-al.xhscdn.com,REJECT
+DOMAIN,ads-video-qc.xhscdn.com,REJECT
+DOMAIN,t-ads.xiaohongshu.com,REJECT
+
+[Script]
+xiaohongshu.self.response = type=http-response,pattern=^https:\/\/(?:edith|rec|so|www)\.xiaohongshu\.com\/api\/sns\/v\d+\/(?:homefeed|followfeed|user\/followings\/followfeed|search\/notes|note\/(?:imagefeed|feed|videofeed)|system_service\/splash_config)(?:\?.*)?$,requires-body=1,max-size=6291456,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.08.15/rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js?v=20260815-1,argument="{\"cleanAds\":{{{清理明确广告}}},\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+# 仅处理路径名明确为广告资源的读接口。
+^https:\/\/www\.xiaohongshu\.com\/api\/sns\/v\d+\/ads\/resource(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+[MITM]
+hostname = %APPEND% edith.xiaohongshu.com, rec.xiaohongshu.com, so.xiaohongshu.com, www.xiaohongshu.com

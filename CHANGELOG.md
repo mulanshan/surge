@@ -3,6 +3,28 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-08-15
+
+Unreleased Xiaohongshu and Weibo candidate modules:
+
+- Added self-authored, single-script candidates for Xiaohongshu 9.43 and Weibo
+  16.8.1 after reviewing current Surge documentation, Apple version metadata,
+  and maintained community implementations from fmz200, zirawell, QingRex and
+  ddgksf2013.
+- Xiaohongshu removes only explicitly marked entries from selected feed,
+  search-result, note and splash containers. Save/watermark switches, search UI,
+  generic system configuration and write endpoints are deliberately excluded.
+  Weibo uses endpoint/container double allowlists and excludes profile, account,
+  membership, message, notification and wallet-adjacent APIs.
+- Excluded third-party runtime code, mutable `main` script URLs, raw-body logs,
+  signed-media persistence, broad first-party domain rejection, and Weibo
+  membership/skin/icon mutation.
+- Both modules remain under `rewrite/Surge/candidates/` and point to the planned
+  `surge-self-v2026.08.15` bundle. Before the immutable tag exists they are not
+  installable. After tag creation they are Surge iOS test entries only; they must
+  not be installed in Surge Mac or advertised as public/stable until current
+  iPhone live-device regressions pass and activation completes.
+
 ## 2026-08-13
 
 Upstream drift notification hardening:

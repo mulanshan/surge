@@ -34,6 +34,18 @@ CANONICAL_MODULE_NAMES = {
     "jd-self.sgmodule": "京东",
     "wechat-self.sgmodule": "微信",
 }
+EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
+    {
+        Path("youtube-self.sgmodule"),
+        Path("instagram-self.sgmodule"),
+        Path("amap-self.sgmodule"),
+        Path("camscanner-self.sgmodule"),
+        Path("jd-self.sgmodule"),
+        Path("wechat-self.sgmodule"),
+        Path("candidates/xiaohongshu-self.sgmodule"),
+        Path("candidates/weibo-self.sgmodule"),
+    }
+)
 RETIRED_MODULE_FILES = {
     "instagram-feed-self.sgmodule",
 }
@@ -81,7 +93,7 @@ def local_path_for_script_url(url: str) -> Path:
 
 def module_script_targets() -> dict[Path, list[Path]]:
     targets: dict[Path, list[Path]] = {}
-    modules = sorted(MODULE_DIR.glob("*.sgmodule"))
+    modules = sorted(MODULE_DIR.rglob("*.sgmodule"))
     if not modules:
         fail("no Surge modules found")
 
@@ -99,6 +111,26 @@ def module_script_targets() -> dict[Path, list[Path]]:
     return targets
 
 
+def check_script_module_inventory(targets: dict[Path, list[Path]]) -> None:
+    discovered = {
+        module.relative_to(MODULE_DIR)
+        for module, scripts in targets.items()
+        if scripts
+    }
+    extra = sorted(discovered - EXPECTED_SCRIPT_MODULE_PATHS)
+    missing = sorted(EXPECTED_SCRIPT_MODULE_PATHS - discovered)
+    if extra:
+        fail(
+            "unregistered script-backed module: "
+            + ", ".join(path.as_posix() for path in extra)
+        )
+    if missing:
+        fail(
+            "registered script-backed module is missing: "
+            + ", ".join(path.as_posix() for path in missing)
+        )
+
+
 def check_module_display_names() -> None:
     for retired_name in sorted(RETIRED_MODULE_FILES):
         if (MODULE_DIR / retired_name).exists():
@@ -112,7 +144,7 @@ def check_module_display_names() -> None:
         if first_line != f"#!name={expected_name}":
             fail(f"unexpected module display name in rewrite/Surge/{file_name}: {first_line}")
 
-    for module in sorted(MODULE_DIR.glob("*.sgmodule")):
+    for module in sorted(MODULE_DIR.rglob("*.sgmodule")):
         first_line = module.read_text(encoding="utf-8").splitlines()[0]
         if not first_line.startswith("#!name="):
             fail(f"module has no display name: {module.relative_to(ROOT)}")
@@ -324,6 +356,7 @@ def main() -> int:
         check_module_display_names()
         check_supply_chain_files()
         targets = module_script_targets()
+        check_script_module_inventory(targets)
         script_count = sum(len(items) for items in targets.values())
         print(f"module paths OK: {len(targets)} modules, {script_count} self-hosted script references")
 

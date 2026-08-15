@@ -12,6 +12,8 @@ scripts used by a stable module are pinned to an immutable repository tag.
 | 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
 | 京东 | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
 | 微信 | candidate | 2026-07-13, iOS load and synthetic response-engine pass; real WeChat flow pending | 基础去广告模块 recommended | Official-account ads and exact mini-program ad hosts; native MMTLS feeds excluded |
+| 小红书 | candidate | synthetic tests only; Xiaohongshu 9.43 live regression pending | none | Explicit structured ads only; save/watermark and search UI excluded |
+| 微博 | candidate | synthetic tests only; Weibo 16.8.1 live regression pending | none | Endpoint/container allowlists; account, membership, messages and wallet excluded |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
 
 ## Status meanings
@@ -36,6 +38,11 @@ scripts used by a stable module are pinned to an immutable repository tag.
   currently pins its `script-path` to the active `.07.27.1` distribution. The
   pending 07-27 live-device regression is recorded in `CHANGELOG.md` and must be
   completed before that bundle is described as stable.
+- Xiaohongshu and Weibo remain under `rewrite/Surge/candidates/`. Their module
+  definitions target the unregistered `surge-self-v2026.08.15` candidate and are
+  not public install entries. They may move to canonical `main` paths only after
+  manifest registration, immutable tag creation, a recorded passed device run,
+  and distribution activation.
 
 ## Rollback certification evidence for surge-self-v2026.07.13.4
 

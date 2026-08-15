@@ -53,10 +53,12 @@ checking source hashes, rule counts, additions, removals, and policy overlap.
    both the intended result and core app behavior before merging to `main`.
 4. Record the tested Surge version, operating system, app version, module
    version, and result in the pull request or release notes.
-5. Create an immutable tag for the response scripts after the automated and
-   device test matrix passes. Public module install URLs remain on protected
-   `main`, while each merged module definition pins its script to that stable
-   tag. Feature branches are the development channel.
+5. Pre-register the candidate manifest on protected `main`, register its exact
+   payload commit in a second reviewed change, and only then create the immutable
+   tag. Test that tag on a non-critical device and record the result before a
+   separate activation change switches canonical module pins. New modules stay
+   under `rewrite/Surge/candidates/` until activation; feature branches and
+   unregistered candidate definitions are not public install channels.
 
 Changes to generated third-party rules, MITM hostnames, URL rewrite patterns,
 response size limits, or payment/account-adjacent fields require especially
