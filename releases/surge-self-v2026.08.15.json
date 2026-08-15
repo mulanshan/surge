@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "tag": "surge-self-v2026.08.15",
+  "integrity": "intact",
+  "distribution": "candidate",
+  "live_device_validation": "pending",
+  "rollback_eligible": false,
+  "supersedes": "surge-self-v2026.07.27.1",
+  "scripts": [
+    {
+      "name": "YouTube",
+      "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+      "sha256": "469bea3013effda7d8254e1447e6a0c935316af6183a84bf9d8cb1964d5b779a"
+    },
+    {
+      "name": "Instagram",
+      "path": "rewrite/Surge/scripts/instagram/instagram-self.response.js",
+      "sha256": "588005a5d16ef588f2b0945d8580174e0aa7c9d309159adfc8611e4138a1ed88"
+    },
+    {
+      "name": "Amap",
+      "path": "rewrite/Surge/scripts/amap/amap-self.response.js",
+      "sha256": "31f75700d2f374226a6410697e653f5631337b6f1e5792e0028173ff69c0da8c"
+    },
+    {
+      "name": "CamScanner",
+      "path": "rewrite/Surge/scripts/camscanner/camscanner-self.response.js",
+      "sha256": "972027af3a17667e404b0314b6d50ab6ce64584e40e91a77231ad3b43735f1ee"
+    },
+    {
+      "name": "JD",
+      "path": "rewrite/Surge/scripts/jd/jd-self.response.js",
+      "sha256": "616f6c8380496cbec01b10b429e1c267e6b68db34acabfd59e44656350b7ac35"
+    },
+    {
+      "name": "WeChat",
+      "path": "rewrite/Surge/scripts/wechat/wechat-self.response.js",
+      "sha256": "0b0bae1d3177ebb78ed44101ff82310f3f5d4d68007ce2ce932ba02d287a4b11"
+    },
+    {
+      "name": "Xiaohongshu",
+      "path": "rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
+      "sha256": "5421a20d47fe18cc5b55009be69dbdf54eaa90cf3ba15684920a9da0b8e7424b"
+    },
+    {
+      "name": "Weibo",
+      "path": "rewrite/Surge/scripts/weibo/weibo-self.response.js",
+      "sha256": "c2b221c1d85dd1454a7c499e04f5fff2aca247876421966aee0b62a826026b38"
+    }
+  ],
+  "modules": [
+    {
+      "name": "Xiaohongshu",
+      "path": "rewrite/Surge/candidates/xiaohongshu-self.sgmodule",
+      "sha256": "8a38699cfc9354a7865d73c0b54d6662f9da8b48365617a1a0622a2f2362bc51"
+    },
+    {
+      "name": "Weibo",
+      "path": "rewrite/Surge/candidates/weibo-self.sgmodule",
+      "sha256": "cbc440ba6314b6261f9bb8d7faa76822634b74dd295878d20c4c7782b5298809"
+    }
+  ]
+}

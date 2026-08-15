@@ -49,6 +49,7 @@ MANIFEST_FIELDS = frozenset(
         "legacy_unvalidated_activation",
         "note",
         "scripts",
+        "modules",
     }
 )
 EXPECTED = {
@@ -58,8 +59,21 @@ EXPECTED = {
     "CamScanner": ("camscanner-self.sgmodule", "rewrite/Surge/scripts/camscanner/camscanner-self.response.js"),
     "JD": ("jd-self.sgmodule", "rewrite/Surge/scripts/jd/jd-self.response.js"),
     "WeChat": ("wechat-self.sgmodule", "rewrite/Surge/scripts/wechat/wechat-self.response.js"),
+    "Xiaohongshu": (
+        "candidates/xiaohongshu-self.sgmodule",
+        "rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
+    ),
+    "Weibo": (
+        "candidates/weibo-self.sgmodule",
+        "rewrite/Surge/scripts/weibo/weibo-self.response.js",
+    ),
 }
-LEGACY_FIVE_SCRIPT_NAMES = frozenset(EXPECTED) - {"WeChat"}
+LEGACY_FIVE_SCRIPT_NAMES = frozenset(EXPECTED) - {"WeChat", "Xiaohongshu", "Weibo"}
+LEGACY_SIX_SCRIPT_NAMES = frozenset(EXPECTED) - {"Xiaohongshu", "Weibo"}
+HISTORICAL_SCRIPT_NAME_SETS = frozenset(
+    {LEGACY_FIVE_SCRIPT_NAMES, LEGACY_SIX_SCRIPT_NAMES, frozenset(EXPECTED)}
+)
+ACTIVE_SCRIPT_NAME_SETS = frozenset({LEGACY_SIX_SCRIPT_NAMES, frozenset(EXPECTED)})
 LEGACY_SCHEMA_ONE_MIGRATION = {
     "surge-self-v2026.07.13": {
         "status": "retired-moved",
@@ -1158,28 +1172,73 @@ def load_manifests() -> dict[str, dict]:
             fail(f"{tag} has duplicate script names")
         script_names = frozenset(by_name)
         current_script_names = frozenset(EXPECTED)
-        if distribution in {"active", "candidate"}:
+        if distribution == "candidate":
             if script_names != current_script_names:
                 fail(
-                    f"{tag} {distribution} manifest must list exactly "
+                    f"{tag} candidate manifest must list exactly "
                     f"{len(EXPECTED)} current scripts"
                 )
-        elif script_names not in {LEGACY_FIVE_SCRIPT_NAMES, current_script_names}:
+        elif distribution == "active":
+            if script_names not in ACTIVE_SCRIPT_NAME_SETS:
+                fail(f"{tag} active manifest has an unsupported script set")
+        elif script_names not in HISTORICAL_SCRIPT_NAME_SETS:
             fail(f"{tag} has an unexpected historical script set")
-        if rollback_eligible and script_names != current_script_names:
-            fail(f"{tag} rollback-eligible manifest must list every current script")
         for name in script_names:
             _, expected_path = EXPECTED[name]
             item = by_name[name]
             if item.get("path") != expected_path or not SHA_RE.fullmatch(item.get("sha256", "")):
                 fail(f"invalid {name} entry in {tag}")
         data["scripts_by_name"] = by_name
+
+        module_records = data.get("modules", [])
+        if not isinstance(module_records, list) or not all(
+            isinstance(item, dict) for item in module_records
+        ):
+            fail(f"{tag} modules must be a list of records")
+        module_names = [item.get("name") for item in module_records]
+        if not all(isinstance(name, str) for name in module_names):
+            fail(f"{tag} module names must be strings")
+        modules_by_name = dict(zip(module_names, module_records, strict=True))
+        if len(modules_by_name) != len(module_records):
+            fail(f"{tag} has duplicate module names")
+        for name, item in modules_by_name.items():
+            module_path = item.get("path")
+            if (
+                name not in EXPECTED
+                or set(item) != {"name", "path", "sha256"}
+                or not isinstance(module_path, str)
+                or not module_path.startswith("rewrite/Surge/")
+                or not module_path.endswith(".sgmodule")
+                or Path(module_path).is_absolute()
+                or ".." in Path(module_path).parts
+                or not SHA_RE.fullmatch(item.get("sha256", ""))
+            ):
+                fail(f"invalid {name} module entry in {tag}")
+        data["modules_by_name"] = modules_by_name
         manifests[tag] = data
     if not manifests:
         fail("no release manifests found")
     active = [tag for tag, item in manifests.items() if item.get("distribution") == "active"]
     if len(active) != 1:
         fail(f"expected exactly one active distribution manifest, found {len(active)}")
+    active_names = frozenset(manifests[active[0]]["scripts_by_name"])
+    for tag, item in manifests.items():
+        if item.get("rollback_eligible") and frozenset(item["scripts_by_name"]) != active_names:
+            fail(
+                f"{tag} rollback-eligible manifest must list every active script"
+            )
+        if item.get("distribution") == "candidate":
+            candidate_names = frozenset(item["scripts_by_name"]) - active_names
+            module_names = frozenset(item["modules_by_name"])
+            if module_names != candidate_names:
+                fail(
+                    f"{tag} candidate module records must list exactly the "
+                    "new candidate scripts"
+                )
+            for name in candidate_names:
+                expected_module_path = f"rewrite/Surge/{EXPECTED[name][0]}"
+                if item["modules_by_name"][name]["path"] != expected_module_path:
+                    fail(f"{tag} candidate module path mismatch for {name}")
     validate_supersession_chain(manifests)
     return manifests
 
@@ -1253,6 +1312,24 @@ def verify_manifest_payload(manifest: dict, revision: str | None) -> None:
             source = revision or "worktree"
             fail(f"{manifest['tag']} {name} SHA-256 mismatch at {source}: {actual}")
 
+    module_revision = revision
+    if (
+        module_revision is None
+        and manifest.get("distribution") != "candidate"
+        and manifest.get("release_commit")
+    ):
+        module_revision = manifest["release_commit"]
+    for name, item in manifest.get("modules_by_name", {}).items():
+        path = item["path"]
+        data = git_bytes(module_revision, path) if module_revision else (ROOT / path).read_bytes()
+        actual = sha256(data)
+        if actual != item["sha256"]:
+            source = module_revision or "worktree"
+            fail(
+                f"{manifest['tag']} {name} module SHA-256 mismatch "
+                f"at {source}: {actual}"
+            )
+
 
 def module_tag_and_path(module_name: str) -> tuple[str, str]:
     matches = []
@@ -1271,6 +1348,29 @@ def module_tag_and_path(module_name: str) -> tuple[str, str]:
     return parts[2], "/".join(parts[3:])
 
 
+def verify_module_inventory() -> None:
+    discovered: set[Path] = set()
+    for module in MODULES.rglob("*.sgmodule"):
+        if any(
+            SCRIPT_URL_RE.search(line)
+            for line in module.read_text(encoding="utf-8").splitlines()
+        ):
+            discovered.add(module.relative_to(MODULES))
+    expected = {Path(module_name) for module_name, _ in EXPECTED.values()}
+    extra = sorted(discovered - expected)
+    missing = sorted(expected - discovered)
+    if extra:
+        fail(
+            "unregistered script-backed module: "
+            + ", ".join(path.as_posix() for path in extra)
+        )
+    if missing:
+        fail(
+            "registered script-backed module is missing: "
+            + ", ".join(path.as_posix() for path in missing)
+        )
+
+
 def verify_worktree(manifests: dict[str, dict]) -> str:
     active_tag = next(
         tag for tag, item in manifests.items() if item.get("distribution") == "active"
@@ -1279,6 +1379,8 @@ def verify_worktree(manifests: dict[str, dict]) -> str:
     candidate_tags = [
         tag for tag, item in manifests.items() if item.get("distribution") == "candidate"
     ]
+    candidate_tag = candidate_tags[0] if candidate_tags else None
+    candidate = manifests[candidate_tag] if candidate_tag else None
     chain_heads = [
         tag
         for tag, item in manifests.items()
@@ -1286,14 +1388,32 @@ def verify_worktree(manifests: dict[str, dict]) -> str:
     ]
     worktree_tag = candidate_tags[0] if candidate_tags else chain_heads[0]
     verify_manifest_payload(manifests[worktree_tag], None)
+    verify_module_inventory()
+    active_names = frozenset(active["scripts_by_name"])
     for name, (module_name, expected_path) in EXPECTED.items():
+        is_candidate_path = Path(module_name).parts[:1] == ("candidates",)
+        if name in active_names and is_candidate_path:
+            fail(f"active module must use a canonical path: {module_name}")
+        if name not in active_names and not is_candidate_path:
+            fail(f"new candidate module must stay under candidates/: {module_name}")
         tag, path = module_tag_and_path(module_name)
-        if tag != active_tag:
+        if name in active_names:
+            expected_tag = active_tag
+            expected_manifest = active
+        elif candidate is not None and name in candidate["scripts_by_name"]:
+            expected_tag = candidate_tag
+            expected_manifest = candidate
+        else:
+            fail(f"{module_name} is not present in the active or candidate payload")
+        if tag != expected_tag:
             state = manifests.get(tag, {}).get("distribution", "unregistered")
-            fail(f"{module_name} references {tag} ({state}); expected active tag {active_tag}")
+            fail(
+                f"{module_name} references {tag} ({state}); "
+                f"expected {expected_manifest['distribution']} tag {expected_tag}"
+            )
         if path != expected_path:
             fail(f"{module_name} references unexpected script {path}")
-        if active["scripts_by_name"][name]["path"] != path:
+        if expected_manifest["scripts_by_name"][name]["path"] != path:
             fail(f"manifest/module path mismatch for {name}")
     for item in manifests.values():
         revision = item.get("release_commit")
@@ -1301,7 +1421,8 @@ def verify_worktree(manifests: dict[str, dict]) -> str:
             verify_manifest_payload(item, revision)
     print(
         f"release worktree OK: distribution={active_tag}, payload={worktree_tag}, "
-        f"{len(EXPECTED)} scripts and {len(EXPECTED)} module pins"
+        f"{len(active_names)} active scripts and "
+        f"{len(EXPECTED) - len(active_names)} candidate scripts"
     )
     return active_tag
 
@@ -1388,12 +1509,17 @@ def verify_manifest_remote_tag(manifest: dict, repository: str) -> None:
         fail(f"candidate tag {tag} exists without a registered release_commit")
     if remote_commit != expected_commit:
         fail(f"immutable tag {tag} moved: expected {expected_commit}, got {remote_commit}")
-    for name, item in manifest["scripts_by_name"].items():
-        url = f"https://raw.githubusercontent.com/{repository}/{tag}/{item['path']}"
-        with urllib.request.urlopen(url, timeout=30) as response:
-            actual = sha256(response.read())
-        if actual != item["sha256"]:
-            fail(f"remote tag payload mismatch for {tag} {name}: {actual}")
+    payloads = [
+        ("script", manifest["scripts_by_name"]),
+        ("module", manifest.get("modules_by_name", {})),
+    ]
+    for kind, records in payloads:
+        for name, item in records.items():
+            url = f"https://raw.githubusercontent.com/{repository}/{tag}/{item['path']}"
+            with urllib.request.urlopen(url, timeout=30) as response:
+                actual = sha256(response.read())
+            if actual != item["sha256"]:
+                fail(f"remote tag {kind} payload mismatch for {tag} {name}: {actual}")
 
 
 def verify_retired_release(entry: dict, release: dict, repository: str) -> None:
@@ -1544,8 +1670,8 @@ def verify_selected_release(
 
 def print_sha_block(manifest: dict) -> None:
     print("Tagged script SHA-256:")
-    for name in EXPECTED:
-        print(f"- {name}: {manifest['scripts_by_name'][name]['sha256']}")
+    for record in manifest["scripts"]:
+        print(f"- {record['name']}: {record['sha256']}")
 
 
 def main() -> int:

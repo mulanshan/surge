@@ -1,8 +1,10 @@
 # Surge release manifests
 
 Each `surge-self-v*.json` file records the exact script payloads associated with
-a release tag. Historical manifests keep the script set that actually existed
-at that tag. Schema version 2 keeps four independent decisions explicit:
+a release tag. When a release introduces a script-backed module, its candidate
+module path and SHA-256 are recorded too. Historical manifests keep the script
+set that actually existed at that tag. Schema version 2 keeps four independent
+decisions explicit:
 
 - `integrity`: whether the tag is `intact` or `retired-moved`.
 - `distribution`: `candidate`, `active`, `inactive`, `rejected`, or
@@ -41,10 +43,21 @@ change must match exactly one lifecycle transaction: create, register, validate,
 activate, reject, delete an untagged candidate, certify or revoke rollback,
 rollback, or record the legacy result. A retired-tag addition is separate too.
 
-These manifests protect the immutable script bundle and its canonical module
-pins. Mutable module definitions and generated rule assets on `main` are not
-covered by the script release manifest; their independent gates are documented
-in `docs/RELEASE_PROCESS.md`.
+These manifests protect the immutable script bundle and the exact candidate
+module bytes for newly introduced scripts. Existing mutable canonical module
+definitions and generated rule assets on `main` retain the independent gates
+documented in `docs/RELEASE_PROCESS.md`.
+
+When a candidate adds script-backed modules that are absent from the active
+distribution, their non-public definitions live under `rewrite/Surge/candidates/`
+and pin the candidate tag. Their manifest `modules` records freeze the reviewed
+path and SHA-256 at the same `release_commit` as the scripts. The worktree verifier
+requires a closed module inventory, existing canonical modules to keep the active
+tag, and candidate pins only for names missing from that active manifest. After
+passed device evidence, activation moves the new definitions to canonical
+top-level paths, updates the verifier mapping, and removes the staged copies. A
+historical rollback bundle remains eligible only while its inventory matches the
+current active script inventory.
 
 `surge-self-v2026.07.27.1` is the sole recorded legacy exception: it became
 active before live validation and therefore remains explicitly pending. New

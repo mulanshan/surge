@@ -1,0 +1,27 @@
+#!name=微博 (候选)
+#!desc=自有可审计微博去广告候选模块：仅清理白名单信息流、搜索、详情、评论容器中具有明确结构标志的广告，并精确空响应开屏广告接口。不处理账号、会员、私信或钱包接口。
+#!author=mulanshan
+#!category=Candidate
+#!tag=微博
+#!openUrl=https://apps.apple.com/cn/app/id350962117
+#!arguments=清理明确广告:true,启用调试模式:false
+#!arguments-desc=- 清理明确广告：[true, false]，只删除具有 is_ad / mblogtypename=广告 / ads_material_info 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改会员、皮肤、图标、余额或账号权益，不上传请求/响应。微博 16.8.1 尚未完成真机回归。
+#!system=ios
+#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
+#!date=2026-08-15
+
+[Rule]
+DOMAIN,adpinpai.video.weibocdn.com,REJECT
+
+[Script]
+weibo.self.response = type=http-response,pattern=^https:\/\/(?:api\.weibo\.cn|mapi\.weibo\.(?:cn|com))\/2\/(?:cardlist|page|flowlist|flowpage|container\/asyn|searchall|comments\/(?:build_comments|mix_comments)|groups\/timeline|search\/(?:finder|container_timeline|container_discover)|statuses\/(?:container_detail(?:_comment|_mix|_forward)?|container_timeline(?:_hot|_topic|_topicpage|_unread)?|extend|show|repost_timeline|unread_hot_timeline|unread_friends_timeline|friends_timeline)|video\/(?:community_tab|full_screen_stream|remind_info|tiny_stream_mid_detail|tiny_stream_video_list))(?:\?.*)?$,requires-body=1,max-size=6291456,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.08.15/rewrite/Surge/scripts/weibo/weibo-self.response.js?v=20260815-1,argument="{\"cleanAds\":{{{清理明确广告}}},\"debug\":{{{启用调试模式}}}}"
+
+[Map Local]
+# 仅处理路径名明确为广告实时、预加载或素材配置的接口。
+^https:\/\/bootrealtime\.uve\.weibo\.com\/v[23]\/ad\/realtime(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https:\/\/bootpreload\.uve\.weibo\.com\/v[12]\/ad\/preload(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https:\/\/sdkapp\.uve\.weibo\.com\/interface\/sdk\/sdkad\.php(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+^https:\/\/wbapp\.uve\.weibo\.com\/(?:preload\/get_ad|wbapplua\/wbpullad\.lua)(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+
+[MITM]
+hostname = %APPEND% api.weibo.cn, mapi.weibo.cn, mapi.weibo.com, bootrealtime.uve.weibo.com, bootpreload.uve.weibo.com, sdkapp.uve.weibo.com, wbapp.uve.weibo.com

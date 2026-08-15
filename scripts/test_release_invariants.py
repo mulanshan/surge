@@ -159,8 +159,8 @@ class ReleaseManifestTests(unittest.TestCase):
                     return release_verifier.load_manifests()
 
     def test_active_six_and_historical_five_are_both_strictly_validated(self) -> None:
-        current_names = list(release_verifier.EXPECTED)
-        legacy_names = [name for name in current_names if name != "WeChat"]
+        current_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        legacy_names = list(release_verifier.LEGACY_FIVE_SCRIPT_NAMES)
         retired = manifest("surge-self-v2026.07.13", "retired-moved", legacy_names)
         active = manifest("surge-self-v2026.07.13.2", "active", current_names)
         retired["superseded_by"] = active["tag"]
@@ -179,8 +179,8 @@ class ReleaseManifestTests(unittest.TestCase):
         )
 
     def test_active_manifest_cannot_use_the_historical_five_script_set(self) -> None:
-        legacy_names = [name for name in release_verifier.EXPECTED if name != "WeChat"]
-        with self.assertRaisesRegex(SystemExit, "active manifest must list exactly 6 current scripts"):
+        legacy_names = list(release_verifier.LEGACY_FIVE_SCRIPT_NAMES)
+        with self.assertRaisesRegex(SystemExit, "active manifest has an unsupported script set"):
             self.load_from([manifest("surge-self-v2026.07.13.2", "active", legacy_names)])
 
     def test_release_manifest_tag_requires_ascii_digits(self) -> None:
@@ -201,7 +201,7 @@ class ReleaseManifestTests(unittest.TestCase):
             self.load_from([retired, active])
 
     def test_retired_manifest_may_retain_a_nonempty_explanatory_note(self) -> None:
-        names = [name for name in release_verifier.EXPECTED if name != "WeChat"]
+        names = list(release_verifier.LEGACY_FIVE_SCRIPT_NAMES)
         retired = manifest("surge-self-v2026.07.13", "retired-moved", names)
         active = manifest(
             "surge-self-v2026.07.13.1", "active", list(release_verifier.EXPECTED)
@@ -258,6 +258,150 @@ class ReleaseManifestTests(unittest.TestCase):
         manifests = self.load_from([active, candidate])
         self.assertEqual(manifests[candidate_tag]["distribution"], "candidate")
         self.assertNotIn("release_commit", manifests[candidate_tag])
+
+    def test_candidate_may_expand_the_script_inventory_before_activation(self) -> None:
+        active_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        expanded = dict(release_verifier.EXPECTED)
+        active_tag = "surge-self-v2026.07.27.1"
+        candidate_tag = "surge-self-v2026.08.14"
+        with mock.patch.object(release_verifier, "EXPECTED", expanded):
+            active = lifecycle_manifest(
+                active_tag,
+                "active",
+                active_names,
+                live_device_validation="passed",
+            )
+            candidate = lifecycle_manifest(
+                candidate_tag,
+                "candidate",
+                list(expanded),
+                release_commit=None,
+                live_device_validation="pending",
+                supersedes=active_tag,
+            )
+            candidate["modules"] = [
+                {
+                    "name": name,
+                    "path": f"rewrite/Surge/{expanded[name][0]}",
+                    "sha256": "0" * 64,
+                }
+                for name in expanded
+                if name not in active_names
+            ]
+            manifests = self.load_from([active, candidate])
+
+        self.assertEqual(set(manifests[active_tag]["scripts_by_name"]), set(active_names))
+        self.assertEqual(set(manifests[candidate_tag]["scripts_by_name"]), set(expanded))
+
+    def test_expanded_candidate_requires_immutable_module_records(self) -> None:
+        active_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        expanded_names = list(release_verifier.EXPECTED)
+        active_tag = "surge-self-v2026.07.27.1"
+        candidate_tag = "surge-self-v2026.08.14"
+        active = lifecycle_manifest(
+            active_tag,
+            "active",
+            active_names,
+            live_device_validation="passed",
+        )
+        candidate = lifecycle_manifest(
+            candidate_tag,
+            "candidate",
+            expanded_names,
+            release_commit=None,
+            live_device_validation="pending",
+            supersedes=active_tag,
+        )
+
+        with self.assertRaisesRegex(SystemExit, "candidate module records"):
+            self.load_from([active, candidate])
+
+    def test_candidate_module_bytes_are_part_of_the_verified_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            module_path = "rewrite/Surge/candidates/example.sgmodule"
+            path = root / module_path
+            path.parent.mkdir(parents=True)
+            path.write_text("#!name=Example\n", encoding="utf-8")
+            candidate = {
+                "tag": "surge-self-v2026.08.14",
+                "distribution": "candidate",
+                "scripts_by_name": {},
+                "modules_by_name": {
+                    "Xiaohongshu": {
+                        "name": "Xiaohongshu",
+                        "path": module_path,
+                        "sha256": "0" * 64,
+                    }
+                },
+            }
+            with (
+                mock.patch.object(release_verifier, "ROOT", root),
+                self.assertRaisesRegex(SystemExit, "module SHA-256 mismatch"),
+            ):
+                release_verifier.verify_manifest_payload(candidate, None)
+
+    def test_unregistered_nested_script_module_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            module_dir = Path(temporary)
+            (module_dir / "canonical.sgmodule").write_text(
+                "#!name=Canonical\n"
+                "[Script]\n"
+                "example = type=http-response,script-path=https://raw.githubusercontent.com/"
+                "mulanshan/surge/surge-self-v2026.08.14/rewrite/Surge/scripts/example.js\n",
+                encoding="utf-8",
+            )
+            candidate_dir = module_dir / "candidates"
+            candidate_dir.mkdir()
+            (candidate_dir / "extra.sgmodule").write_text(
+                "#!name=Extra\n"
+                "[Script]\n"
+                "extra = type=http-response,script-path=https://raw.githubusercontent.com/"
+                "mulanshan/surge/surge-self-v2026.08.14/rewrite/Surge/scripts/extra.js\n",
+                encoding="utf-8",
+            )
+            expected = {
+                "Canonical": ("canonical.sgmodule", "rewrite/Surge/scripts/example.js")
+            }
+            with (
+                mock.patch.object(release_verifier, "MODULES", module_dir),
+                mock.patch.object(release_verifier, "EXPECTED", expected),
+                self.assertRaisesRegex(SystemExit, "unregistered script-backed module"),
+            ):
+                release_verifier.verify_module_inventory()
+
+    def test_active_script_cannot_remain_under_candidate_module_path(self) -> None:
+        tag = "surge-self-v2026.08.14"
+        expected = {
+            "Example": (
+                "candidates/example.sgmodule",
+                "rewrite/Surge/scripts/example.js",
+            )
+        }
+        active = {
+            "tag": tag,
+            "distribution": "active",
+            "superseded_by": None,
+            "scripts_by_name": {
+                "Example": {
+                    "name": "Example",
+                    "path": "rewrite/Surge/scripts/example.js",
+                    "sha256": "0" * 64,
+                }
+            },
+        }
+        with (
+            mock.patch.object(release_verifier, "EXPECTED", expected),
+            mock.patch.object(release_verifier, "verify_manifest_payload"),
+            mock.patch.object(release_verifier, "verify_module_inventory"),
+            mock.patch.object(
+                release_verifier,
+                "module_tag_and_path",
+                return_value=(tag, "rewrite/Surge/scripts/example.js"),
+            ),
+            self.assertRaisesRegex(SystemExit, "active module must use a canonical path"),
+        ):
+            release_verifier.verify_worktree({tag: active})
 
     def test_candidate_records_live_validation_before_distribution_activation(self) -> None:
         names = list(release_verifier.EXPECTED)
@@ -504,7 +648,8 @@ class ReleaseManifestTests(unittest.TestCase):
         self.assertEqual(manifests[rollback["tag"]]["distribution"], "active")
 
     def test_worktree_after_rollback_uses_chain_head_payload_and_active_module_pins(self) -> None:
-        names = list(release_verifier.EXPECTED)
+        names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        legacy_expected = {name: release_verifier.EXPECTED[name] for name in names}
         rollback_tag = "surge-self-v2026.07.13.4"
         head_tag = "surge-self-v2026.07.27.1"
         rollback = lifecycle_manifest(
@@ -521,18 +666,79 @@ class ReleaseManifestTests(unittest.TestCase):
             live_device_validation="failed",
             supersedes=rollback_tag,
         )
-        manifests = self.load_from([rollback, head])
-        paths = {module_name: path for module_name, path in release_verifier.EXPECTED.values()}
-        with (
-            mock.patch.object(release_verifier, "verify_manifest_payload") as verify,
-            mock.patch.object(
-                release_verifier,
-                "module_tag_and_path",
-                side_effect=lambda module_name: (rollback_tag, paths[module_name]),
-            ),
-        ):
-            release_verifier.verify_worktree(manifests)
+        with mock.patch.object(release_verifier, "EXPECTED", legacy_expected):
+            manifests = self.load_from([rollback, head])
+            paths = {module_name: path for module_name, path in legacy_expected.values()}
+            with (
+                mock.patch.object(release_verifier, "verify_manifest_payload") as verify,
+                mock.patch.object(release_verifier, "verify_module_inventory"),
+                mock.patch.object(
+                    release_verifier,
+                    "module_tag_and_path",
+                    side_effect=lambda module_name: (rollback_tag, paths[module_name]),
+                ),
+            ):
+                release_verifier.verify_worktree(manifests)
         self.assertEqual(verify.call_args_list[0], mock.call(manifests[head_tag], None))
+
+    def test_worktree_uses_candidate_module_pins_for_new_scripts(self) -> None:
+        active_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        expanded = dict(release_verifier.EXPECTED)
+        active_tag = "surge-self-v2026.07.27.1"
+        candidate_tag = "surge-self-v2026.08.14"
+        with mock.patch.object(release_verifier, "EXPECTED", expanded):
+            active = lifecycle_manifest(
+                active_tag,
+                "active",
+                active_names,
+                live_device_validation="passed",
+            )
+            candidate = lifecycle_manifest(
+                candidate_tag,
+                "candidate",
+                list(expanded),
+                release_commit=None,
+                live_device_validation="pending",
+                supersedes=active_tag,
+            )
+            for item in (active, candidate):
+                item["scripts_by_name"] = {
+                    record["name"]: record for record in item["scripts"]
+                }
+            manifests = {active_tag: active, candidate_tag: candidate}
+            module_records = {
+                module_name: (
+                    candidate_tag if name not in active_names else active_tag,
+                    script_path,
+                )
+                for name, (module_name, script_path) in expanded.items()
+            }
+            with (
+                mock.patch.object(release_verifier, "verify_manifest_payload") as verify,
+                mock.patch.object(
+                    release_verifier,
+                    "module_tag_and_path",
+                    side_effect=lambda module_name: module_records[module_name],
+                ),
+            ):
+                release_verifier.verify_worktree(manifests)
+
+        self.assertEqual(verify.call_args_list[0], mock.call(candidate, None))
+
+    def test_release_body_prints_only_scripts_in_the_active_manifest(self) -> None:
+        active_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
+        active = manifest("surge-self-v2026.07.27.1", "active", active_names)
+        active["scripts_by_name"] = {
+            record["name"]: record for record in active["scripts"]
+        }
+
+        with mock.patch("builtins.print") as emit:
+            release_verifier.print_sha_block(active)
+
+        lines = [call.args[0] for call in emit.call_args_list]
+        self.assertEqual(lines[0], "Tagged script SHA-256:")
+        self.assertEqual(len(lines), len(active_names) + 1)
+        self.assertFalse(any("Xiaohongshu" in line or "Weibo" in line for line in lines))
 
     def test_transition_gate_allows_candidate_lifecycle_and_explicit_rollback(self) -> None:
         names = list(release_verifier.EXPECTED)
@@ -1625,6 +1831,12 @@ class RemoteReleaseIntegrityTests(unittest.TestCase):
 
 
 class RepositoryInvariantTests(unittest.TestCase):
+    def test_repository_and_release_module_inventories_match(self) -> None:
+        self.assertEqual(
+            repository_checker.EXPECTED_SCRIPT_MODULE_PATHS,
+            {Path(module_name) for module_name, _ in release_verifier.EXPECTED.values()},
+        )
+
     def test_wechat_module_display_name_is_canonical(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             module_dir = Path(temporary)
@@ -1635,6 +1847,58 @@ class RepositoryInvariantTests(unittest.TestCase):
                 (module_dir / "wechat-self.sgmodule").write_text("#!name=WeChat\n", encoding="utf-8")
                 with self.assertRaisesRegex(SystemExit, "unexpected module display name"):
                     repository_checker.check_module_display_names()
+
+    def test_candidate_modules_are_included_in_module_discovery(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            module_dir = Path(temporary)
+            candidate_dir = module_dir / "candidates"
+            candidate_dir.mkdir()
+            canonical = module_dir / "canonical.sgmodule"
+            candidate = candidate_dir / "candidate.sgmodule"
+            canonical.write_text("#!name=Canonical\n", encoding="utf-8")
+            candidate.write_text("#!name=Candidate\n", encoding="utf-8")
+            with mock.patch.object(repository_checker, "MODULE_DIR", module_dir):
+                targets = repository_checker.module_script_targets()
+            self.assertEqual(set(targets), {canonical, candidate})
+
+    def test_repository_checker_rejects_unregistered_script_module(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            module_dir = Path(temporary)
+            canonical = module_dir / "canonical.sgmodule"
+            extra = module_dir / "candidates" / "extra.sgmodule"
+            extra.parent.mkdir()
+            targets = {
+                canonical: [Path("rewrite/Surge/scripts/canonical.js")],
+                extra: [Path("rewrite/Surge/scripts/extra.js")],
+            }
+            with (
+                mock.patch.object(repository_checker, "MODULE_DIR", module_dir),
+                mock.patch.object(
+                    repository_checker,
+                    "EXPECTED_SCRIPT_MODULE_PATHS",
+                    frozenset({Path("canonical.sgmodule")}),
+                    create=True,
+                ),
+                self.assertRaisesRegex(SystemExit, "unregistered script-backed module"),
+            ):
+                repository_checker.check_script_module_inventory(targets)
+
+    def test_candidate_module_display_names_are_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            module_dir = Path(temporary)
+            for file_name, display_name in repository_checker.CANONICAL_MODULE_NAMES.items():
+                (module_dir / file_name).write_text(f"#!name={display_name}\n", encoding="utf-8")
+            candidate_dir = module_dir / "candidates"
+            candidate_dir.mkdir()
+            (candidate_dir / "weibo-self.sgmodule").write_text(
+                "#!name=Weibo Self\n", encoding="utf-8"
+            )
+            with (
+                mock.patch.object(repository_checker, "MODULE_DIR", module_dir),
+                mock.patch.object(repository_checker, "ROOT", module_dir.parent),
+                self.assertRaisesRegex(SystemExit, "display name still contains Self"),
+            ):
+                repository_checker.check_module_display_names()
 
     def test_generated_rule_inventory_rejects_nested_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -1690,7 +1954,9 @@ class RepositoryInvariantTests(unittest.TestCase):
         manifests = (ROOT / "releases/README.md").read_text(encoding="utf-8")
         combined = process + "\n" + manifests
         self.assertIn("script bundle", combined)
-        self.assertIn("not covered by the script release manifest", combined)
+        self.assertIn("every newly introduced candidate module definition", combined)
+        self.assertIn("mutable canonical module definitions", combined)
+        self.assertIn("manifest `modules` records freeze", combined)
         self.assertIn("rejected", combined)
         self.assertIn("release change surface", combined)
         self.assertIn("live_device_evidence", combined)
