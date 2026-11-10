@@ -7,13 +7,13 @@
 # Sources:
 # - Sukka Global non-IP: snapshot:rule/Surge/upstream/sukka/non_ip/global.conf
 #   tracking: https://ruleset.skk.moe/List/non_ip/global.conf
-#   sha256: 0a48f1f27effe13fa8e3f55e347a59c4d40778adf62e6c18448b59a8a4e4b5d8
+#   sha256: 9b5e53dc90878f3d4fa6afd56916f46f630ffe9143196384ba6be6300a883bbb
 #   license: AGPL-3.0-only (https://ruleset.skk.moe/LICENSE)
-#   rules: 1269
+#   rules: 1276
 # Excluded overlapping rules:
 # - DOMAIN,7h15.ru1353t.1s.m4d3.by.5ukk4w.skk.moe
 # Artifact: Surge DOMAIN-SET (exact domains and leading-dot suffix domains only).
-# Total DOMAIN-SET entries: 1259
+# Total DOMAIN-SET entries: 1266
 
 ccmdl.adobe.com
 community.oneplus.com
@@ -101,6 +101,7 @@ wego.here.com
 .apkpure.com
 .apkpure.net
 .apnews.com
+.approveit.today
 .appspot.com
 .aptoide.com
 .arc.net
@@ -180,6 +181,7 @@ wego.here.com
 .bloomberg.net
 .bnbstatic.com
 .box.com
+.boxcloud.com
 .brave.com
 .broadcom.com
 .bsky.app
@@ -784,6 +786,7 @@ wego.here.com
 .nordvpn.com
 .note.com
 .notepad-plus-plus.org
+.notion.com
 .notion.site
 .notion.so
 .now.com
@@ -792,6 +795,7 @@ wego.here.com
 .npm.io
 .npmjs.com
 .npmjs.org
+.npmx.dev
 .npr.org
 .nsfwr34.com
 .nssurge.com
@@ -1043,6 +1047,7 @@ wego.here.com
 .surfshark.com
 .surfsharkdns.com
 .surge-activation.com
+.surveymonkey.com
 .sx
 .synergyse.com
 .sysctl-explorer.net
@@ -1094,6 +1099,7 @@ wego.here.com
 .tmdb.org
 .tnaflix.com
 .to
+.tokens.ci
 .tokto-motion.net
 .tokyomotion.net
 .tokyonline.com
@@ -1144,6 +1150,7 @@ wego.here.com
 .v2ray.com
 .va
 .vanityfair.com
+.vanta.com
 .vercel.app
 .vercel.com
 .vercel.live

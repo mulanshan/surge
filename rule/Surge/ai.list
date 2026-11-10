@@ -212,3 +212,6 @@ DOMAIN-SUFFIX,xinghuo.xfyun.cn
 DOMAIN-SUFFIX,hunyuan.tencent.com
 DOMAIN-SUFFIX,yuanbao.tencent.com
 DOMAIN-SUFFIX,yuanqi.tencent.com
+
+# OpenAI supplements not yet present in the pinned upstream OpenAI baseline
+DOMAIN-SUFFIX,sora.com

@@ -245,3 +245,29 @@ routing configuration and must not be printed wholesale.
 
 Never commit live credentials (including `wifi-access-http-auth`), a private
 network inventory, CA private keys, or raw request/event/profile output.
+
+## Surge Mac 6.9.1 / iOS and tvOS 5.23.0 Notes
+
+Verified on 2026-11-10 against the local Mac (6.9.1, build 12290), iOS 5.23.0
+(3867) and tvOS 5.23.0 (3869). All three report controller protocol 25.
+
+- Smart groups (Mac 6.9+) learn from TCP and UDP results and mark a connection
+  that receives no response within three seconds as failed. Inspect the
+  learned state with `dump smart-group-info`; keep Smart members concrete
+  proxies rather than nested groups.
+- Group-level `underlying-proxy` is available on 6.9+.
+- The HTTP API exposes Prometheus metrics on Mac and iOS; the tvOS instance
+  returns 404 for `/v1/metrics`.
+- tvOS 5.23.0 accepts `status`, `version`, `dump performance`, `dump summary`,
+  `feature list`, `policy-group`, `rule match`, `rule explain`, `rule temp`,
+  `external-resource list|update` and `log file`. It returns `Unsupported
+  command` for `module list`, `logbook` and `update-profile`, and `log memory`
+  is empty.
+- A tvOS profile cannot be replaced from the Mac CLI. Deploy it from Surge iOS.
+  Until then, interim rule changes can be applied with `rule temp add`; they
+  precede profile rules and are discarded when the tvOS engine restarts. Proxy,
+  group-type and `[General]` changes still require a deployment.
+- The VS Code Surge Language Support extension starts `surge-cli lsp --stdio`,
+  which requires Mac 6.10.0 or later. On 6.9.1 it provides highlighting only;
+  validate with `surge-cli --check <profile>`.
+- The hourly `SGNTPClient` warning described above is still present on 6.9.1.
