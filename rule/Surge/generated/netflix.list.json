@@ -2,12 +2,17 @@
   "id": "netflix",
   "name": "Netflix",
   "output": "rule/Surge/generated/netflix.list",
-  "description": "Netflix kept separate so its routing can diverge from the general streaming group when needed. The active profile currently routes it to 流媒体.",
-  "suggested_policy": "流媒体",
-  "suggested_options": [],
-  "included_rules": [],
+  "description": "Netflix kept separate so its routing can use the dedicated Netflix policy group, split into O(1) DOMAIN-SET plus residual non-domain rules with AS2906 Open Connect coverage.",
+  "suggested_policy": "Netflix",
+  "suggested_options": [
+    "extended-matching",
+    "no-resolve"
+  ],
+  "included_rules": [
+    "IP-ASN,2906,no-resolve"
+  ],
   "excluded_rules": [],
-  "unique_rule_count": 1157,
+  "unique_rule_count": 1158,
   "sources": [
     {
       "name": "blackmatrix7 Netflix",
@@ -20,5 +25,9 @@
       "rule_count": 1157,
       "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Netflix/Netflix.list"
     }
-  ]
+  ],
+  "domain_set_output": "rule/Surge/generated/netflix.domainset",
+  "non_domain_output": "rule/Surge/generated/netflix.non-domain.list",
+  "domain_set_rule_count": 33,
+  "non_domain_rule_count": 1125
 }

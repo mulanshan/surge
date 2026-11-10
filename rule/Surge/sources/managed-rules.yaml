@@ -203,9 +203,16 @@ sets:
 
   - id: netflix
     name: Netflix
-    description: Netflix kept separate so its routing can diverge from the general streaming group when needed. The active profile currently routes it to 流媒体.
+    description: Netflix kept separate so its routing can use the dedicated Netflix policy group, split into O(1) DOMAIN-SET plus residual non-domain rules with AS2906 Open Connect coverage.
     output: netflix.list
-    suggested_policy: 流媒体
+    domain_set_output: netflix.domainset
+    non_domain_output: netflix.non-domain.list
+    suggested_policy: Netflix
+    suggested_options:
+      - extended-matching
+      - no-resolve
+    include_rules:
+      - IP-ASN,2906,no-resolve
     sources:
       - name: blackmatrix7 Netflix
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/Netflix/Netflix.list

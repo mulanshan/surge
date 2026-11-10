@@ -3,6 +3,20 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-11
+
+Netflix domain-set split, template policy alignment, and JD IPv6 probe cleanup:
+
+- Split `netflix` managed rules into `netflix.domainset` + `netflix.non-domain.list`
+  with `IP-ASN,2906,no-resolve` coverage while retaining `netflix.list` as the
+  compatibility snapshot, and aligned `rule-section-managed.conf` policies with
+  active `DMIT-Common.dconf` (`Netflix` for Netflix, `hinet` for `tmdb.list`).
+- Removed retired `rule/Surge/generated/gemini.list` and `gemini.list.json`
+  compatibility artifacts now that all devices use `ai.list` / `openai.list` /
+  `claude.list`.
+- Added `DOMAIN,speedv6.m.jd.com,REJECT-NO-DROP` to `rewrite/Surge/jd-self.sgmodule`
+  to silence repeated AAAA-only probe failures when `ipv6 = false`.
+
 ## 2026-11-10
 
 Candidate bundle `surge-self-v2026.11.10` and rule/template alignment:
