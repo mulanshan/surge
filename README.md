@@ -337,19 +337,22 @@ scripts/generate-managed-surge-rules.py --check-upstream
 文件：[rule/Surge/generated/openai.list](rule/Surge/generated/openai.list)、[rule/Surge/generated/claude.list](rule/Surge/generated/claude.list) 和 [rule/Surge/ai.list](rule/Surge/ai.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/openai.list,Ai,extended-matching,no-resolve
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/claude.list,hinet,extended-matching,no-resolve
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/ai.list,Ai,extended-matching,no-resolve
+# 放在 Microsoft、China、Google、global 等大规则之前
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/ai.list,us,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/openai.list,us,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/generated/claude.list,us,extended-matching,no-resolve
 ```
 
 AI 规则按三层保存：
 
 - `rule/Surge/generated/openai.list`：OpenAI / ChatGPT / GPT 专用，单独保留，方便以后按日志独立调整。
-- `rule/Surge/generated/claude.list`：Claude / Anthropic 的可复现基线，从完整 commit 和 SHA-256 生成；建议继续使用当前已验证的 `hinet` 策略。
-- `rule/Surge/ai.list`：其他非 OpenAI AI 服务的自维护入口，包含 Gemini、Cursor、Windsurf、Perplexity、OpenRouter、Hugging Face、xAI/Grok 和 Claude 补充域名。
+- `rule/Surge/generated/claude.list`：Claude / Anthropic 的可复现基线，从完整 commit 和 SHA-256 生成，与网站、API 和附件补充域名统一使用 `us`。
+- `rule/Surge/ai.list`：其他 AI 服务的自维护入口，包含 Muse/Meta AI、Claude 补充域名、Gemini/NotebookLM、Microsoft/GitHub Copilot、Cursor、Windsurf、推理服务、生成式媒体和常见国内 AI 服务；统一使用明确的 `us` 策略。
 
-建议这三条都放在 Google、Microsoft、GitHub 等大规则前面。这样 OpenAI/GPT 和 Claude/Anthropic 的命中不会被通用
-AI、Google 或 global 规则抢走，同时保留小范围自维护补充。
+建议将 AI 服务的具体域名规则放在 Google、Microsoft、China、global 等大规则前面，避免被宽泛分类分配到其他出口。
+补充列表与 OpenAI、Claude 基线统一使用 `us`，保留各自的维护来源。
+
+`us` 是本环境中具体代理的名字，使用时应替换为自己的美国出口。列表按服务域名维护，不将整个 `.ai` 顶级域、Google、Microsoft 或 GitHub 全部归为 AI。私有配置可以将已审查域名规则内联为 `DOMAIN-SUFFIX,...,us`，这样本地扩充可立即生效，无需等待公开订阅发布或缓存刷新。
 
 旧路径 `rule/Surge/generated/gemini.list` 只作为兼容文件保留，避免 Apple TV 等设备在 iCloud profile
 同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口为上述三个受审入口。

@@ -3,7 +3,7 @@
   "name": "Claude",
   "output": "rule/Surge/generated/claude.list",
   "description": "Claude and Anthropic service baseline. Kept separate from the hand-curated AI supplements so production routing never consumes an unreviewed moving branch.",
-  "suggested_policy": "hinet",
+  "suggested_policy": "us",
   "suggested_options": [
     "extended-matching",
     "no-resolve"
