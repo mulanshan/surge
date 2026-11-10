@@ -263,4 +263,43 @@ const playerWithCaptions = JSON.stringify({
   assert.ok(payload.items[0].videoRenderer);
 }
 
+{
+  // account/get_setting background-playback injection (+101 bytes: 26683 -> 26784)
+  // must succeed without triggering protobuf-inflation-abort or protobuf-growth-abort.
+  const categoryIdField = concatBytes(
+    encodeVarint((4n << 3n) | 0n),
+    encodeVarint(10135n),
+  );
+  const categoryItem = encodeLengthField(66930374, categoryIdField);
+  const settingItem = encodeLengthField(6, categoryItem);
+  const collectionItem = encodeLengthField(7, categoryItem);
+  const paddingPayload = new Uint8Array(
+    26683 - settingItem.length - collectionItem.length - 4,
+  );
+  const paddingField = encodeLengthField(1, paddingPayload);
+  const settingResponse = concatBytes(paddingField, settingItem, collectionItem);
+  assert.equal(settingResponse.length, 26683);
+
+  for (const settingEndpoint of ["account/get_setting", "account/get_setting_values"]) {
+    const result = execute(settingResponse, settingEndpoint);
+    assertNoLogs(result, `${settingEndpoint} background playback injection`);
+    assert.ok(result.output && result.output.body instanceof Uint8Array);
+    assert.equal(result.output.body.length, 26784);
+  }
+
+  // Multiple setting categories that inflate by >256 bytes must still abort safely.
+  const excessiveSetting = concatBytes(
+    settingItem,
+    settingItem,
+    settingItem,
+    settingItem,
+    settingItem,
+    settingItem,
+    settingItem,
+  );
+  const aborted = execute(excessiveSetting, "account/get_setting");
+  assert.equal(Object.keys(aborted.output).length, 0);
+  assert.ok(aborted.logbookLogs.some((line) => line.includes("protobuf-inflation-abort")));
+}
+
 console.log("YouTube Self tests passed");

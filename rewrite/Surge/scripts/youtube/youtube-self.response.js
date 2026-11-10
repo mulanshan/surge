@@ -1241,12 +1241,22 @@ try {
     const removedCount = feedAdCardsRemoved + nextAdFieldsRemoved;
 
     // Hard safety: never ship an inflated protobuf body.
-    if (output.length > input.length + 64) {
+    // Setting responses (account/get_setting, account/get_setting_values) inject
+    // background-playback subSettings and settingItems (~101 bytes), so allow up
+    // to 256 additive bytes there while keeping the 64-byte cap everywhere else.
+    const isSettingEndpoint =
+      endpoint === "account/get_setting" || endpoint === "account/get_setting_values";
+    const maxInflationBytes = isSettingEndpoint ? 256 : 64;
+    const maxOutputBytes = Math.max(
+      Math.floor(input.length * 1.02) + 32,
+      isSettingEndpoint ? input.length + 256 : 0,
+    );
+    if (output.length > input.length + maxInflationBytes) {
       logbook(
         `protobuf-inflation-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
       );
       $done({});
-    } else if (output.length > Math.floor(input.length * 1.02) + 32) {
+    } else if (output.length > maxOutputBytes) {
       logbook(
         `protobuf-growth-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
       );
