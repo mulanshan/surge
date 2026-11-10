@@ -39,7 +39,7 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | google | `google.list` | `google.domainset` (685) + `google.non-domain.list` (13) | `自动` | 698 |
 | openai | `openai.list` | - | `us` | 35 |
 | claude | `claude.list` | - | `us` | 3 |
-| telegram | `telegram.list` | - | `Proxy` | 29 |
+| telegram | `telegram.list` | - | `Proxy` | 28 |
 | apple-tv | `apple-tv.list` | - | `流媒体` | 10 |
 | youtube | `youtube.list` | `youtube.domainset` (179) + `youtube.non-domain.list` (11) | `自动` | 190 |
 | netflix | `netflix.list` | - | `流媒体` | 1157 |
@@ -49,4 +49,4 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | prime-video | `prime-video.list` | - | `流媒体` | 18 |
 | streaming | `streaming.list` | `streaming.domainset` (258) + `streaming.non-domain.list` (63) | `自动` | 321 |
 | paypal | `paypal.list` | `paypal.domainset` (246) + `paypal.non-domain.list` (2) | `自动` | 248 |
-| global | `global.list` | `global.domainset` (1259) + `global.non-domain.list` (10) | `Proxy` | 1269 |
+| global | `global.list` | `global.domainset` (1266) + `global.non-domain.list` (10) | `Proxy` | 1276 |

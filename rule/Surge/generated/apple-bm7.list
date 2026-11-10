@@ -9,9 +9,9 @@
 # distributed file.
 # Suggested policy: DIRECT
 # Sources:
-# - blackmatrix7 Apple: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/86ada72372ec0586be75901f47d5ccca6e28c655/rule/Surge/Apple/Apple.list
+# - blackmatrix7 Apple: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/Apple/Apple.list
 #   tracking: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple.list
-#   sha256: 9122a78ff822385e7f1d8071f34a4ffd330a9317a3c83e2e177d2fea6a5c8928
+#   sha256: cdfd3d4746541b6a73b129e510b37ed8b77e0b9737270f7fc83448304560ffbd
 #   license: GPL-2.0-only (https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE)
 #   rules: 53
 # Excluded overlapping rules:
