@@ -1403,6 +1403,12 @@ def verify_worktree(manifests: dict[str, dict]) -> str:
         elif candidate is not None and name in candidate["scripts_by_name"]:
             expected_tag = candidate_tag
             expected_manifest = candidate
+        elif (
+            manifests[worktree_tag].get("distribution") == "rejected"
+            and name in manifests[worktree_tag]["scripts_by_name"]
+        ):
+            expected_tag = worktree_tag
+            expected_manifest = manifests[worktree_tag]
         else:
             fail(f"{module_name} is not present in the active or candidate payload")
         if tag != expected_tag:

@@ -396,10 +396,10 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douba
 文件：[rule/Surge/tmdb.list](rule/Surge/tmdb.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,TW,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,Proxy,extended-matching,no-resolve
 ```
 
-覆盖 The Movie Database 网站、API 和图片资源域名。
+覆盖 The Movie Database 网站、API 和图片资源域名。当前活跃配置（`DMIT-Common.dconf`）使用台湾出口 `hinet`，通用参考模板使用 `Proxy`；使用时按自己的策略组替换。
 
 ### Docker / OCI 镜像拉取
 
