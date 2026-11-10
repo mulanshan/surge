@@ -403,6 +403,66 @@ class ReleaseManifestTests(unittest.TestCase):
         ):
             release_verifier.verify_worktree({tag: active})
 
+    def test_rejected_expanded_candidate_worktree_stays_valid_before_next_candidate(self) -> None:
+        active_tag = "surge-self-v2026.07.27.1"
+        rejected_tag = "surge-self-v2026.08.15"
+        expected = {
+            "YouTube": (
+                "youtube-self.sgmodule",
+                "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+            ),
+            "Weibo": (
+                "candidates/weibo-self.sgmodule",
+                "rewrite/Surge/scripts/weibo/weibo-self.response.js",
+            ),
+        }
+        active = {
+            "tag": active_tag,
+            "distribution": "active",
+            "superseded_by": rejected_tag,
+            "scripts_by_name": {
+                "YouTube": {
+                    "name": "YouTube",
+                    "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+                    "sha256": "0" * 64,
+                }
+            },
+        }
+        rejected = {
+            "tag": rejected_tag,
+            "distribution": "rejected",
+            "supersedes": active_tag,
+            "superseded_by": None,
+            "scripts_by_name": {
+                "YouTube": {
+                    "name": "YouTube",
+                    "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+                    "sha256": "0" * 64,
+                },
+                "Weibo": {
+                    "name": "Weibo",
+                    "path": "rewrite/Surge/scripts/weibo/weibo-self.response.js",
+                    "sha256": "0" * 64,
+                },
+            },
+        }
+
+        def resolve_module(module_name: str) -> tuple[str, str]:
+            if module_name == "youtube-self.sgmodule":
+                return active_tag, "rewrite/Surge/scripts/youtube/youtube-self.response.js"
+            return rejected_tag, "rewrite/Surge/scripts/weibo/weibo-self.response.js"
+
+        with (
+            mock.patch.object(release_verifier, "EXPECTED", expected),
+            mock.patch.object(release_verifier, "verify_manifest_payload"),
+            mock.patch.object(release_verifier, "verify_module_inventory"),
+            mock.patch.object(release_verifier, "module_tag_and_path", side_effect=resolve_module),
+        ):
+            self.assertEqual(
+                release_verifier.verify_worktree({active_tag: active, rejected_tag: rejected}),
+                active_tag,
+            )
+
     def test_candidate_records_live_validation_before_distribution_activation(self) -> None:
         names = list(release_verifier.EXPECTED)
         active_tag = "surge-self-v2026.07.13.4"
@@ -1177,7 +1237,9 @@ class ReleaseManifestTests(unittest.TestCase):
         previous = release_verifier.manifest_records_at_revision(
             "092045fe74f7fb068ff8aed240595d69818f40c1"
         )
-        current_registry = release_verifier.current_manifest_records()
+        current_registry = release_verifier.manifest_records_at_revision(
+            "737cceded44d3d833a3d44a08cd9583c8a62004b"
+        )
         current_registry["surge-self-v2026.08.09"] = {
             "schema_version": 2,
             "tag": "surge-self-v2026.08.09",
