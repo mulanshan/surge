@@ -14,9 +14,10 @@ Candidate bundle `surge-self-v2026.11.10` and rule/template alignment:
 - Transitioned `surge-self-v2026.08.15` to `rejected` and registered candidate
   `surge-self-v2026.11.10` carrying the YouTube setting fix along with the
   Xiaohongshu and Weibo candidate modules.
-- Aligned `google.domainset` and `google.non-domain.list` policies in
-  `rule/Surge/generated/rule-section-managed.conf` to `自动` (matching
-  `managed-rules.yaml` and active `DMIT-Common.dconf`) and documented the
+- Simplified Google routing to two tiers (`ai.list` -> `us`; merged Google
+  general services + YouTube video & music under ruleset `谷歌` /
+  `google.{domainset,non-domain.list,list}` -> `HK`), retaining `youtube.*` as
+  frozen compatibility artifacts for un-redeployed devices and documenting the
   `224.0.0.0/4` multicast block ordering relative to `RULE-SET,LAN`.
 
 ## 2026-08-15

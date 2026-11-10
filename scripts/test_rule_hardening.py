@@ -355,6 +355,8 @@ def optimized_rule_set_counts():
     generated = ROOT / "rule/Surge/generated"
     counts = {}
     for meta_path in sorted(generated.glob("*.list.json")):
+        if meta_path.name in repository_checker.GENERATED_COMPATIBILITY_ARTIFACTS:
+            continue
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         if meta.get("domain_set_output"):
             counts[meta["id"]] = (
@@ -367,7 +369,7 @@ def optimized_rule_set_counts():
 class RepositoryInvariantTests(unittest.TestCase):
     def test_optimized_domain_sets_are_equivalent_to_compatibility_rulesets(self):
         expected_counts = optimized_rule_set_counts()
-        self.assertGreaterEqual(len(expected_counts), 9)
+        self.assertGreaterEqual(len(expected_counts), 8)
         generated = ROOT / "rule/Surge/generated"
         for rule_id, (domain_count, residual_count) in expected_counts.items():
             with self.subTest(rule_id=rule_id):
@@ -401,7 +403,7 @@ class RepositoryInvariantTests(unittest.TestCase):
 
     def test_domain_set_resources_stay_adjacent_with_policy_and_option_parity(self):
         optimized_ids = sorted(optimized_rule_set_counts())
-        self.assertGreaterEqual(len(optimized_ids), 9)
+        self.assertGreaterEqual(len(optimized_ids), 8)
         section = (ROOT / "rule/Surge/generated/rule-section-managed.conf").read_text(
             encoding="utf-8"
         )

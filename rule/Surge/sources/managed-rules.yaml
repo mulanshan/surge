@@ -106,19 +106,26 @@ sets:
         license_url: https://ruleset.skk.moe/LICENSE
 
   - id: google
-    name: Google
-    description: Google common services. AI-specific Google entries should stay before this ruleset.
+    name: 谷歌
+    description: 谷歌通用服务及 YouTube 视频与音乐合并规则集。Google AI 相关域名在前面的 ai.list 中单独走 us，其余谷歌与 YouTube 服务统一走 HK。
     output: google.list
     domain_set_output: google.domainset
     non_domain_output: google.non-domain.list
-    suggested_policy: 自动
+    suggested_policy: HK
     suggested_options:
       - extended-matching
+      - no-resolve
     sources:
       - name: blackmatrix7 Google
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/Google/Google.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
         expected_sha256: 4b08fd3ef47e2668d2a4bb79777773e2408394fdda60ac36014e1a4d3456ba6f
+        license: GPL-2.0-only
+        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
+      - name: blackmatrix7 YouTube
+        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/YouTube/YouTube.list
+        tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
+        expected_sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
         license: GPL-2.0-only
         license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 
@@ -191,24 +198,6 @@ sets:
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/AppleTV/AppleTV.list
         tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/AppleTV/AppleTV.list
         expected_sha256: 1078a83e65a4d65cf754e267c369f667fe4b30937747232f809aa03223148bbd
-        license: GPL-2.0-only
-        license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
-
-  - id: youtube
-    name: YouTube
-    description: YouTube service rules kept separate because the current profile routes them to 自动.
-    output: youtube.list
-    domain_set_output: youtube.domainset
-    non_domain_output: youtube.non-domain.list
-    suggested_policy: 自动
-    suggested_options:
-      - extended-matching
-      - no-resolve
-    sources:
-      - name: blackmatrix7 YouTube
-        url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/YouTube/YouTube.list
-        tracking_url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
-        expected_sha256: 42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d
         license: GPL-2.0-only
         license_url: https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE
 

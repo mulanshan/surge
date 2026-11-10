@@ -36,12 +36,11 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | private-tracker | `private-tracker.list` | `private-tracker.domainset` (241) + `private-tracker.non-domain.list` (7) | `DIRECT` | 248 |
 | apple-bm7 | `apple-bm7.list` | - | `DIRECT` | 53 |
 | apple-sukka | `apple-sukka.list` | - | `DIRECT` | 35 |
-| google | `google.list` | `google.domainset` (685) + `google.non-domain.list` (13) | `自动` | 698 |
+| google | `google.list` | `google.domainset` (864) + `google.non-domain.list` (21) | `HK` | 885 |
 | openai | `openai.list` | - | `us` | 35 |
 | claude | `claude.list` | - | `us` | 3 |
 | telegram | `telegram.list` | - | `Proxy` | 28 |
 | apple-tv | `apple-tv.list` | - | `流媒体` | 10 |
-| youtube | `youtube.list` | `youtube.domainset` (179) + `youtube.non-domain.list` (11) | `自动` | 190 |
 | netflix | `netflix.list` | - | `流媒体` | 1157 |
 | bahamut | `bahamut.list` | - | `流媒体` | 8 |
 | disney | `disney.list` | `disney.domainset` (172) + `disney.non-domain.list` (1) | `流媒体` | 173 |
