@@ -231,7 +231,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 - 兼容京东 15.8.50 真机确认的 `/`、`/api`、`/client.action` 三种 API 入口，以及 POST 请求体中的 `functionId`
 - 可关闭 `basicConfig` 中的 socket 诊断上报与 HTTPDNS 开关
 - 可选择是否清理订单列表/物流页中的推广节点
-- 仅拒绝随机 `jddebug.com/diagnose` 请求，不整域拦截京东
+- 仅拒绝随机 `jddebug.com/diagnose` 请求与纯 IPv6 测速探针 `speedv6.m.jd.com`，不整域拦截京东
 
 安全边界：
 
@@ -354,9 +354,6 @@ AI 规则按三层保存：
 
 `us` 是本环境中具体代理的名字，使用时应替换为自己的美国出口。列表按服务域名维护，不将整个 `.ai` 顶级域、Google、Microsoft 或 GitHub 全部归为 AI。私有配置可以将已审查域名规则内联为 `DOMAIN-SUFFIX,...,us`，这样本地扩充可立即生效，无需等待公开订阅发布或缓存刷新。
 
-旧路径 `rule/Surge/generated/gemini.list` 只作为兼容文件保留，避免 Apple TV 等设备在 iCloud profile
-同步滞后时仍引用旧 URL 导致外部规则集解析失败；正式分类入口为上述三个受审入口。
-
 ### Apple 系统服务
 
 文件：[rule/Surge/generated/apple.list](rule/Surge/generated/apple.list)
@@ -396,10 +393,10 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douba
 文件：[rule/Surge/tmdb.list](rule/Surge/tmdb.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,Proxy,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,hinet,extended-matching,no-resolve
 ```
 
-覆盖 The Movie Database 网站、API 和图片资源域名。当前活跃配置（`DMIT-Common.dconf`）使用台湾出口 `hinet`，通用参考模板使用 `Proxy`；使用时按自己的策略组替换。
+覆盖 The Movie Database 网站、API 和图片资源域名。当前活跃配置（`DMIT-Common.dconf`）与参考模板均使用台湾出口 `hinet`；使用时按自己的策略组替换。
 
 ### Docker / OCI 镜像拉取
 
