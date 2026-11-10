@@ -22,7 +22,7 @@ GENERATOR = ROOT / "scripts/generate-managed-surge-rules.py"
 RULE_TEMPLATE = ROOT / "rule/Surge/generated/rule-section-managed.conf"
 ROOT_README = ROOT / "README.md"
 RELEASE_PROCESS = ROOT / "docs/RELEASE_PROCESS.md"
-BLACKMATRIX_COMMIT = "86ada72372ec0586be75901f47d5ccca6e28c655"
+BLACKMATRIX_COMMIT = "0b6897dc17e0c513d25449c935a9694818e32f0c"
 CLAUDE_SHA256 = "870e7e25d798e7f00338507f773b0eea4dfd15e25e9df0a27d5ae421ae1ab378"
 
 
