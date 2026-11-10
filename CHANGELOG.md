@@ -3,6 +3,22 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-10
+
+Candidate bundle `surge-self-v2026.11.10` and rule/template alignment:
+
+- Fixed `protobuf-inflation-abort` on YouTube `account/get_setting` and
+  `account/get_setting_values` responses (`26683 -> 26784`, `+101` bytes) by
+  raising the additive protobuf byte cap to `256` bytes for setting endpoints
+  while preserving the `64`-byte cap on all other endpoints.
+- Transitioned `surge-self-v2026.08.15` to `rejected` and registered candidate
+  `surge-self-v2026.11.10` carrying the YouTube setting fix along with the
+  Xiaohongshu and Weibo candidate modules.
+- Aligned `google.domainset` and `google.non-domain.list` policies in
+  `rule/Surge/generated/rule-section-managed.conf` to `自动` (matching
+  `managed-rules.yaml` and active `DMIT-Common.dconf`) and documented the
+  `224.0.0.0/4` multicast block ordering relative to `RULE-SET,LAN`.
+
 ## 2026-08-15
 
 Unreleased Xiaohongshu and Weibo candidate modules:
