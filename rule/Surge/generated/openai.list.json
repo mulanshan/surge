@@ -3,7 +3,7 @@
   "name": "OpenAI",
   "output": "rule/Surge/generated/openai.list",
   "description": "OpenAI, ChatGPT, and GPT service baseline. Non-OpenAI AI services stay in rule/Surge/ai.list.",
-  "suggested_policy": "自动",
+  "suggested_policy": "us",
   "suggested_options": [
     "extended-matching",
     "no-resolve"

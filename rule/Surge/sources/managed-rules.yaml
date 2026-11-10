@@ -126,7 +126,7 @@ sets:
     name: OpenAI
     description: OpenAI, ChatGPT, and GPT service baseline. Non-OpenAI AI services stay in rule/Surge/ai.list.
     output: openai.list
-    suggested_policy: 自动
+    suggested_policy: us
     suggested_options:
       - extended-matching
       - no-resolve
@@ -142,7 +142,7 @@ sets:
     name: Claude
     description: Claude and Anthropic service baseline. Kept separate from the hand-curated AI supplements so production routing never consumes an unreviewed moving branch.
     output: claude.list
-    suggested_policy: hinet
+    suggested_policy: us
     suggested_options:
       - extended-matching
       - no-resolve

@@ -87,7 +87,8 @@ class ManifestInvariantTests(unittest.TestCase):
         claude = by_id["claude"]
 
         self.assertEqual(claude.output, "claude.list")
-        self.assertEqual(claude.suggested_policy, "hinet")
+        self.assertEqual(claude.suggested_policy, "us")
+        self.assertEqual(by_id["openai"].suggested_policy, "us")
         self.assertEqual(claude.suggested_options, ["extended-matching", "no-resolve"])
         self.assertEqual(len(claude.sources), 1)
         source = claude.sources[0]
@@ -99,7 +100,7 @@ class ManifestInvariantTests(unittest.TestCase):
         template = RULE_TEMPLATE.read_text(encoding="utf-8")
         self.assertIn(
             "RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/"
-            "rule/Surge/generated/claude.list,hinet,extended-matching,no-resolve",
+            "rule/Surge/generated/claude.list,us,extended-matching,no-resolve",
             template,
         )
         self.assertNotIn("Claude/Anthropic domains are covered by ai.list", template)

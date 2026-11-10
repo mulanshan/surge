@@ -35,3 +35,12 @@ upstream repositories for complete and current license text.
 
 Upstream projects and their maintainers do not endorse this repository. Product
 and project names remain the property of their respective owners.
+
+## Curated AI domains
+
+Selected additions in `rule/Surge/ai.list` were reviewed against the
+[V2Fly domain-list-community](https://github.com/v2fly/domain-list-community)
+AI category and service lists on 2026-11-09, alongside service websites.
+This upstream uses the MIT License, Copyright (c) 2018-2019 V2Ray.
+Its notice is retained in
+[`LICENSES/v2fly-domain-list-community-MIT.txt`](LICENSES/v2fly-domain-list-community-MIT.txt).
