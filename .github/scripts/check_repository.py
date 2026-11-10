@@ -49,11 +49,17 @@ EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
 RETIRED_MODULE_FILES = {
     "instagram-feed-self.sgmodule",
 }
-# These two frozen files intentionally preserve an old public URL while active
-# AI rules are maintained in rule/Surge/ai.list. They are not generator inputs.
+# These frozen files intentionally preserve old public URLs while active AI
+# rules are maintained in rule/Surge/ai.list and YouTube rules are merged into
+# rule/Surge/generated/google.{list,domainset,non-domain.list}. They are not
+# generator inputs.
 GENERATED_COMPATIBILITY_ARTIFACTS = {
     "gemini.list",
     "gemini.list.json",
+    "youtube.list",
+    "youtube.list.json",
+    "youtube.domainset",
+    "youtube.non-domain.list",
 }
 
 

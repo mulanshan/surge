@@ -1,15 +1,16 @@
 {
   "id": "google",
-  "name": "Google",
+  "name": "谷歌",
   "output": "rule/Surge/generated/google.list",
-  "description": "Google common services. AI-specific Google entries should stay before this ruleset.",
-  "suggested_policy": "自动",
+  "description": "谷歌通用服务及 YouTube 视频与音乐合并规则集。Google AI 相关域名在前面的 ai.list 中单独走 us，其余谷歌与 YouTube 服务统一走 HK。",
+  "suggested_policy": "HK",
   "suggested_options": [
-    "extended-matching"
+    "extended-matching",
+    "no-resolve"
   ],
   "included_rules": [],
   "excluded_rules": [],
-  "unique_rule_count": 698,
+  "unique_rule_count": 885,
   "sources": [
     {
       "name": "blackmatrix7 Google",
@@ -21,10 +22,21 @@
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
       "rule_count": 698,
       "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list"
+    },
+    {
+      "name": "blackmatrix7 YouTube",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/YouTube/YouTube.list",
+      "snapshot": null,
+      "sha256": "42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d",
+      "expected_sha256": "42274e143447066e26e1ebbf21ae03ce6efb40827f41e2775a84fb16d390713d",
+      "license": "GPL-2.0-only",
+      "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
+      "rule_count": 190,
+      "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list"
     }
   ],
   "domain_set_output": "rule/Surge/generated/google.domainset",
   "non_domain_output": "rule/Surge/generated/google.non-domain.list",
-  "domain_set_rule_count": 685,
-  "non_domain_rule_count": 13
+  "domain_set_rule_count": 864,
+  "non_domain_rule_count": 21
 }
