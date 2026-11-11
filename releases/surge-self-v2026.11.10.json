@@ -2,11 +2,12 @@
   "schema_version": 2,
   "tag": "surge-self-v2026.11.10",
   "integrity": "intact",
-  "distribution": "candidate",
+  "distribution": "rejected",
   "live_device_validation": "pending",
   "rollback_eligible": false,
   "release_commit": "e7985b073c03b3d5d63bc9f07ab31559748d807c",
   "supersedes": "surge-self-v2026.08.15",
+  "note": "Superseded before live-device validation by surge-self-v2026.11.11 to optimize YouTube protobuf feed scanning latency.",
   "scripts": [
     {
       "name": "YouTube",

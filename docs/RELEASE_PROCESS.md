@@ -262,6 +262,11 @@ normalized output. Updating a source is an explicit maintenance operation:
    licenses, the full generated index, and manifest changes.
 5. Commit the manifest, upstream snapshots, generated lists, and metadata
    together through a pull request.
+6. When active profiles consume `https://mulanshan.github.io/surge/rule/Surge/generated/...`
+   (GitHub Pages), wait for the `pages build and deployment` workflow to finish
+   and confirm HTTP 200 on any newly introduced `.domainset` or `.non-domain.list`
+   URLs before running `external-resource update` or `reload` on live devices,
+   preventing transient 404 fetches during the 1–5 minute CDN propagation window.
 
 The daily tracking workflow is read-only. The write-capable managed-source
 workflow is manual and requires an explicit rule-set id plus the reviewed
