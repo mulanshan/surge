@@ -1,11 +1,11 @@
-#!name=小红书 (候选)
-#!desc=自有可审计小红书去广告候选模块：仅清理白名单 Feed、搜索结果、笔记和开屏响应中具有明确结构标志的广告。当前仅供候选 tag 真机验证，不是稳定发布。
+#!name=小红书
+#!desc=固定云端订阅，自有可审计小红书去广告模块：仅清理白名单 Feed、搜索结果、笔记和开屏响应中具有明确结构标志的广告。不含第三方脚本。
 #!author=mulanshan
-#!category=Candidate
+#!category=AdBlock
 #!tag=小红书
 #!openUrl=https://apps.apple.com/cn/app/id741292507
 #!arguments=清理明确广告:true,启用调试模式:false
-#!arguments-desc=- 清理明确广告：[true, false]，只删除具有非空 ads_info / is_ad 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改保存/水印开关、搜索提示、系统配置、会员或账号状态，不上传请求/响应。小红书 9.43 尚未完成真机回归。
+#!arguments-desc=- 清理明确广告：[true, false]，只删除具有非空 ads_info / is_ad 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改保存/水印开关、搜索提示、系统配置、会员或账号状态，不上传请求/响应。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-11-11

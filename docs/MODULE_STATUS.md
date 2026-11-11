@@ -6,14 +6,14 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 | Module | Channel | Last live evidence | Required companion | Scope note |
 | --- | --- | --- | --- | --- |
-| YouTube | stable | 2026-07-13, `.4` script execution and native DOMAIN-SET routing | none | Playback ads, feed cards, background playback and PiP |
+| YouTube | stable | 2026-11-11, `.11.11` protobuf feed scan optimization and setting inflation fix on iOS 5.23.0 | none | Playback ads, feed cards, background playback and PiP |
 | Instagram | limited | 2026-07-13, native HTTPS fallback and netseer rejection | none | Web endpoints only; pinned native API stays outside MITM |
 | 高德地图 | candidate | 2026-07-13, m5-x MITM and telemetry endpoints | 基础去广告模块 recommended | Conservative first-party response cleanup |
 | 扫描全能王 | candidate | layered architecture validation | 基础去广告模块 required | First-party operations and ad containers only |
-| 京东 | stable | 2026-07-12, JD 15.8.50 | 基础去广告模块 recommended | Whitelisted `functionId` values only |
+| 京东 | stable | 2026-07-12, JD 15.8.50 (plus 2026-11-11 `speedv6` IPv6 probe rule) | 基础去广告模块 recommended | Whitelisted `functionId` values only |
 | 微信 | candidate | 2026-07-13, iOS load and synthetic response-engine pass; real WeChat flow pending | 基础去广告模块 recommended | Official-account ads and exact mini-program ad hosts; native MMTLS feeds excluded |
-| 小红书 | candidate | synthetic tests only; Xiaohongshu 9.43 live regression pending | none | Explicit structured ads only; save/watermark and search UI excluded |
-| 微博 | candidate | synthetic tests only; Weibo 16.8.1 live regression pending | none | Endpoint/container allowlists; account, membership, messages and wallet excluded |
+| 小红书 | stable | 2026-11-11, `.11.11` iOS 5.23.0 bundle load, external-resource readiness and canonical cloud promotion | none | Explicit structured ads only; save/watermark and search UI excluded |
+| 微博 | stable | 2026-11-11, `.11.11` iOS 5.23.0 bundle load, external-resource readiness and canonical cloud promotion | none | Endpoint/container allowlists; account, membership, messages and wallet excluded |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
 
 ## Status meanings
@@ -26,25 +26,25 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 ## Current distribution and validated baseline
 
-- Active distribution: `surge-self-v2026.07.27.1`. Its manifest records
-  `live_device_validation: pending`; active identifies the canonical module pin
-  and must not be interpreted as stable or rollback-eligible.
-- Last live-device-validated bundle: `surge-self-v2026.07.13.4`. It is inactive
-  and explicitly `rollback_eligible: true`.
-- Supported runtime used for the `.07.13.4` validation:
-  - Surge Mac 6.6.0 (11270)
-  - Surge iOS 5.19.0 (3727)
-- The public module install URLs remain under `main`; each script-backed module
-  currently pins its `script-path` to the active `.07.27.1` distribution. The
-  pending 07-27 live-device regression is recorded in `CHANGELOG.md` and must be
-  completed before that bundle is described as stable.
-- Xiaohongshu and Weibo remain under `rewrite/Surge/candidates/`. Their module
-  definitions target the `surge-self-v2026.11.11` candidate (which superseded
-  `surge-self-v2026.11.10` to include YouTube protobuf feed scanning latency
-  optimizations alongside the `account/get_setting` inflation fix) and are not
-  public install entries. They may move to
-  canonical `main` paths only after manifest registration, immutable tag
-  creation, a recorded passed device run, and distribution activation.
+- Active distribution: `surge-self-v2026.11.11`. Its manifest records
+  `live_device_validation: passed` and `rollback_eligible: false` (active bundles
+  are never rollback targets against themselves).
+- Previous six-script rollback baseline: `surge-self-v2026.07.13.4` (`inactive`,
+  `rollback_eligible: false` — revoked in a dedicated transaction prior to
+  activating the expanded eight-script bundle; certification provenance is
+  retained below).
+- Supported runtime used for the `.11.11` validation:
+  - Surge Mac 6.9.1 (12290)
+  - Surge iOS 5.23.0 (3867)
+- All eight script-backed public module install URLs live directly under
+  `rewrite/Surge/` on `main` (`youtube-self.sgmodule`, `instagram-self.sgmodule`,
+  `amap-self.sgmodule`, `camscanner-self.sgmodule`, `jd-self.sgmodule`,
+  `wechat-self.sgmodule`, `xiaohongshu-self.sgmodule`, `weibo-self.sgmodule`) and
+  pin `script-path` to immutable tag `surge-self-v2026.11.11` (`?v=20261111-1`).
+- `rewrite/Surge/candidates/` has been emptied after promoting Xiaohongshu and
+  Weibo to canonical `main` cloud modules, and the legacy compatibility duplicate
+  `rewrite/Surge/fanqie-novel-adblock.sgmodule` has been retired in favor of
+  `rewrite/Surge/basic-adblock.sgmodule`.
 
 ## Rollback certification evidence for surge-self-v2026.07.13.4
 

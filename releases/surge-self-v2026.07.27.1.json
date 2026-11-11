@@ -2,7 +2,7 @@
   "schema_version": 2,
   "tag": "surge-self-v2026.07.27.1",
   "integrity": "intact",
-  "distribution": "active",
+  "distribution": "inactive",
   "live_device_validation": "pending",
   "legacy_unvalidated_activation": true,
   "rollback_eligible": false,

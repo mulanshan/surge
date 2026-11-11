@@ -33,6 +33,8 @@ CANONICAL_MODULE_NAMES = {
     "camscanner-self.sgmodule": "扫描全能王",
     "jd-self.sgmodule": "京东",
     "wechat-self.sgmodule": "微信",
+    "xiaohongshu-self.sgmodule": "小红书",
+    "weibo-self.sgmodule": "微博",
 }
 EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
     {
@@ -42,12 +44,13 @@ EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
         Path("camscanner-self.sgmodule"),
         Path("jd-self.sgmodule"),
         Path("wechat-self.sgmodule"),
-        Path("candidates/xiaohongshu-self.sgmodule"),
-        Path("candidates/weibo-self.sgmodule"),
+        Path("xiaohongshu-self.sgmodule"),
+        Path("weibo-self.sgmodule"),
     }
 )
 RETIRED_MODULE_FILES = {
     "instagram-feed-self.sgmodule",
+    "fanqie-novel-adblock.sgmodule",
 }
 # These frozen files intentionally preserve old public URLs while YouTube rules
 # are merged into rule/Surge/generated/google.{list,domainset,non-domain.list}

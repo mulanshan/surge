@@ -60,11 +60,11 @@ EXPECTED = {
     "JD": ("jd-self.sgmodule", "rewrite/Surge/scripts/jd/jd-self.response.js"),
     "WeChat": ("wechat-self.sgmodule", "rewrite/Surge/scripts/wechat/wechat-self.response.js"),
     "Xiaohongshu": (
-        "candidates/xiaohongshu-self.sgmodule",
+        "xiaohongshu-self.sgmodule",
         "rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
     ),
     "Weibo": (
-        "candidates/weibo-self.sgmodule",
+        "weibo-self.sgmodule",
         "rewrite/Surge/scripts/weibo/weibo-self.response.js",
     ),
 }

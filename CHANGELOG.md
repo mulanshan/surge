@@ -5,8 +5,20 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-11
 
-Candidate bundle `surge-self-v2026.11.11`, YouTube protobuf feed latency optimization, Netflix domain-set split, and JD IPv6 probe cleanup:
+Activated canonical bundle `surge-self-v2026.11.11`, promoted Xiaohongshu and Weibo to public cloud modules, retired legacy Fanqie module duplicate, and landed YouTube protobuf feed latency optimization + Netflix domain-set split:
 
+- Activated immutable bundle `surge-self-v2026.11.11` after passed iOS 5.23.0
+  live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v20261111`),
+  transitioning legacy `surge-self-v2026.07.27.1` to `inactive`, revoking
+  six-script rollback eligibility on `surge-self-v2026.07.13.4`, and updating
+  all eight canonical cloud modules under `rewrite/Surge/` (`youtube-self.sgmodule`,
+  `instagram-self.sgmodule`, `amap-self.sgmodule`, `camscanner-self.sgmodule`,
+  `jd-self.sgmodule`, `wechat-self.sgmodule`, `xiaohongshu-self.sgmodule`,
+  `weibo-self.sgmodule`) to `surge-self-v2026.11.11` (`?v=20261111-1`).
+- Promoted `xiaohongshu-self.sgmodule` (`小红书`) and `weibo-self.sgmodule` (`微博`)
+  from `rewrite/Surge/candidates/` to canonical `rewrite/Surge/` cloud subscription
+  paths, and retired/deleted obsolete compatibility duplicate
+  `rewrite/Surge/fanqie-novel-adblock.sgmodule` in favor of `basic-adblock.sgmodule`.
 - Optimized `rewrite/Surge/scripts/youtube/youtube-self.response.js` to eliminate
   ~460–580 ms script spikes on large `browse`, `search`, `next`, and `get_watch`
   protobuf responses: lazy-evaluated `markerHits()` only on `debug=true` or
@@ -14,10 +26,9 @@ Candidate bundle `surge-self-v2026.11.11`, YouTube protobuf feed latency optimiz
   shared a single `TextDecoder` instance with one decode per `RichItemContent`,
   and added exact `ITEM_SECTION_RENDERER_TAG` / subtree marker guards before
   recursing into nested protobuf fields.
-- Transitioned `surge-self-v2026.11.10` to `rejected`, registered candidate
-  `surge-self-v2026.11.11` carrying the YouTube optimization plus the
-  Xiaohongshu and Weibo candidate modules, and documented the GitHub Pages CDN
-  propagation window before refreshing device external resources.
+- Transitioned `surge-self-v2026.11.10` to `rejected`, registered and tagged
+  `surge-self-v2026.11.11`, and documented the GitHub Pages CDN propagation
+  window before refreshing device external resources.
 - Split `netflix` managed rules into `netflix.domainset` + `netflix.non-domain.list`
   with `IP-ASN,2906,no-resolve` coverage while retaining `netflix.list` as the
   compatibility snapshot, and aligned `rule-section-managed.conf` policies with

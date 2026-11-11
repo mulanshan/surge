@@ -47,12 +47,12 @@ Surge 社区中有多个微博国内版/国际版去广告方案。它们通常�
 
 上述项目只用于交叉确认端点家族和广告强标志。本仓库没有复制、分发或执行它们的脚本。
 
-## 本仓库候选实现
+## 本仓库正式实现
 
-- 候选模块：`rewrite/Surge/candidates/weibo-self.sgmodule`
+- 正式云端模块：`rewrite/Surge/weibo-self.sgmodule`（于 2026-11-11 随 `surge-self-v2026.11.11` 激活迁入 `main` 正式路径）
 - 自有脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`
 - 行为测试：`rewrite/Surge/scripts/weibo/weibo-self.response.test.js`
-- 候选发布：`surge-self-v2026.08.15`，在 manifest 注册和 tag 创建前不能安装。
+- 当前不可变发布：`surge-self-v2026.11.11`。
 
 功能边界：
 
