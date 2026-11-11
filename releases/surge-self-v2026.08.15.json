@@ -7,6 +7,7 @@
   "rollback_eligible": false,
   "release_commit": "7d4d49825c649ef67242225c162c36e10b30e544",
   "supersedes": "surge-self-v2026.07.27.1",
+  "superseded_by": "surge-self-v2026.11.10",
   "note": "Superseded before live-device validation by surge-self-v2026.11.10 to include the YouTube account/get_setting protobuf inflation fix.",
   "scripts": [
     {

@@ -332,6 +332,8 @@ scripts/generate-managed-surge-rules.py --check-upstream
 `blackmatrix7` / `ruleset.skk.moe` 的 URL 替换为 `mulanshan/surge` 下的 generated URL。示例片段见：
 [rule/Surge/generated/rule-section-managed.conf](rule/Surge/generated/rule-section-managed.conf)。
 
+注意：当规则配置引用 `https://mulanshan.github.io/surge/rule/Surge/generated/...`（GitHub Pages）而非 `raw.githubusercontent.com` 时，`main` 合并后存在约 1–5 分钟的 `pages build and deployment` 构建与 CDN 传播窗口。新增或拆分 `.domainset` / `.non-domain.list` 后，请等待新 URL 返回 `HTTP 200` 再在 Mac / iOS / Apple TV 上执行外部资源刷新与配置重载，避免设备在传播窗口内首次拉取 `404` 导致规则集进入未就绪状态并退回兜底策略。
+
 ### AI / LLM / Coding
 
 文件：[rule/Surge/generated/openai.list](rule/Surge/generated/openai.list)、[rule/Surge/generated/claude.list](rule/Surge/generated/claude.list) 和 [rule/Surge/ai.list](rule/Surge/ai.list)
