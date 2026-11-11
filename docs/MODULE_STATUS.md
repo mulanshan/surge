@@ -87,3 +87,26 @@ all response scripts remain pinned to the immutable public tag.
 
 Changing a module from `candidate` to `stable` requires updating this matrix in
 the same pull request as the release notes.
+
+## Live-device evidence for surge-self-v2026.11.11
+
+- Registered payload commit: `4b1a7ce93998cca6c1b5804e44be6cbb56daf27b`.
+- Device and runtime: `iPhone18,3` running iOS `27.2 (24B119)` with
+  `Surge iOS 5.23.0 (3867)` (`Core 6010000`), exercised between
+  `2026-11-11 11:32 +08:00` and `2026-11-11 12:01 +08:00`; Surge Mac (`6.9.1`,
+  `Core 6009001`) remained free of candidate modules throughout.
+- Readiness and script pinning: enabled `YouTube (候选 2026.11.11)`,
+  `小红书 (候选 2026.11.11)`, and `微博 (候选 2026.11.11)` on iOS; refreshed all
+  external resources (`39/39` reported `ready=1`, `0` load errors) and verified
+  `script list` pinned `youtube.self.response`, `xiaohongshu.self.response`, and
+  `weibo.self.response` to immutable tag `surge-self-v2026.11.11` (`?v=20261111-1`).
+- Exercised release change surface and result (`passed`):
+  - Three live `youtube.self.response` sessions at `2026-11-11 11:49:16–11:49:21 +08:00`
+    (`A0B2543E`, `70A3AF6D`, `BE1F876A`) completed cleanly and returned rewritten
+    protobuf bodies (`result.body = true`, `18.4 ms` on compact response and
+    `420.4 ms` / `453.6 ms` on large rewritten surfaces, down from pre-optimization
+    `957.5 ms` / `586.7 ms`), with zero script errors, zero `protobuf-inflation-abort`,
+    and zero `browse-schema-safety` aborts.
+  - Surge iOS `file` and `memory` logs recorded zero warnings or errors across the
+    validation window, confirming bundle integrity and readiness for canonical
+    cloud activation.
