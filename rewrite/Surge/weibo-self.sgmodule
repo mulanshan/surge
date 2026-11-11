@@ -1,11 +1,11 @@
-#!name=微博 (候选)
-#!desc=自有可审计微博去广告候选模块：仅清理白名单信息流、搜索、详情、评论容器中具有明确结构标志的广告，并精确空响应开屏广告接口。不处理账号、会员、私信或钱包接口。
+#!name=微博
+#!desc=固定云端订阅，自有可审计微博去广告模块：仅清理白名单信息流、搜索、详情、评论容器中具有明确结构标志的广告，并精确空响应开屏广告接口。不处理账号、会员、私信或钱包接口。
 #!author=mulanshan
-#!category=Candidate
+#!category=AdBlock
 #!tag=微博
 #!openUrl=https://apps.apple.com/cn/app/id350962117
 #!arguments=清理明确广告:true,启用调试模式:false
-#!arguments-desc=- 清理明确广告：[true, false]，只删除具有 is_ad / mblogtypename=广告 / ads_material_info 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改会员、皮肤、图标、余额或账号权益，不上传请求/响应。微博 16.8.1 尚未完成真机回归。
+#!arguments-desc=- 清理明确广告：[true, false]，只删除具有 is_ad / mblogtypename=广告 / ads_material_info 等明确标志的条目\n- 调试参数：[true, false]\n\n不修改会员、皮肤、图标、余额或账号权益，不上传请求/响应。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-11-11

@@ -15,8 +15,7 @@ YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路�
 旧番茄 Self 的 URL Rewrite 与 MITM 随专用模块删除而取消；这是有意缩小证书解密范围，代价是部分路径级广告
 可能不再处理，后续只根据脱敏真机日志补充安全的精确域名规则。
 
-旧地址 `rewrite/Surge/fanqie-novel-adblock.sgmodule` 保留为兼容入口，并与新模块使用相同规则；
-新旧地址不要同时启用。旧 `rule/Surge/fanqie-novel-adblock.list` 只为已有配置兼容保留，内容同步收敛为当前基础模块中已确认的番茄精确日志主机，主配置不再引用。
+早期兼容模块 `rewrite/Surge/fanqie-novel-adblock.sgmodule` 已于 2026-11-11 正式退役并删除，仓库仅保留 `rewrite/Surge/basic-adblock.sgmodule` 唯一模块入口。旧 `rule/Surge/fanqie-novel-adblock.list` 只为已有规则引用兼容保留，内容同步收敛为当前基础模块中已确认的番茄精确日志主机，主配置不再引用。
 
 ## Surge 官方约束
 
@@ -120,6 +119,6 @@ iPhone 上的基础模块已启用，生效配置也完整包含原有 44 条规
 1. 从 Surge 日志只聚合域名、次数、策略和规则，不公开 URL 参数、Cookie、账号或 token。
 2. 候选必须满足：本机真实出现且用途明确，或得到至少两个成熟社区来源交叉确认且不存在混合业务证据。
 3. 除已审计的无业务日志主机外，第一方 App 接口、路径规则、响应体清理和任何 MITM 不进入基础模块。
-4. 修改后运行 `python3 scripts/check-basic-adblock.py`，确认新旧入口一致、没有高风险域名和禁止节。
+4. 修改后运行 `python3 scripts/check-basic-adblock.py`，确认已退役的旧兼容模块未重新出现、没有高风险域名和禁止节。
 5. 先在 `main` 验证，再更新外部资源；Mac、iPhone、iPad 分别检查 `available` 与 `enabled`。
 6. 出现误杀时直接从基础模块删除该规则。不要用模块内 `DIRECT` 白名单掩盖，因为这会绕过主配置原有分流策略。

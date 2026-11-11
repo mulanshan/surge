@@ -95,16 +95,12 @@ def module_rules(path: Path) -> list[str]:
 
 def main() -> int:
     canonical_text = CANONICAL.read_text(encoding="utf-8")
-    legacy_text = LEGACY.read_text(encoding="utf-8")
+    if LEGACY.exists():
+        raise SystemExit(f"retired legacy compatibility module must not exist: {LEGACY.relative_to(ROOT)}")
     if not canonical_text.startswith("#!name=基础去广告模块\n"):
         raise SystemExit("canonical module name must be 基础去广告模块")
-    if "旧“番茄小说去广告”订阅地址" not in legacy_text:
-        raise SystemExit("legacy module must explain its compatibility role")
 
     canonical_rules = module_rules(CANONICAL)
-    legacy_rules = module_rules(LEGACY)
-    if canonical_rules != legacy_rules:
-        raise SystemExit("legacy and canonical module rule bodies differ")
     if len(canonical_rules) < 90:
         raise SystemExit(f"unexpectedly small rule set: {len(canonical_rules)}")
     if len(canonical_rules) != len(set(canonical_rules)):

@@ -4,10 +4,10 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const scriptPath = path.join(__dirname, "xiaohongshu-self.response.js");
-const modulePath = path.join(__dirname, "..", "..", "candidates", "xiaohongshu-self.sgmodule");
+const modulePath = path.join(__dirname, "..", "..", "xiaohongshu-self.sgmodule");
 
 assert.ok(fs.existsSync(scriptPath), "missing Xiaohongshu response script");
-assert.ok(fs.existsSync(modulePath), "missing Xiaohongshu candidate module");
+assert.ok(fs.existsSync(modulePath), "missing Xiaohongshu canonical module");
 
 const script = fs.readFileSync(scriptPath, "utf8");
 const moduleText = fs.readFileSync(modulePath, "utf8");
@@ -258,7 +258,7 @@ assert.deepEqual(run(
   assert.doesNotMatch(logs, /sensitive-note-id|sensitive-trace|sensitive-cursor/);
 }
 
-assert.match(moduleText, /^#!name=小红书 \(候选\)$/m);
+assert.match(moduleText, /^#!name=小红书$/m);
 assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(moduleText, /#!arguments=.*清理明确广告:true.*启用调试模式:false/);
 assert.doesNotMatch(moduleText, /恢复无水印保存:true|清理搜索提示:true/);

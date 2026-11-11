@@ -47,12 +47,12 @@
 4. Google 与 GitHub 代码搜索还能找到大量镜像、合集和个人备份。它们大多从上述项目或
    `kelee.one` 再引用，不算独立证据。
 
-## 本仓库候选实现
+## 本仓库正式实现
 
-- 候选模块：`rewrite/Surge/candidates/xiaohongshu-self.sgmodule`
+- 正式云端模块：`rewrite/Surge/xiaohongshu-self.sgmodule`（于 2026-11-11 随 `surge-self-v2026.11.11` 激活迁入 `main` 正式路径）
 - 自有脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`
 - 行为测试：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.test.js`
-- 候选发布：`surge-self-v2026.08.15`，在 manifest 注册和 tag 创建前不能安装。
+- 当前不可变发布：`surge-self-v2026.11.11`。
 
 功能边界：
 

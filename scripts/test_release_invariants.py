@@ -743,7 +743,15 @@ class ReleaseManifestTests(unittest.TestCase):
 
     def test_worktree_uses_candidate_module_pins_for_new_scripts(self) -> None:
         active_names = list(release_verifier.LEGACY_SIX_SCRIPT_NAMES)
-        expanded = dict(release_verifier.EXPECTED)
+        expanded = {
+            name: (
+                f"candidates/{module_name}"
+                if name not in active_names and not module_name.startswith("candidates/")
+                else module_name,
+                script_path,
+            )
+            for name, (module_name, script_path) in release_verifier.EXPECTED.items()
+        }
         active_tag = "surge-self-v2026.07.27.1"
         candidate_tag = "surge-self-v2026.08.14"
         with mock.patch.object(release_verifier, "EXPECTED", expanded):
@@ -775,6 +783,7 @@ class ReleaseManifestTests(unittest.TestCase):
             }
             with (
                 mock.patch.object(release_verifier, "verify_manifest_payload") as verify,
+                mock.patch.object(release_verifier, "verify_module_inventory"),
                 mock.patch.object(
                     release_verifier,
                     "module_tag_and_path",

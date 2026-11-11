@@ -4,10 +4,10 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const scriptPath = path.join(__dirname, "weibo-self.response.js");
-const modulePath = path.join(__dirname, "..", "..", "candidates", "weibo-self.sgmodule");
+const modulePath = path.join(__dirname, "..", "..", "weibo-self.sgmodule");
 
 assert.ok(fs.existsSync(scriptPath), "missing Weibo response script");
-assert.ok(fs.existsSync(modulePath), "missing Weibo candidate module");
+assert.ok(fs.existsSync(modulePath), "missing Weibo canonical module");
 
 const script = fs.readFileSync(scriptPath, "utf8");
 const moduleText = fs.readFileSync(modulePath, "utf8");
@@ -230,7 +230,7 @@ assert.deepEqual(run(
   assert.doesNotMatch(logs, /sensitive-post-id|sensitive-container/);
 }
 
-assert.match(moduleText, /^#!name=微博 \(候选\)$/m);
+assert.match(moduleText, /^#!name=微博$/m);
 assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(moduleText, /#!arguments=.*清理明确广告:true.*启用调试模式:false/);
 assert.match(moduleText, /max-size=6291456/);
