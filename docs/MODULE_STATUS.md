@@ -39,9 +39,10 @@ scripts used by a stable module are pinned to an immutable repository tag.
   pending 07-27 live-device regression is recorded in `CHANGELOG.md` and must be
   completed before that bundle is described as stable.
 - Xiaohongshu and Weibo remain under `rewrite/Surge/candidates/`. Their module
-  definitions target the `surge-self-v2026.11.10` candidate (which superseded
-  `surge-self-v2026.08.15` to include the YouTube `account/get_setting`
-  protobuf inflation fix) and are not public install entries. They may move to
+  definitions target the `surge-self-v2026.11.11` candidate (which superseded
+  `surge-self-v2026.11.10` to include YouTube protobuf feed scanning latency
+  optimizations alongside the `account/get_setting` inflation fix) and are not
+  public install entries. They may move to
   canonical `main` paths only after manifest registration, immutable tag
   creation, a recorded passed device run, and distribution activation.
 

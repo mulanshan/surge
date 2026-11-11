@@ -235,7 +235,7 @@ assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(moduleText, /#!arguments=.*清理明确广告:true.*启用调试模式:false/);
 assert.match(moduleText, /max-size=6291456/);
 assert.ok(moduleText.includes(
-  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.10/rewrite/Surge/scripts/weibo/weibo-self.response.js",
+  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.11/rewrite/Surge/scripts/weibo/weibo-self.response.js",
 ));
 assert.equal(moduleText.includes("script-path=https://raw.githubusercontent.com/mulanshan/surge/main/"), false);
 assert.doesNotMatch(moduleText, /new\.vip\.weibo/);

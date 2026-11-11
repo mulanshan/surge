@@ -75,16 +75,18 @@ function bodyBytes(body) {
   return new Uint8Array(0);
 }
 
+const UTF8_DECODER = new TextDecoder();
+
 function bodyText(body) {
   if (typeof body === "string") {
     // Only treat as real text when it already looks like JSON text.
     const trimmed = body.trim();
     if (trimmed.startsWith("{") || trimmed.startsWith("[")) return body;
     // Byte-string binary payload: decode as UTF-8 bytes, not JS string semantics.
-    return new TextDecoder().decode(bodyBytes(body));
+    return UTF8_DECODER.decode(bodyBytes(body));
   }
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
 }
 
@@ -453,6 +455,26 @@ function encodeLengthField(fieldNo, payload) {
   return concatBytes([encodeTag(fieldNo, WIRE_LENGTH), writeVarint(payload.length), payload]);
 }
 
+function bytesContainsSubsequence(bytes, seq) {
+  if (!seq || seq.length === 0) return true;
+  const limit = bytes.length - seq.length;
+  if (limit < 0) return false;
+  const first = seq[0];
+  let idx = bytes.indexOf(first);
+  while (idx !== -1 && idx <= limit) {
+    let matched = true;
+    for (let j = 1; j < seq.length; j += 1) {
+      if (bytes[idx + j] !== seq[j]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+    idx = bytes.indexOf(first, idx + 1);
+  }
+  return false;
+}
+
 function parseFields(bytes) {
   const fields = [];
   let pos = 0;
@@ -476,7 +498,7 @@ function parseFields(bytes) {
       const length = readVarint(bytes, pos);
       valueStart = length.offset;
       valueEnd = valueStart + length.value;
-      payload = bytes.slice(valueStart, valueEnd);
+      payload = bytes.subarray(valueStart, valueEnd);
     } else if (wireType === WIRE_32BIT) {
       valueEnd = pos + 4;
     } else {
@@ -490,7 +512,7 @@ function parseFields(bytes) {
       start,
       end: valueEnd,
       payload,
-      raw: bytes.slice(start, valueEnd),
+      raw: bytes.subarray(start, valueEnd),
     });
     pos = valueEnd;
   }
@@ -907,18 +929,20 @@ function cleanSettingProtobuf(bytes) {
   return changed ? rebuildFields(out) : bytes;
 }
 
+function textContainsAnyMarker(text, markers) {
+  return markers.some((marker) => text.includes(marker));
+}
+
 function bytesContainAdMarker(bytes) {
-  const text = new TextDecoder().decode(bytes);
-  return AD_MARKERS.some((marker) => text.includes(marker));
+  return textContainsAnyMarker(UTF8_DECODER.decode(bytes), AD_MARKERS);
 }
 
 function bytesContainMarker(bytes, marker) {
-  return new TextDecoder().decode(bytes).includes(marker);
+  return UTF8_DECODER.decode(bytes).includes(marker);
 }
 
 function bytesContainAnyMarker(bytes, markers) {
-  const text = new TextDecoder().decode(bytes);
-  return markers.some((marker) => text.includes(marker));
+  return textContainsAnyMarker(UTF8_DECODER.decode(bytes), markers);
 }
 
 function isLikelyNextAdFragment(payload) {
@@ -937,12 +961,19 @@ function isLikelyNextAdFragment(payload) {
 }
 
 function cleanNextAdFragmentsProtobuf(bytes, depth) {
-  if (depth <= 0) return bytes;
+  if (depth <= 0 || bytes.length < 180 || !bytesContainAnyMarker(bytes, NEXT_AD_STRONG_MARKERS)) {
+    return bytes;
+  }
 
   let changed = false;
   const out = [];
   for (const field of parseFields(bytes)) {
-    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+    if (
+      field.wireType !== WIRE_LENGTH ||
+      !field.payload ||
+      field.payload.length < 180 ||
+      !bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)
+    ) {
       out.push(field);
       continue;
     }
@@ -983,6 +1014,7 @@ function isLikelyNestedMessage(bytes) {
 }
 
 function markerHits(bytes) {
+  const text = UTF8_DECODER.decode(bytes);
   const checks = {
     badge_cn: ["赞助商广告"],
     sponsor_cn: ["赞助商"],
@@ -1004,7 +1036,7 @@ function markerHits(bytes) {
   };
   const hits = [];
   for (const [name, markers] of Object.entries(checks)) {
-    if (bytesContainAnyMarker(bytes, markers)) hits.push(name);
+    if (textContainsAnyMarker(text, markers)) hits.push(name);
   }
   return hits;
 }
@@ -1015,46 +1047,54 @@ function markerHits(bytes) {
 // Removing the repeated field itself is important. Deleting an arbitrary
 // ad-marked descendant only hollows the card and leaves a grey placeholder.
 const ITEM_SECTION_RENDERER_FIELD = 50195462;
+const ITEM_SECTION_RENDERER_TAG = encodeTag(ITEM_SECTION_RENDERER_FIELD, WIRE_LENGTH);
 const RICH_ITEM_CONTENT_FIELD = 1;
+
+const FEED_AD_UI_MARKERS = [
+  "inline_injection_entrypoint_layout.eml",
+  "ad_badge.eml-fe",
+  "ad_avatar.eml-fe",
+  "ad_button.eml-fe",
+  "ad_details_line.eml-fe",
+  "ad_icon_text.eml-fe",
+  "ad_rating.eml-fe",
+  "in_feed_ad",
+  "promotedSparklesWebRenderer",
+  "promotedVideoRenderer",
+  "displayAdRenderer",
+  "adSlotRenderer",
+  "inFeedAdLayoutRenderer",
+];
+
+const FEED_AD_NETWORK_MARKERS = [
+  "pagead",
+  "googleads",
+  "googleadservices",
+  "doubleclick.net",
+  "adclick",
+  "adview",
+];
+
+const FEED_AD_BADGE_TEXT_MARKERS = [
+  "赞助商广告",
+  "付费宣传",
+  "付费推广",
+  "Sponsored",
+];
 
 function isDirectFeedAdItem(payload) {
   if (!payload || payload.length < 64) return false;
+  const text = UTF8_DECODER.decode(payload);
 
   // Structural UI identifiers and ad-network payloads are stronger than
   // translated CTA text and are stable across the live Chinese responses.
-  if (
-    bytesContainAnyMarker(payload, [
-      "inline_injection_entrypoint_layout.eml",
-      "ad_badge.eml-fe",
-      "ad_avatar.eml-fe",
-      "ad_button.eml-fe",
-      "ad_details_line.eml-fe",
-      "ad_icon_text.eml-fe",
-      "ad_rating.eml-fe",
-      "in_feed_ad",
-      "promotedSparklesWebRenderer",
-      "promotedVideoRenderer",
-      "displayAdRenderer",
-      "adSlotRenderer",
-      "inFeedAdLayoutRenderer",
-    ])
-  ) {
+  if (textContainsAnyMarker(text, FEED_AD_UI_MARKERS)) {
     return true;
   }
 
   // Community implementations use pagead inside a sizeable unknown field as
   // the fallback when YouTube has not exposed a known renderer/EML name.
-  if (
-    payload.length >= 1000 &&
-    bytesContainAnyMarker(payload, [
-      "pagead",
-      "googleads",
-      "googleadservices",
-      "doubleclick.net",
-      "adclick",
-      "adview",
-    ])
-  ) {
+  if (payload.length >= 1000 && textContainsAnyMarker(text, FEED_AD_NETWORK_MARKERS)) {
     return true;
   }
 
@@ -1064,12 +1104,7 @@ function isDirectFeedAdItem(payload) {
   // badge strings. Generic lowercase words like "sponsored"/"advertisement"
   // appear in organic titles and descriptions and risk deleting real videos.
   if (payload.length < 4096) return false;
-  return bytesContainAnyMarker(payload, [
-    "赞助商广告",
-    "付费宣传",
-    "付费推广",
-    "Sponsored",
-  ]);
+  return textContainsAnyMarker(text, FEED_AD_BADGE_TEXT_MARKERS);
 }
 
 function cleanItemSectionRenderer(payload, counters) {
@@ -1103,7 +1138,7 @@ function cleanItemSectionRenderer(payload, counters) {
 }
 
 function cleanKnownFeedItemSections(bytes, depth, counters) {
-  if (depth <= 0) return bytes;
+  if (depth <= 0 || !bytesContainsSubsequence(bytes, ITEM_SECTION_RENDERER_TAG)) return bytes;
 
   let fields;
   try {
@@ -1123,8 +1158,10 @@ function cleanKnownFeedItemSections(bytes, depth, counters) {
     let payload;
     if (field.fieldNo === ITEM_SECTION_RENDERER_FIELD) {
       payload = cleanItemSectionRenderer(field.payload, counters);
-    } else {
+    } else if (bytesContainsSubsequence(field.payload, ITEM_SECTION_RENDERER_TAG)) {
       payload = cleanKnownFeedItemSections(field.payload, depth - 1, counters);
+    } else {
+      payload = field.payload;
     }
 
     if (payload !== field.payload) {
@@ -1140,15 +1177,17 @@ function cleanKnownFeedItemSections(bytes, depth, counters) {
 
 function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
   feedAdCardsRemoved = 0;
-  const hits = markerHits(bytes);
   const counters = { sections: 0, items: 0, removed: 0 };
   const output = cleanKnownFeedItemSections(bytes, 18, counters);
   feedAdCardsRemoved = counters.removed;
 
   if (counters.removed === 0) {
-    debug(
-      `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`
-    );
+    if (config.debug === true) {
+      const hits = markerHits(bytes);
+      debug(
+        `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=0 bytes=${bytes.length}`,
+      );
+    }
     return bytes;
   }
 
@@ -1162,16 +1201,20 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
     remainingItems <= 0 ||
     counters.removed > Math.max(4, Math.floor(counters.items / 2));
   if (tooManyItemsRemoved) {
+    const hits = markerHits(bytes);
     logbook(
-      `${surface}-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)}`
+      `${surface}-schema-safety hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)}`,
     );
     feedAdCardsRemoved = 0;
     return bytes;
   }
 
-  debug(
-    `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`
-  );
+  if (config.debug === true) {
+    const hits = markerHits(bytes);
+    debug(
+      `${surface}-schema hits=${hits.join("|") || "none"} sections=${counters.sections} items=${counters.items} removed=${counters.removed} remaining=${remainingItems} ratio=${ratio.toFixed(3)} ${bytes.length} -> ${output.length}`,
+    );
+  }
   return output;
 }
 
