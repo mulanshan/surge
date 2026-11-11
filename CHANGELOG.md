@@ -5,8 +5,19 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-11
 
-Netflix domain-set split, template policy alignment, and JD IPv6 probe cleanup:
+Candidate bundle `surge-self-v2026.11.11`, YouTube protobuf feed latency optimization, Netflix domain-set split, and JD IPv6 probe cleanup:
 
+- Optimized `rewrite/Surge/scripts/youtube/youtube-self.response.js` to eliminate
+  ~460–580 ms script spikes on large `browse`, `search`, `next`, and `get_watch`
+  protobuf responses: lazy-evaluated `markerHits()` only on `debug=true` or
+  schema-safety aborts, switched `parseFields()` to zero-copy `subarray()`,
+  shared a single `TextDecoder` instance with one decode per `RichItemContent`,
+  and added exact `ITEM_SECTION_RENDERER_TAG` / subtree marker guards before
+  recursing into nested protobuf fields.
+- Transitioned `surge-self-v2026.11.10` to `rejected`, registered candidate
+  `surge-self-v2026.11.11` carrying the YouTube optimization plus the
+  Xiaohongshu and Weibo candidate modules, and documented the GitHub Pages CDN
+  propagation window before refreshing device external resources.
 - Split `netflix` managed rules into `netflix.domainset` + `netflix.non-domain.list`
   with `IP-ASN,2906,no-resolve` coverage while retaining `netflix.list` as the
   compatibility snapshot, and aligned `rule-section-managed.conf` policies with

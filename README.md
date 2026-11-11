@@ -285,7 +285,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self
 
 当前基线是小红书 `9.43`、微博 `16.8.1`。只有合成测试通过，没有这两个 App 版本的 iPhone
 真机回归，因此不提供稳定订阅地址，也不应直接从 `main` 安装候选文件。它们的脚本当前固定到候选发布
-`surge-self-v2026.11.10`（取代 `surge-self-v2026.08.15`，合并了 YouTube `account/get_setting` protobuf 注入阈值修复）；完成候选真机验证与激活后再迁入 `main` 正式路径。
+`surge-self-v2026.11.11`（取代 `surge-self-v2026.11.10`，合并了 YouTube `account/get_setting` 注入修复与首页/推荐流 protobuf 扫描性能优化）；完成候选真机验证与激活后再迁入 `main` 正式路径。
 
 两者都不加载第三方脚本，不伪造会员、皮肤、App 图标或账号权益，不记录原始请求/响应。
 运行时脚本由本仓库自主编写并按 [MIT License](LICENSE) 开源；社区实现只用于确认端点家族、

@@ -302,4 +302,106 @@ const playerWithCaptions = JSON.stringify({
   assert.ok(aborted.logbookLogs.some((line) => line.includes("protobuf-inflation-abort")));
 }
 
+{
+  // Performance & lazy-decoding regression:
+  // 1) When debug=false and no safety abort fires, browse feed cleanup must not
+  //    UTF-8 decode the full multi-megabyte buffer for markerHits() or decode
+  //    unrelated non-ItemSectionRenderer blobs.
+  // 2) Deeply nested ItemSectionRenderers and next ad fragments must still be
+  //    cleaned identically in a few milliseconds on ~2 MB payloads.
+  const organicCardBytes = textFilledItem("organic video title and description", 1024);
+  const sponsoredCardBytes = textFilledItem("ad_badge.eml-fe promoted card", 1024);
+  const cleanSection = encodeLengthField(
+    50195462,
+    concatBytes(
+      encodeLengthField(1, organicCardBytes),
+      encodeLengthField(1, organicCardBytes),
+      encodeLengthField(1, sponsoredCardBytes),
+    ),
+  );
+  const nestedSectionTree = encodeLengthField(
+    9,
+    encodeLengthField(49399797, encodeLengthField(1, cleanSection)),
+  );
+  const heavyBlob = new Uint8Array(65536);
+  heavyBlob.fill(0x61); // 'a'
+  const metadataTree = encodeLengthField(
+    12,
+    concatBytes(
+      ...Array.from({ length: 32 }, (_, idx) =>
+        encodeLengthField((idx % 7) + 2, heavyBlob),
+      ),
+    ),
+  );
+  const largeBrowse = concatBytes(metadataTree, nestedSectionTree);
+  assert.ok(largeBrowse.length > 2 * 1024 * 1024, "synthetic browse fixture must exceed 2 MB");
+
+  const decodedLengths = [];
+  class CountingTextDecoder extends TextDecoder {
+    decode(input, options) {
+      if (input) decodedLengths.push(input.byteLength ?? input.length ?? 0);
+      return super.decode(input, options);
+    }
+  }
+
+  let browseOutput;
+  const startMs = Date.now();
+  vm.runInNewContext(
+    script,
+    {
+      ArrayBuffer,
+      TextDecoder: CountingTextDecoder,
+      Uint8Array,
+      console: { log() {} },
+      $surge: { logbook() {} },
+      $argument: JSON.stringify({ debug: false }),
+      $request: { url: "https://youtubei.googleapis.com/youtubei/v1/browse" },
+      $response: { bodyBytes: largeBrowse },
+      $done(value) {
+        browseOutput = value;
+      },
+    },
+    { filename: "youtube-self.response.js" },
+  );
+  const elapsedMs = Date.now() - startMs;
+
+  assert.ok(browseOutput && browseOutput.body instanceof Uint8Array);
+  assert.equal(
+    browseOutput.body.length,
+    largeBrowse.length - encodeLengthField(1, sponsoredCardBytes).length,
+    "nested sponsored RichItemContent must be stripped cleanly",
+  );
+  assert.equal(
+    decodedLengths.some((len) => len >= 65536),
+    false,
+    "full-buffer markerHits() and unrelated 64 KB blobs must never be UTF-8 decoded when debug=false",
+  );
+  assert.equal(
+    decodedLengths.length,
+    3,
+    "each RichItemContent must be UTF-8 decoded at most once",
+  );
+  assert.ok(elapsedMs < 150, `2 MB browse cleanup took ${elapsedMs}ms (expected < 150ms)`);
+
+  // Verify nested next ad fragment removal still works with subtree marker guard.
+  const nextAdLeaf = textFilledItem("googleadservices.com/pagead/aclk", 256);
+  const nextCleanLeaf = textFilledItem("related video metadata item", 4096);
+  const nextPayload = concatBytes(
+    encodeLengthField(7, encodeLengthField(3, nextAdLeaf)),
+    encodeLengthField(8, nextCleanLeaf),
+  );
+  const nextResult = execute(nextPayload, "next");
+  assertNoLogs(nextResult, "nested next ad fragment cleanup");
+  assert.ok(nextResult.output && nextResult.output.body instanceof Uint8Array);
+  assert.deepEqual(
+    Array.from(nextResult.output.body),
+    Array.from(
+      concatBytes(
+        encodeLengthField(7, new Uint8Array(0)),
+        encodeLengthField(8, nextCleanLeaf),
+      ),
+    ),
+  );
+}
+
 console.log("YouTube Self tests passed");
