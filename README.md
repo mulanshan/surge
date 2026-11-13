@@ -49,10 +49,10 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 
 - 处理 `player` / `get_watch` / `next` 播放链路广告，并尝试后台播放与 PiP
 - 对首页/搜索 `browse` / `search`、详情页 `next` 与 `get_watch.contents.next` 按 protobuf 的 `ItemSectionRenderer -> richItemContents` 结构删除整张赞助卡，避免只清空内容后留下灰壳
-- `guide` / `reel` 仍原样放行，避免导航和元数据回归
+- 支持 `reel/reel_watch_sequence` Shorts 插播广告剥离与可选底栏入口精简开关（`隐藏上传按钮`、`隐藏Shorts入口`、`隐藏选段入口`，默认均关闭），信息流按零 UTF-8 解码原始字节扫描
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13.1`，query 版本为 `v=20261113-2`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13.2`，query 版本为 `v=20261113-3`。
 
 能力边界（SSAP）：YouTube 自 2024 年起试验并逐步扩大服务端广告注入（SSAI，社区称 SSAP），把广告直接拼进视频流。本模块与所有 protobuf 改写路线一样，只能拦截客户端插入的广告；命中 SSAP 实验的账号或设备会出现"模块开着但仍有广告"，这是预期行为而非模块故障。
 
@@ -125,7 +125,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/amap-self.s
 - 清理搜索热词广告配置 `ws/shield/search/new_hotword`
 - 清理 DSP/推荐广告配置 `ws/shield/dsp/profile/index/nodefaas`
 - 对明确广告/归因接口使用 Map Local 返回空响应
-- 覆盖 `m5.amap.com`、`m5-zb.amap.com` 与 2026-07-13 真机验证的 `m5-x.amap.com`；后者已确认承载 `shield/alc/collect` 和 `shield/amapstream/upload`
+- 覆盖 `m5.amap.com`、`m5-zb.amap.com`、`m5-x.amap.com` 与 `m6.amap.com`，提供 `精简周边与出行推广` 可选开关及仅限 `AMap*` User-Agent 的 `amdc.m.taobao.com` HTTPDNS 阻断规则（不影响淘宝/支付宝）
 
 安全边界：
 
@@ -156,7 +156,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/camscanner-
 
 旧标签 `camscanner-self-v1.0.0` 已标记为 `retired-moved`：远端引用不再指向原始发布状态，不能继续作为安装、校验或回滚地址。仍在使用该 URL 的设备应删除旧订阅，改用上面的 `main` 模块地址，并同时启用“基础去广告模块”。当前扫描全能王脚本属于受 release manifest 校验的统一 `surge-self-vYYYY.MM.DD[.N]` 发布链；回滚只能选择 manifest 中显式标记 `rollback_eligible: true` 的完整 bundle，不能复用或移动旧标签。详细迁移规则见 [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)。
 
-当前 `main` 已切换到“基础模块 + 专用模块”分层。已安装“扫描全能王 Self v2”的设备更新原订阅后会显示为“扫描全能王”；旧架构“扫描全能王 Self”仍应停用。模块仍按状态矩阵保留为 `candidate`，完成新版本真机专项回归后再晋升为 `stable`。
+当前 `main` 已切换到“基础模块 + 专用模块”分层。已安装“扫描全能王 Self v2”的设备更新原订阅后会显示为“扫描全能王”；旧架构“扫描全能王 Self”仍应停用。已完成 iOS 5.23.0 真机回归并晋升为 `stable`，支持 `open.camscanner.com` 与 `api/api-cs.intsig.net` 双域名族及 `get_startpic` 开屏清理。
 
 当前 `main` 功能范围：
 
@@ -232,7 +232,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 - 兼容京东 15.8.50 真机确认的 `/`、`/api`、`/client.action` 三种 API 入口，以及 POST 请求体中的 `functionId`
 - 可关闭 `basicConfig` 中的 socket 诊断上报与 HTTPDNS 开关
 - 可选择是否清理订单列表/物流页中的推广节点
-- 仅拒绝随机 `jddebug.com/diagnose` 请求与纯 IPv6 测速探针 `speedv6.m.jd.com`，不整域拦截京东
+- URL 正则层通过 ICU 负向预查跳过非白名单带参请求，拒绝 `dns.jd.com` HTTPDNS、随机 `jddebug.com/diagnose` 请求与纯 IPv6 测速探针 `speedv6.m.jd.com`，不整域拦截京东
 
 安全边界：
 
@@ -256,7 +256,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self.sgmodule
 ```
 
-这是自有可审计的微信去广告模块（固定到 `surge-self-v2026.11.13.1`）：
+这是自有可审计的微信去广告模块（固定到 `surge-self-v2026.11.13.2`）：
 
 - 清理公众号文章 `/mp/getappmsgad` 与 `/mp/getappmsgext` 返回中的明确广告/推广字段，完整保留阅读数、点赞、合集与赞赏头像
 - 对公众号商品推广接口 `/mp/cps_product_info` 进行受控空列表清理（支持 `清理明确广告` 开关）
@@ -287,13 +287,13 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/xiaohongshu
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的小红书正式云端去广告模块：
 
 - 模块：`rewrite/Surge/xiaohongshu-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
+- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
 - 调研与安全边界：[docs/XIAOHONGSHU_SELF_RESEARCH.md](docs/XIAOHONGSHU_SELF_RESEARCH.md)
 
 当前范围与安全边界：
 
 - 仅清理白名单 Feed、搜索结果、笔记和开屏响应中带非空 `ads_info`、`is_ad` 等明确结构标志的整条目
-- 对 `www.xiaohongshu.com/api/sns/v*/ads/resource` 返回空 JSON，并精确拒绝明确广告 CDN 主机
+- 对 `www.xiaohongshu.com/api/sns/v*/ads/resource` 执行保留 `{code, success, data}` 外壳的受控广告清空，并精确拒绝 `ads-img-al/qc` 与 `ads-video-al/qc` 广告 CDN 主机
 - 不修改保存/水印开关、搜索提示、系统配置、会员或账号状态；不整域拒绝 `xiaohongshu.com`
 - 不使用第三方脚本，不记录或上传原始请求/响应
 
@@ -310,13 +310,13 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/weibo-self.
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的微博正式云端去广告模块：
 
 - 模块：`rewrite/Surge/weibo-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
+- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
 - 调研与安全边界：[docs/WEIBO_SELF_RESEARCH.md](docs/WEIBO_SELF_RESEARCH.md)
 
 当前范围与安全边界：
 
 - 仅清理白名单信息流、搜索、详情、评论容器中带 `is_ad`、`mblogtypename=广告`、`promotion.type=ad`、`ads_material_info` 等明确标志的条目
-- 精确空响应 `uve.weibo.com` 下开屏/实时/预加载广告接口，并拒绝 `adpinpai.video.weibocdn.com`
+- 精确空响应 `uve.weibo.com` 下开屏/实时/预加载广告接口（含 `sdkad.php` 与 `actionad.php`），拒绝 `adpinpai.video.weibocdn.com` 及微博 HTTPDNS（`dns.weibo.cn`、`httpdns.uve.weibo.com`）
 - 个人页、账号、会员、私信、通知和钱包接口不在匹配范围内；不伪造会员、皮肤或 App 图标
 - 不使用第三方脚本，不记录或上传原始请求/响应
 
@@ -333,7 +333,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/bilibili-se
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的哔哩哔哩正式云端去广告模块：
 
 - 模块：`rewrite/Surge/bilibili-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
+- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
 - 调研与安全边界：[docs/BILIBILI_SELF_RESEARCH.md](docs/BILIBILI_SELF_RESEARCH.md)
 
 当前范围与安全边界：

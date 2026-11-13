@@ -5,6 +5,16 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-13
 
+Activated canonical bundle `surge-self-v2026.11.13.2`, upgraded six script-backed modules (`京东`, `小红书`, `微博`, `扫描全能王`, `高德地图`, `YouTube`), and promoted `高德地图` and `扫描全能王` to `stable`:
+
+- Activated immutable nine-script bundle `surge-self-v2026.11.13.2` after passed Surge iOS 5.23.0 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v202611132`), transitioning `surge-self-v2026.11.13.1` to `inactive` and updating all nine canonical cloud modules under `rewrite/Surge/` to `surge-self-v2026.11.13.2` (`?v=20261113-3`).
+- `京东` (`jd-self`): added ICU negative-lookahead `functionId` URL gating to avoid buffering non-whitelisted cart/product/checkout responses, added `DOMAIN,dns.jd.com,{{{HTTPDNS策略}}}`, exposed `清理明确广告` + `debug={{{启用调试模式}}}`, and added `openUpgrade` popup neutralization plus `welcomeHome` splash/float floor cleanup.
+- `小红书` (`xiaohongshu-self`): moved `ads/resource` from static `[Map Local]` `{}` into `xiaohongshu-self.response.js` so `{code, success, data}` envelopes remain intact and honor `清理明确广告`, added `DOMAIN,ads-img-al.xhscdn.com,REJECT`, and covered `splash_list` / `ads_groups` / `ads` containers.
+- `微博` (`weibo-self`): added parameterized `dns.weibo.cn` + `httpdns.uve.weibo.com` HTTPDNS rules, extended `[Map Local]` to `actionad.php`, and extended `mix_comments` / `build_comments` cleanup to `datas` / `comments` / `trends` promotional sub-items.
+- `扫描全能王` (`camscanner-self`, promoted to `stable`): separated `SENSITIVE_ENDPOINT_MARKERS` from `PROTECTED_KEY_MARKERS` so `user/cs/operating/app/get_startpic` is cleaned while `purchase/cs/query_property` remains untouched, added `api.intsig.net` + `api-cs.intsig.net` coverage, tightened compound ad key tokens (protecting `float_btn`), and removed duplicate `get_ad_*` `[Map Local]` short-circuits.
+- `高德地图` (`amap-self`, promoted to `stable`): added User-Agent-scoped `AND,((DOMAIN,amdc.m.taobao.com), (USER-AGENT,AMap*)),{{{高德HTTPDNS策略}}}` (preserving Taobao/Alipay), added `m6.amap.com` coverage, added opt-in `精简周边与出行推广:false` (`afootprint` + `main-page` `pull3`/activity promo cards), and added `Content-Type: application/json` headers to JSON `[Map Local]` mocks.
+- `YouTube` (`youtube-self`): eliminated per-card UTF-8 `TextDecoder.decode()` allocations on protobuf feeds via pre-encoded byte-subsequence scanning (`31 ms` on `2.10 MB` `browse` payload in iOS JSC), added `reel/reel_watch_sequence` Shorts ad stripping, and exposed default-off iOS Protobuf `guide` bottom-bar switches (`隐藏上传按钮:false`, `隐藏Shorts入口:false`, `隐藏选段入口:false`).
+
 Upgraded `基础去广告模块` (`rewrite/Surge/basic-adblock.sgmodule`) from 94 to 119 exact domain rules after Mac + iOS live traffic-stat and rule-match audit:
 
 - Upgraded dedicated ByteDance Pangolin SDK domains (`pangolin-sdk-toutiao*.com`) to `DOMAIN-SUFFIX` and added `pangolin-sdk-toutiao1.com` and `pangolin-dsp-toutiao.com` to stop unblocked ad SDK subdomains from leaking through `FINAL` proxy policies.

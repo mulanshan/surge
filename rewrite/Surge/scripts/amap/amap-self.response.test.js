@@ -58,8 +58,8 @@ assert.deepEqual(run("faas/amap-navigation/main-page", {
 }
 
 assert.deepEqual(run("faas/amap-navigation/main-page", "not-json"), {});
-assert.match(moduleText, /\(\?:m5\|m5-zb\|m5-x\)\\\.amap\\\.com/);
-assert.match(moduleText, /hostname = %APPEND% m5\.amap\.com, m5-zb\.amap\.com, m5-x\.amap\.com, awaken\.amap\.com/);
+assert.match(moduleText, /\(\?:m5\|m5-zb\|m5-x\|m6\)\\\.amap\\\.com/);
+assert.match(moduleText, /hostname = %APPEND% m5\.amap\.com, m5-zb\.amap\.com, m5-x\.amap\.com, m6\.amap\.com, awaken\.amap\.com/);
 
 {
   const result = bodyOf(run("valueadded/alimama/splash_screen", {
