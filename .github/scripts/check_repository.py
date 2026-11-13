@@ -46,6 +46,7 @@ EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
         Path("wechat-self.sgmodule"),
         Path("xiaohongshu-self.sgmodule"),
         Path("weibo-self.sgmodule"),
+        Path("candidates/bilibili-self.sgmodule"),
     }
 )
 RETIRED_MODULE_FILES = {

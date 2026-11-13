@@ -1,0 +1,28 @@
+#!name=哔哩哔哩 (候选 2026.11.13)
+#!desc=候选测试模块，自有可审计哔哩哔哩去广告方案：覆盖开屏、首页与竖屏推荐流、视频详情与相关推荐(gRPC)、评论区商业推广、动态流广告与搜索推广，并提供可选底栏精简与 PCDN 策略开关。不含第三方脚本，不修改登录、大会员或支付状态。
+#!author=mulanshan
+#!category=AdBlock
+#!tag=哔哩哔哩
+#!openUrl=https://apps.apple.com/cn/app/id736536022
+#!arguments=清理明确广告:true,隐藏底栏会员购:false,PCDN节点策略:DIRECT,启用调试模式:false
+#!arguments-desc=- 清理明确广告：[true, false]，默认 true；清理开屏、推荐流、视频详情与相关推荐(gRPC)、评论区商业条、动态广告卡与搜索推广\n- 隐藏底栏会员购：[true, false]，默认 false；开启后隐藏底部导航栏「会员购」入口\n- PCDN节点策略：[DIRECT, REJECT]，默认 DIRECT；改为 REJECT 可屏蔽 mcdn/szbdyd PCDN 节点并回退官方 CDN\n- 启用调试模式：[true, false]\n\n不加载第三方脚本，不整域拦截 bilibili.com 或 cm.bilibili.com，不手写宽泛 UDP REJECT，不修改账号、大会员、钱包或支付接口。
+#!system=ios
+#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
+#!date=2026-11-13
+
+[Rule]
+# 阻断 HTTPDNS 直连 IP 调度，确保域名级 MITM 与分流规则稳定生效。
+DOMAIN,httpdns.bilivideo.com,REJECT
+# 可选 PCDN 节点策略（默认 DIRECT；改为 REJECT 强制客户端回退官方 upos CDN）。
+DOMAIN-SUFFIX,mcdn.bilivideo.cn,{{{PCDN节点策略}}}
+DOMAIN-SUFFIX,szbdyd.com,{{{PCDN节点策略}}}
+
+[Header Rewrite]
+# 仅对本模块改写的 6 个白名单 gRPC 接口移除压缩协商头，保留弹幕包 (DmSegMobile) 等大体积接口的 gzip 压缩。
+http-request ^https:\/\/(?:grpc\.biliapi\.net|app\.bilibili\.com)\/bilibili\.(?:app\.view\.v1\.View\/(?:View|RelatesFeed)|app\.viewunite\.v1\.View\/(?:View|RelatesFeed)|main\.community\.reply\.v1\.Reply\/MainList|app\.dynamic\.v2\.Dynamic\/DynAll)(?:\?.*)?$ header-del grpc-accept-encoding
+
+[Script]
+bilibili.self.response = type=http-response,pattern=^https:\/\/(?:(?:app|api)\.bilibili\.com\/x\/(?:v2\/(?:splash\/(?:list|show|event\/list2|brand\/list)|feed\/index(?:\/story)?|search\/square)|resource\/show\/tab\/v2)|api\.live\.bilibili\.com\/xlive\/app-room\/v1\/index\/getInfoByRoom|(?:grpc\.biliapi\.net|app\.bilibili\.com)\/bilibili\.(?:app\.view\.v1\.View\/(?:View|RelatesFeed)|app\.viewunite\.v1\.View\/(?:View|RelatesFeed)|main\.community\.reply\.v1\.Reply\/MainList|app\.dynamic\.v2\.Dynamic\/DynAll))(?:\?.*)?$,requires-body=1,binary-body-mode=1,max-size=6291456,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13/rewrite/Surge/scripts/bilibili/bilibili-self.response.js?v=20261113-1,argument="{\"cleanAds\":{{{清理明确广告}}},\"hideMallTab\":{{{隐藏底栏会员购}}},\"debug\":{{{启用调试模式}}}}"
+
+[MITM]
+hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.live.bilibili.com, grpc.biliapi.net

@@ -67,13 +67,30 @@ EXPECTED = {
         "weibo-self.sgmodule",
         "rewrite/Surge/scripts/weibo/weibo-self.response.js",
     ),
+    "Bilibili": (
+        "candidates/bilibili-self.sgmodule",
+        "rewrite/Surge/scripts/bilibili/bilibili-self.response.js",
+    ),
 }
-LEGACY_FIVE_SCRIPT_NAMES = frozenset(EXPECTED) - {"WeChat", "Xiaohongshu", "Weibo"}
-LEGACY_SIX_SCRIPT_NAMES = frozenset(EXPECTED) - {"Xiaohongshu", "Weibo"}
+LEGACY_FIVE_SCRIPT_NAMES = frozenset(EXPECTED) - {
+    "WeChat",
+    "Xiaohongshu",
+    "Weibo",
+    "Bilibili",
+}
+LEGACY_SIX_SCRIPT_NAMES = frozenset(EXPECTED) - {"Xiaohongshu", "Weibo", "Bilibili"}
+LEGACY_EIGHT_SCRIPT_NAMES = frozenset(EXPECTED) - {"Bilibili"}
 HISTORICAL_SCRIPT_NAME_SETS = frozenset(
-    {LEGACY_FIVE_SCRIPT_NAMES, LEGACY_SIX_SCRIPT_NAMES, frozenset(EXPECTED)}
+    {
+        LEGACY_FIVE_SCRIPT_NAMES,
+        LEGACY_SIX_SCRIPT_NAMES,
+        LEGACY_EIGHT_SCRIPT_NAMES,
+        frozenset(EXPECTED),
+    }
 )
-ACTIVE_SCRIPT_NAME_SETS = frozenset({LEGACY_SIX_SCRIPT_NAMES, frozenset(EXPECTED)})
+ACTIVE_SCRIPT_NAME_SETS = frozenset(
+    {LEGACY_SIX_SCRIPT_NAMES, LEGACY_EIGHT_SCRIPT_NAMES, frozenset(EXPECTED)}
+)
 LEGACY_SCHEMA_ONE_MIGRATION = {
     "surge-self-v2026.07.13": {
         "status": "retired-moved",

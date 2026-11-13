@@ -3,6 +3,13 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-13
+
+Staged Bilibili candidate module (`surge-self-v2026.11.13`):
+
+- Added clean-room self-hosted Bilibili response sanitizer (`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`), synthetic unit test suite (`bilibili-self.response.test.js`), architectural boundary document (`docs/BILIBILI_SELF_RESEARCH.md`), and staged candidate module (`rewrite/Surge/candidates/bilibili-self.sgmodule`) pinned to `surge-self-v2026.11.13`.
+- Covered whitelisted JSON splash, home/story feeds (preserving organic `is_ad_loc` fallback slots), search square promotions, live room ad banners, and unary uncompressed gRPC Protobuf ad slots across `viewunite.v1`, `view.v1`, `reply.v1` (preserving `up_top` creator-pinned comments), and `dynamic.v2` (`DYNAMIC_TYPE_AD`), with optional switches for bottom Mall tab hiding and PCDN policy.
+
 ## 2026-11-11
 
 Activated canonical bundle `surge-self-v2026.11.11`, promoted Xiaohongshu and Weibo to public cloud modules, retired legacy Fanqie module duplicate, and landed YouTube protobuf feed latency optimization + Netflix domain-set split:
