@@ -10,7 +10,7 @@
 ## 目录
 
 - [公开使用](#公开使用)
-- [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信) · [小红书](#小红书) · [微博](#微博)
+- [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信) · [小红书](#小红书) · [微博](#微博) · [哔哩哔哩](#哔哩哔哩)
 - [rule / Surge（规则）](#rule--surge)：[自托管生成镜像](#自托管生成镜像) · [AI / LLM / Coding](#ai--llm--coding) · [Apple 系统服务](#apple-系统服务) · [豆瓣](#豆瓣) · [TMDb](#tmdb) · [Docker / OCI](#docker--oci-镜像拉取) · [番茄小说](#番茄小说回国分流) · [示例配置](#示例配置)
 - [日志导出与候选规则开发](#日志导出与候选规则开发)
 - [授权与第三方来源](#授权与第三方来源)
@@ -52,7 +52,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.11`，query 版本为 `v=20261111-1`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13`，query 版本为 `v=20261113-1`。
 
 能力边界（SSAP）：YouTube 自 2024 年起试验并逐步扩大服务端广告注入（SSAI，社区称 SSAP），把广告直接拼进视频流。本模块与所有 protobuf 改写路线一样，只能拦截客户端插入的广告；命中 SSAP 实验的账号或设备会出现"模块开着但仍有广告"，这是预期行为而非模块故障。
 
@@ -285,7 +285,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/xiaohongshu
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的小红书正式云端去广告模块：
 
 - 模块：`rewrite/Surge/xiaohongshu-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.11`）
+- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13`）
 - 调研与安全边界：[docs/XIAOHONGSHU_SELF_RESEARCH.md](docs/XIAOHONGSHU_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -308,7 +308,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/weibo-self.
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的微博正式云端去广告模块：
 
 - 模块：`rewrite/Surge/weibo-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.11`）
+- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13`）
 - 调研与安全边界：[docs/WEIBO_SELF_RESEARCH.md](docs/WEIBO_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -317,6 +317,30 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/weibo-self.
 - 精确空响应 `uve.weibo.com` 下开屏/实时/预加载广告接口，并拒绝 `adpinpai.video.weibocdn.com`
 - 个人页、账号、会员、私信、通知和钱包接口不在匹配范围内；不伪造会员、皮肤或 App 图标
 - 不使用第三方脚本，不记录或上传原始请求/响应
+
+### 哔哩哔哩
+
+文件：[rewrite/Surge/bilibili-self.sgmodule](rewrite/Surge/bilibili-self.sgmodule)
+
+订阅地址：
+
+```text
+https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/bilibili-self.sgmodule
+```
+
+这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的哔哩哔哩正式云端去广告模块：
+
+- 模块：`rewrite/Surge/bilibili-self.sgmodule`
+- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13`）
+- 调研与安全边界：[docs/BILIBILI_SELF_RESEARCH.md](docs/BILIBILI_SELF_RESEARCH.md)
+
+当前范围与安全边界：
+
+- 清理白名单 JSON 接口（开屏 `/x/v2/splash/*`、首页推荐流与竖屏 Story 流 `/x/v2/feed/index*`、搜索推广 `/x/v2/search/square`、直播间广告横幅），精准区分真广告与 `is_ad_loc` 正常推荐视频
+- 清理白名单 HTTP/2 一元未压缩 gRPC Protobuf 接口（视频详情与相关推荐 `viewunite.v1` / `view.v1`、评论区商业条 `reply.v1` 并完整保留 UP 主置顶评论 `up_top`、动态流广告卡 `dynamic.v2` `DYNAMIC_TYPE_AD`）
+- 精确拒绝 `httpdns.bilivideo.com` 防止绕过域名级 MITM，不整域拒绝 `bilibili.com` 或 `cm.bilibili.com`，不手写宽泛 `UDP REJECT`
+- 提供可选参数开关：`隐藏底栏会员购`（默认 `false`）与 `PCDN节点策略`（默认 `DIRECT`，可改为 `REJECT`）
+- 账号、大会员、登录、钱包、支付、播放流与弹幕包不在改写范围内；不使用第三方脚本，不记录或上传原始请求/响应
 
 ## rule / Surge
 

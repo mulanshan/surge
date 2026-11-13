@@ -5,9 +5,10 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-13
 
-Staged Bilibili candidate module (`surge-self-v2026.11.13`):
+Activated canonical bundle `surge-self-v2026.11.13` and promoted Bilibili (`哔哩哔哩`) to a public cloud module:
 
-- Added clean-room self-hosted Bilibili response sanitizer (`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`), synthetic unit test suite (`bilibili-self.response.test.js`), architectural boundary document (`docs/BILIBILI_SELF_RESEARCH.md`), and staged candidate module (`rewrite/Surge/candidates/bilibili-self.sgmodule`) pinned to `surge-self-v2026.11.13`.
+- Activated immutable nine-script bundle `surge-self-v2026.11.13` after passed iOS 5.23.0 + Bilibili 9.19.0 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v20261113`), transitioning `surge-self-v2026.11.11` to `inactive` and updating all nine canonical cloud modules under `rewrite/Surge/` to `surge-self-v2026.11.13` (`?v=20261113-1`).
+- Promoted `rewrite/Surge/bilibili-self.sgmodule` (`#!name=哔哩哔哩`) from `rewrite/Surge/candidates/` to its permanent `main` cloud install URL, backed by clean-room MIT sanitizer `rewrite/Surge/scripts/bilibili/bilibili-self.response.js`, unit test suite `bilibili-self.response.test.js`, and boundary documentation `docs/BILIBILI_SELF_RESEARCH.md`.
 - Covered whitelisted JSON splash, home/story feeds (preserving organic `is_ad_loc` fallback slots), search square promotions, live room ad banners, and unary uncompressed gRPC Protobuf ad slots across `viewunite.v1`, `view.v1`, `reply.v1` (preserving `up_top` creator-pinned comments), and `dynamic.v2` (`DYNAMIC_TYPE_AD`), with optional switches for bottom Mall tab hiding and PCDN policy.
 
 ## 2026-11-11

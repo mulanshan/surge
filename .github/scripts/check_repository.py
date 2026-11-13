@@ -35,6 +35,7 @@ CANONICAL_MODULE_NAMES = {
     "wechat-self.sgmodule": "微信",
     "xiaohongshu-self.sgmodule": "小红书",
     "weibo-self.sgmodule": "微博",
+    "bilibili-self.sgmodule": "哔哩哔哩",
 }
 EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
     {
@@ -46,7 +47,7 @@ EXPECTED_SCRIPT_MODULE_PATHS = frozenset(
         Path("wechat-self.sgmodule"),
         Path("xiaohongshu-self.sgmodule"),
         Path("weibo-self.sgmodule"),
-        Path("candidates/bilibili-self.sgmodule"),
+        Path("bilibili-self.sgmodule"),
     }
 )
 RETIRED_MODULE_FILES = {

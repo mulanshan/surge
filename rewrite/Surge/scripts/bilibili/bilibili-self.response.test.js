@@ -4,10 +4,10 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const scriptPath = path.join(__dirname, "bilibili-self.response.js");
-const modulePath = path.join(__dirname, "..", "..", "candidates", "bilibili-self.sgmodule");
+const modulePath = path.join(__dirname, "..", "..", "bilibili-self.sgmodule");
 
 assert.ok(fs.existsSync(scriptPath), "missing Bilibili response script");
-assert.ok(fs.existsSync(modulePath), "missing Bilibili staged candidate module");
+assert.ok(fs.existsSync(modulePath), "missing Bilibili canonical module");
 
 const script = fs.readFileSync(scriptPath, "utf8");
 const moduleText = fs.readFileSync(modulePath, "utf8");
@@ -418,7 +418,7 @@ function runJson(url, payload, options = {}) {
 }
 
 // 10. Module & supply-chain assertions
-assert.match(moduleText, /^#!name=哔哩哔哩 \(候选 2026\.11\.13\)$/m);
+assert.match(moduleText, /^#!name=哔哩哔哩$/m);
 assert.doesNotMatch(moduleText, /^#!name=.*self/im);
 assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(
