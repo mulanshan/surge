@@ -5,6 +5,12 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-13
 
+Upgraded `基础去广告模块` (`rewrite/Surge/basic-adblock.sgmodule`) from 94 to 119 exact domain rules after Mac + iOS live traffic-stat and rule-match audit:
+
+- Upgraded dedicated ByteDance Pangolin SDK domains (`pangolin-sdk-toutiao*.com`) to `DOMAIN-SUFFIX` and added `pangolin-sdk-toutiao1.com` and `pangolin-dsp-toutiao.com` to stop unblocked ad SDK subdomains from leaking through `FINAL` proxy policies.
+- Added cross-verified pure ad networks and domestic SDK endpoints observed in iPhone `traffic-stat-host`: `app-ads-services.com`, `tanx.com`, `adukwai.com`, `anythinktech.com`, `ads-pixiv.net`, `ad-stir.com`, `ads-twitter.com`, `paypal-ads.com`, `openxcdn.net`, `mfadsrvr.com`, `ad-delivery.net`, `ad.gt`, plus exact GDT/Kuaishou/Sigmob/Baidu SDK hosts (`c/rpt/v/win.gdt.qq.com`, `sdkreport/tangram.e.qq.com`, `open.e.kuaishou.com`, `dc.sigmob.cn`, `mobads.baidu.com`, `mobads-logs.baidu.com`, `wn.pos.baidu.com`).
+- Hardened `scripts/check-basic-adblock.py` to enforce explicit exclusions on mixed-purpose domains (`mmstat.com`, `imasdk.googleapis.com`, `volces.com`, `pgdt.gtimg.cn`).
+
 Activated canonical bundle `surge-self-v2026.11.13.1` and promoted WeChat (`微信`) to `limited` cloud status:
 
 - Activated immutable nine-script bundle `surge-self-v2026.11.13.1` after passed iOS 5.23.0 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v202611131`), transitioning `surge-self-v2026.11.13` to `inactive` and updating all nine canonical cloud modules under `rewrite/Surge/` to `surge-self-v2026.11.13.1` (`?v=20261113-2`).

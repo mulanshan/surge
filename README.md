@@ -189,13 +189,14 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 这是以后统一使用的去广告入口。主配置 `[Rule]` 不再手工添加去广告 ruleset；模块集中维护跨 App
 广告网络和少量日志确认的精确应用规则，模块规则由 Surge 自动插入主配置规则顶部。
 
-当前范围：
+当前范围（119 条精确规则）：
 
-- Google 广告：DoubleClick、Google Ad Services、Google Syndication 等
-- 腾讯广告 SDK：GDT / 优量汇的明确广告入口
-- 字节 / 穿山甲：广告 SDK、广告包、广告素材与日志已确认的广告主机
+- Google / AdMob 广告：DoubleClick、Google Ad Services、Google Syndication、`app-ads-services.com` 等
+- 腾讯广告 SDK：GDT / 优量汇的明确广告入口（`a/c/mi/rpt/v/win.gdt.qq.com`、`sdk/sdkreport/tangram.e.qq.com` 等）
+- 字节 / 穿山甲：专用穿山甲 SDK/DSP 域（`pangolin-sdk-toutiao*`、`pangolin-dsp-toutiao.com`）与日志已确认的广告素材主机
+- 国内移动广告交易与聚合 SDK：`tanx.com`、`adukwai.com`、`anythinktech.com` 及快手/Sigmob/百青藤精确 SDK 入口
 - 番茄小说：只拦真机日志确认的 `log` / `rtlog` / `mon` 精确主机
-- 本机浏览器长期出现的 AppNexus、Integral Ad Science、AdKernel、Teads 等广告网络
+- 本机浏览器与海外应用中持续出现的 AppNexus、Integral Ad Science、AdKernel、Teads、`ads-pixiv.net`、`ad-stir.com`、`ads-twitter.com` 等独立广告网络
 - 仅使用精确 `DOMAIN` / `DOMAIN-SUFFIX` + Surge 内置 `REJECT`
 
 安全边界：

@@ -1,14 +1,15 @@
 # 基础去广告模块：调研、日志证据与维护边界
 
-更新时间：2026-07-13
+更新时间：2026-11-13
 
 ## 结论
 
 仓库以后只保留一个通用入口：`rewrite/Surge/basic-adblock.sgmodule`。它只做域名级
 `REJECT`，不包含 JavaScript、MITM、URL Rewrite、Map Local、IP 规则或宽泛关键词。
-2026-07-13 的网页强化版把规则从 44 条扩展到 94 条：新增一组由 anti-AD、AdGuard DNS
-与 HaGeZi Pro 三方交叉确认的独立网页广告网络，以及 iPhone 真机当次页面中确认的广告像素、
-素材和跳转入口。没有把第三方清单直接混载进运行时。
+2026-07-13 的网页强化版把规则从 44 条扩展到 94 条；2026-11-13 结合 iPhone 与 Mac 实时
+`traffic-stat-host` / `rule match` 审计及 anti-AD、AdGuard DNS、HaGeZi Pro 三方交叉复核，
+进一步将规则扩展到 **119 条**：补齐了真机实测漏网并误走代理的字节穿山甲轮换域、国内主流移动广告
+交易/聚合 SDK 域名与海外独立广告投放域，同时在 Surge Mac 与 Surge iOS 双端同步启用。没有把第三方清单直接混载进运行时。
 
 番茄小说按规则类型直接并入基础模块，只保留精确 `log` / `rtlog` / `mon` 主机，不建立专用模块。
 YouTube、Instagram、高德地图、扫描全能王、京东等确实需要路径或响应体处理的 App 继续使用专用模块。
@@ -103,6 +104,17 @@ iPhone 上的基础模块已启用，生效配置也完整包含原有 44 条规
 同批出现但没有加入的包括页面主站、Cloudflare Challenge、播放器、推荐接口、图片/视频 CDN，
 以及 Google Analytics / Tag Manager。它们分别承担正文、防机器人、播放或站点功能，不能只凭
 “在有广告的页面出现”就判定为广告。`QUIC-BLOCK`、Sentry、Crashlytics、OpenTelemetry 也继续排除。
+
+### 2026-11-13 Mac / iPhone 双端流量与代理防漏审计
+
+2026-11-13 对 Surge iOS 5.23.0 与 Surge Mac 6.9.1 进行 `traffic-stat-host` 与 `rule match` 交叉排查，确认两项核心改进：
+
+1. **Mac 端启用补齐**：Mac 此前未启用 `基础去广告模块`，导致月度放行 `doubleclick.net` 与 `googleadservices.com`；模块为纯域名级 `REJECT`，双端同步启用无任何证书或脚本开销。
+2. **漏网独立广告域与代理流量止血**：iPhone 流量统计发现一批纯广告专用域未命中 `china-direct`，反而掉入 `FINAL` 消耗香港代理流量，同时三方规则源（anti-AD、AdGuard DNS、HaGeZi Pro）均将其列为独立广告基础设施：
+   - 字节穿山甲专用域：将原 `api-access.pangolin-sdk-toutiao*.com` 单主机升级为 `DOMAIN-SUFFIX`（覆盖同域其他 SDK 节点），并新增轮换域 `pangolin-sdk-toutiao1.com` 与竞价域 `pangolin-dsp-toutiao.com`。
+   - 国内广告交易与聚合 SDK：新增 `tanx.com`（阿里妈妈 TanX，独立于 `mmstat.com`）、`adukwai.com`（快手广告联盟）、`anythinktech.com`（TopOn 聚合广告），以及优量汇/快手/Sigmob/百青藤精确 SDK 节点（`v/win/c/rpt.gdt.qq.com`、`tangram/sdkreport.e.qq.com`、`open.e.kuaishou.com`、`dc.sigmob.cn`、`mobads.baidu.com`、`mobads-logs.baidu.com`、`wn.pos.baidu.com`）。
+   - 海外应用与网页独立广告域：新增 `app-ads-services.com`（Google AdMob 广告专用域）、`ads-pixiv.net`（不影响 `pximg.net` 插画加载）、`ad-stir.com`、`ads-twitter.com`、`paypal-ads.com`、`openxcdn.net`、`mfadsrvr.com`、`ad-delivery.net`、`ad.gt`。
+   - 继续严格排除：`mmstat.com`（淘宝滑块验证）、`imasdk.googleapis.com`（网页播放器起播）、`volces.com`（通用 APM）与 `pgdt.gtimg.cn`（微信朋友圈裂图白框），并写入 `scripts/check-basic-adblock.py` 禁止词集合自动门禁。
 
 ## 明确排除
 

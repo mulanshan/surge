@@ -1,28 +1,37 @@
 #!name=基础去广告模块
-#!desc=基础域名级去广告：常见网页广告、弹窗跳转网络与真机日志确认的精确应用规则。无脚本、无 MITM、无响应改写。
+#!desc=基础域名级去广告：常见网页广告、移动广告联盟、弹窗跳转网络与真机日志确认的精确应用规则。无脚本、无 MITM、无响应改写。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=基础去广告
-#!date=2026-07-13
+#!date=2026-11-13
 
 [Rule]
-# Google 广告网络。来自 iPhone 请求日志与 Mac 月度流量统计。
+# Google / AdMob 广告网络。来自 iPhone 请求日志与 Mac 月度流量统计。
 DOMAIN-SUFFIX,doubleclick.net,REJECT
 DOMAIN-SUFFIX,googleadservices.com,REJECT
 DOMAIN-SUFFIX,googlesyndication.com,REJECT
 DOMAIN-SUFFIX,googleadsserving.cn,REJECT
+DOMAIN-SUFFIX,app-ads-services.com,REJECT
 
-# 腾讯广告 SDK。只拦明确广告入口，不拒绝 qq.com / e.qq.com 整域。
+# 腾讯广告 SDK（优量汇 / GDT）。只拦明确广告入口，不拒绝 qq.com / e.qq.com / gdtimg.com 整域。
 DOMAIN,a.gdt.qq.com,REJECT
+DOMAIN,c.gdt.qq.com,REJECT
 DOMAIN,mi.gdt.qq.com,REJECT
+DOMAIN,rpt.gdt.qq.com,REJECT
+DOMAIN,v.gdt.qq.com,REJECT
+DOMAIN,win.gdt.qq.com,REJECT
 DOMAIN,sdk.e.qq.com,REJECT
+DOMAIN,sdkreport.e.qq.com,REJECT
+DOMAIN,tangram.e.qq.com,REJECT
 DOMAIN,api.iegadp.qq.com,REJECT
 
-# 穿山甲 / 字节广告 SDK 与广告素材。保留 snssdk、zijieapi、byteimg 主域及混合用途接口。
-DOMAIN,api-access.pangolin-sdk-toutiao.com,REJECT
-DOMAIN,api-access.pangolin-sdk-toutiao-b.com,REJECT
-DOMAIN,api-access.pangolin-sdk-toutiao-b1.com,REJECT
-DOMAIN,api-access.pangolin-sdk-toutiao-p.com,REJECT
+# 穿山甲 / 字节广告 SDK 与广告素材。专用穿山甲 SDK/DSP 域整域拒绝，保留 snssdk、zijieapi、byteimg 主域及混合用途接口。
+DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b1.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-p.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT
+DOMAIN-SUFFIX,pangolin-dsp-toutiao.com,REJECT
 DOMAIN,sf3-be-pack.pglstatp-toutiao.com,REJECT
 DOMAIN,sf3-fe-tos.pglstatp-toutiao.com,REJECT
 DOMAIN,ads3-normal.zijieapi.com,REJECT
@@ -35,6 +44,16 @@ DOMAIN,p3-ad-sign.byteimg.com,REJECT
 DOMAIN,p6-ad-sign.byteimg.com,REJECT
 DOMAIN,p9-ad-sign.byteimg.com,REJECT
 DOMAIN,dig.bdurl.net,REJECT
+
+# 国内移动广告交易平台与聚合 SDK。均由真机流量与 anti-AD / AdGuard / HaGeZi 交叉确认，不含 mmstat 等混合验证域。
+DOMAIN-SUFFIX,tanx.com,REJECT
+DOMAIN-SUFFIX,adukwai.com,REJECT
+DOMAIN-SUFFIX,anythinktech.com,REJECT
+DOMAIN,open.e.kuaishou.com,REJECT
+DOMAIN,dc.sigmob.cn,REJECT
+DOMAIN,mobads.baidu.com,REJECT
+DOMAIN,mobads-logs.baidu.com,REJECT
+DOMAIN,wn.pos.baidu.com,REJECT
 
 # 番茄小说规则。只拦真机日志确认的 log / rtlog / mon 精确主机，不碰阅读、图片、听书或视频域名。
 DOMAIN,log0-applog-lq.fqnovel.com,REJECT
@@ -51,7 +70,7 @@ DOMAIN,mon11-misc.fqnovel.com,REJECT
 DOMAIN,mon3-misc-lq.fqnovel.com,REJECT
 DOMAIN,mon3-misc.fqnovel.com,REJECT
 
-# 本机浏览器流量中持续出现的独立广告网络。
+# 本机浏览器与海外应用中持续出现的独立广告投放网络。
 DOMAIN-SUFFIX,adnxs.com,REJECT
 DOMAIN-SUFFIX,adnxs-simple.com,REJECT
 DOMAIN-SUFFIX,adsafeprotected.com,REJECT
@@ -59,8 +78,14 @@ DOMAIN-SUFFIX,ad-score.com,REJECT
 DOMAIN-SUFFIX,ad-m.net,REJECT
 DOMAIN-SUFFIX,adkernel.com,REJECT
 DOMAIN-SUFFIX,teads.tv,REJECT
+DOMAIN-SUFFIX,ads-pixiv.net,REJECT
+DOMAIN-SUFFIX,ad-stir.com,REJECT
+DOMAIN-SUFFIX,ads-twitter.com,REJECT
+DOMAIN-SUFFIX,paypal-ads.com,REJECT
 
 # 通用网页程序化广告与推荐网络。均由 anti-AD、AdGuard DNS 与 HaGeZi Pro 三方交叉确认。
+DOMAIN-SUFFIX,ad.gt,REJECT
+DOMAIN-SUFFIX,ad-delivery.net,REJECT
 DOMAIN-SUFFIX,amazon-adsystem.com,REJECT
 DOMAIN-SUFFIX,adsrvr.org,REJECT
 DOMAIN-SUFFIX,adform.net,REJECT
@@ -71,9 +96,11 @@ DOMAIN-SUFFIX,criteo.net,REJECT
 DOMAIN-SUFFIX,doubleverify.com,REJECT
 DOMAIN-SUFFIX,lijit.com,REJECT
 DOMAIN-SUFFIX,media.net,REJECT
+DOMAIN-SUFFIX,mfadsrvr.com,REJECT
 DOMAIN-SUFFIX,mgid.com,REJECT
 DOMAIN-SUFFIX,moatads.com,REJECT
 DOMAIN-SUFFIX,openx.net,REJECT
+DOMAIN-SUFFIX,openxcdn.net,REJECT
 DOMAIN-SUFFIX,outbrain.com,REJECT
 DOMAIN-SUFFIX,pubmatic.com,REJECT
 DOMAIN-SUFFIX,quantserve.com,REJECT

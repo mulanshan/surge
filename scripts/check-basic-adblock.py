@@ -32,6 +32,10 @@ FORBIDDEN_TOKENS = {
     "appsflyer.com",
     "adjust.com",
     "app-measurement.com",
+    "mmstat.com",
+    "imasdk.googleapis.com",
+    "volces.com",
+    "pgdt.gtimg.cn",
 }
 EXPECTED_FANQIE_RULES = {
     "log0-applog-lq.fqnovel.com",
@@ -67,6 +71,15 @@ EXPECTED_WEB_RULES = {
     "DOMAIN,go.mayzaent.com,REJECT",
     "DOMAIN,creative.myavlive.com,REJECT",
     "DOMAIN,go.myavlive.com,REJECT",
+    "DOMAIN-SUFFIX,app-ads-services.com,REJECT",
+    "DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT",
+    "DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT",
+    "DOMAIN-SUFFIX,pangolin-dsp-toutiao.com,REJECT",
+    "DOMAIN-SUFFIX,tanx.com,REJECT",
+    "DOMAIN-SUFFIX,adukwai.com,REJECT",
+    "DOMAIN-SUFFIX,anythinktech.com,REJECT",
+    "DOMAIN-SUFFIX,ads-pixiv.net,REJECT",
+    "DOMAIN-SUFFIX,ad-stir.com,REJECT",
 }
 
 
@@ -101,7 +114,7 @@ def main() -> int:
         raise SystemExit("canonical module name must be 基础去广告模块")
 
     canonical_rules = module_rules(CANONICAL)
-    if len(canonical_rules) < 90:
+    if len(canonical_rules) < 115:
         raise SystemExit(f"unexpectedly small rule set: {len(canonical_rules)}")
     if len(canonical_rules) != len(set(canonical_rules)):
         raise SystemExit("duplicate rules found")
