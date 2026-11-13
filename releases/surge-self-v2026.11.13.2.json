@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "tag": "surge-self-v2026.11.13.2",
+  "integrity": "intact",
+  "distribution": "candidate",
+  "live_device_validation": "pending",
+  "rollback_eligible": false,
+  "supersedes": "surge-self-v2026.11.13.1",
+  "scripts": [
+    {
+      "name": "YouTube",
+      "path": "rewrite/Surge/scripts/youtube/youtube-self.response.js",
+      "sha256": "a2f30a8d5e501a73980b9522ebb15dc18de2144bb173f8e9fac5db982944e0c8"
+    },
+    {
+      "name": "Instagram",
+      "path": "rewrite/Surge/scripts/instagram/instagram-self.response.js",
+      "sha256": "588005a5d16ef588f2b0945d8580174e0aa7c9d309159adfc8611e4138a1ed88"
+    },
+    {
+      "name": "Amap",
+      "path": "rewrite/Surge/scripts/amap/amap-self.response.js",
+      "sha256": "ab6c49eb15f465b3c31210bfef259ba355e026e950c14efd27870ada1681a147"
+    },
+    {
+      "name": "CamScanner",
+      "path": "rewrite/Surge/scripts/camscanner/camscanner-self.response.js",
+      "sha256": "e36fa17a06c14a6f028a818b5081452147982fda9c2d43770fda9bfdab20ca22"
+    },
+    {
+      "name": "JD",
+      "path": "rewrite/Surge/scripts/jd/jd-self.response.js",
+      "sha256": "1a093288899a5b7a98e0d8fb795d6228d986804db0842dd0eae29735bbcf1940"
+    },
+    {
+      "name": "WeChat",
+      "path": "rewrite/Surge/scripts/wechat/wechat-self.response.js",
+      "sha256": "51f98966da0388f532919f9a928299981d84a93a4b18fcd816d9ce2579dbed1a"
+    },
+    {
+      "name": "Xiaohongshu",
+      "path": "rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
+      "sha256": "91380324b91131a42d2bfbaf8b4c8188557edb40db8bbc76531e0cf5400966e7"
+    },
+    {
+      "name": "Weibo",
+      "path": "rewrite/Surge/scripts/weibo/weibo-self.response.js",
+      "sha256": "f518866c2ea988ce384535c836edd6cfc7aedcca9bdfde0c92981195584cca0c"
+    },
+    {
+      "name": "Bilibili",
+      "path": "rewrite/Surge/scripts/bilibili/bilibili-self.response.js",
+      "sha256": "ca72db00c79e06bdc01e8611cc4b5bdb4f9242164459d9cd365ff12c4297b912"
+    }
+  ]
+}

@@ -4,22 +4,34 @@
  * Behavior:
  * - Keeps the cleanup conservative and schema-tolerant.
  * - Removes known ad/message/hotword payload containers from selected Amap
- *   JSON responses only.
+ *   JSON responses, plus optional footprint/nearby promotions when enabled.
  * - Does not issue network requests, read cookies, upload data, or include
  *   third-party source code.
  */
 
 const DEFAULTS = {
+  cleanAds: true,
+  cleanNearbyPromotions: false,
   debug: false,
 };
 
+const UTF8_DECODER = new TextDecoder();
 const config = parseArgument();
 
 function parseArgument() {
   try {
-    return Object.assign({}, DEFAULTS, JSON.parse(typeof $argument === "string" ? $argument : "{}"));
+    const parsed = JSON.parse(typeof $argument === "string" ? $argument : "{}");
+    if (!isPlainObject(parsed)) return { ...DEFAULTS };
+    return {
+      cleanAds: typeof parsed.cleanAds === "boolean" ? parsed.cleanAds : DEFAULTS.cleanAds,
+      cleanNearbyPromotions:
+        typeof parsed.cleanNearbyPromotions === "boolean"
+          ? parsed.cleanNearbyPromotions
+          : DEFAULTS.cleanNearbyPromotions,
+      debug: parsed.debug === true,
+    };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
@@ -40,14 +52,19 @@ function debug(message) {
 }
 
 function endpointFromUrl(url) {
-  const match = String(url || "").match(/\/ws\/([^?]+)/);
+  const match = String(url || "").match(/\/+ws\/([^?#]+)/);
   return match ? match[1] : "";
+}
+
+function isSuccessfulResponse(response) {
+  const status = response && response.status;
+  return typeof status !== "number" || (status >= 200 && status < 300);
 }
 
 function bodyText(body) {
   if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
 }
 
@@ -70,7 +87,7 @@ function filterArray(target, key, predicate, stats) {
 }
 
 function deleteKey(target, key, stats) {
-  if (target && typeof target === "object" && hasOwn(target, key)) {
+  if (target && typeof target !== "string" && hasOwn(target, key)) {
     stats.deleted += 1;
     delete target[key];
   }
@@ -82,7 +99,7 @@ function safeObjectValues(value) {
 }
 
 function isPlainObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value);
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function textOf(value) {
@@ -109,10 +126,26 @@ const AD_COMPOUND_MARKERS = new Set([
   "recommendad",
 ]);
 
+const NEARBY_PROMOTION_KEYS = new Set([
+  "activity",
+  "activitycard",
+  "afootprint",
+  "footprint",
+  "nearby",
+  "nearbyrecommend",
+  "operation",
+  "operationcard",
+  "pull3",
+]);
+
 const SAFE_MAIN_PAGE_TYPES = new Set([
+  "CommuteCard",
   "FrequentLocation",
   "MyOrderCard",
+  "RouteCard",
+  "TrafficCard",
   "TravelCard",
+  "WeatherCard",
 ]);
 
 function keyLooksLikeAd(key) {
@@ -124,6 +157,11 @@ function keyLooksLikeAd(key) {
     .filter(Boolean);
   const compact = tokens.join("");
   return tokens.some((token) => AD_TOKEN_MARKERS.has(token)) || AD_COMPOUND_MARKERS.has(compact);
+}
+
+function keyLooksLikeNearbyPromotion(key) {
+  const compact = String(key || "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+  return NEARBY_PROMOTION_KEYS.has(compact);
 }
 
 function valueLooksLikeAd(value) {
@@ -258,6 +296,16 @@ function cleanHotword(payload, stats) {
   }
 }
 
+function cleanFootprint(payload, stats) {
+  if (Array.isArray(payload.data) && payload.data.length > 0) {
+    payload.data = [];
+    stats.arrays += 1;
+  } else if (isPlainObject(payload.data) && Object.keys(payload.data).length > 0) {
+    payload.data = {};
+    stats.replaced += 1;
+  }
+}
+
 function filterCardContainer(container, stats) {
   if (!isPlainObject(container)) return;
 
@@ -279,20 +327,34 @@ function filterCardContainer(container, stats) {
 function cleanMainPage(payload, stats) {
   if (!isPlainObject(payload.data)) return;
 
-  deleteKey(payload.data, "feedAd", stats);
-  deleteKey(payload.data, "popup", stats);
-  deleteKey(payload.data, "recommendAd", stats);
-  setEmptyArray(payload.data, "ad", stats);
-  setEmptyArray(payload.data, "ads", stats);
-  setEmptyArray(payload.data, "banner", stats);
-  filterCardContainer(payload.data, stats);
+  if (config.cleanAds) {
+    deleteKey(payload.data, "feedAd", stats);
+    deleteKey(payload.data, "popup", stats);
+    deleteKey(payload.data, "recommendAd", stats);
+    setEmptyArray(payload.data, "ad", stats);
+    setEmptyArray(payload.data, "ads", stats);
+    setEmptyArray(payload.data, "banner", stats);
+    filterCardContainer(payload.data, stats);
+  }
+
+  if (config.cleanNearbyPromotions) {
+    for (const key of Object.keys(payload.data)) {
+      if (keyLooksLikeNearbyPromotion(key)) {
+        deleteKey(payload.data, key, stats);
+      }
+    }
+  }
 
   if (isPlainObject(payload.data.cardList)) {
     const entries = Object.entries(payload.data.cardList);
     const kept = entries.filter(([key, value]) => {
       const type = textOf(value && value.dataType);
       if (SAFE_MAIN_PAGE_TYPES.has(type)) return true;
-      return !(keyLooksLikeAd(key) || valueLooksLikeAd(value));
+      if (config.cleanAds && (keyLooksLikeAd(key) || valueLooksLikeAd(value))) return false;
+      if (config.cleanNearbyPromotions && (keyLooksLikeNearbyPromotion(key) || keyLooksLikeNearbyPromotion(type))) {
+        return false;
+      }
+      return true;
     });
     if (kept.length !== entries.length) {
       payload.data.cardList = Object.fromEntries(kept);
@@ -300,8 +362,10 @@ function cleanMainPage(payload, stats) {
     }
   }
 
-  for (const child of safeObjectValues(payload.data)) {
-    if (isPlainObject(child)) filterCardContainer(child, stats);
+  if (config.cleanAds) {
+    for (const child of safeObjectValues(payload.data)) {
+      if (isPlainObject(child)) filterCardContainer(child, stats);
+    }
   }
 }
 
@@ -313,11 +377,27 @@ function cleanPayload(payload, endpoint) {
     replaced: 0,
   };
 
-  if (endpoint.includes("valueadded/alimama/splash_screen") || endpoint.includes("aos/alimama/splash_screen")) cleanSplash(payload, stats);
-  else if (endpoint.includes("msgbox/pull") || endpoint.includes("message/notice/list")) cleanMessages(payload, stats);
-  else if (endpoint.includes("shield/dsp/profile/index/nodefaas")) cleanDspProfile(payload, stats);
-  else if (endpoint.includes("shield/search/new_hotword")) cleanHotword(payload, stats);
-  else if (endpoint.includes("faas/amap-navigation/main-page")) cleanMainPage(payload, stats);
+  if (endpoint.includes("shield/frogserver/afootprint")) {
+    if (config.cleanNearbyPromotions) cleanFootprint(payload, stats);
+    return stats;
+  }
+
+  if (endpoint.includes("faas/amap-navigation/main-page")) {
+    if (config.cleanAds || config.cleanNearbyPromotions) cleanMainPage(payload, stats);
+    return stats;
+  }
+
+  if (!config.cleanAds) return stats;
+
+  if (endpoint.includes("valueadded/alimama/splash_screen") || endpoint.includes("aos/alimama/splash_screen")) {
+    cleanSplash(payload, stats);
+  } else if (endpoint.includes("msgbox/pull") || endpoint.includes("message/notice/list")) {
+    cleanMessages(payload, stats);
+  } else if (endpoint.includes("shield/dsp/profile/index/nodefaas")) {
+    cleanDspProfile(payload, stats);
+  } else if (endpoint.includes("shield/search/new_hotword")) {
+    cleanHotword(payload, stats);
+  }
 
   return stats;
 }
@@ -328,16 +408,31 @@ function doneUnchanged(reason) {
 }
 
 try {
-  const endpoint = endpointFromUrl($request.url);
-  const text = bodyText($response.body);
-  if (!text) doneUnchanged("empty body");
-  else {
-    const payload = JSON.parse(text);
-    const stats = cleanPayload(payload, endpoint);
-    debug(`${endpoint} arrays=${stats.arrays} deleted=${stats.deleted} filtered=${stats.filtered} replaced=${stats.replaced}`);
-    const changed = stats.arrays + stats.deleted + stats.filtered + stats.replaced;
-    if (!changed) $done({});
-    else $done({ body: JSON.stringify(payload) });
+  const endpoint = endpointFromUrl($request && $request.url);
+  if (!endpoint) {
+    doneUnchanged("unsupported endpoint");
+  } else if (!isSuccessfulResponse($response)) {
+    doneUnchanged("non-success status");
+  } else if (!config.cleanAds && !config.cleanNearbyPromotions) {
+    doneUnchanged("all cleaners disabled");
+  } else if (endpoint.includes("shield/frogserver/afootprint") && !config.cleanNearbyPromotions) {
+    doneUnchanged("nearby promotions kept");
+  } else {
+    const text = bodyText($response && $response.body);
+    if (!text) doneUnchanged("empty body");
+    else if (!/^\s*[\[{]/.test(text)) doneUnchanged("non-json body");
+    else {
+      const payload = JSON.parse(text);
+      if (!isPlainObject(payload)) {
+        doneUnchanged("non-object JSON");
+      } else {
+        const stats = cleanPayload(payload, endpoint);
+        debug(`${endpoint} arrays=${stats.arrays} deleted=${stats.deleted} filtered=${stats.filtered} replaced=${stats.replaced}`);
+        const changed = stats.arrays + stats.deleted + stats.filtered + stats.replaced;
+        if (!changed) $done({});
+        else $done({ body: JSON.stringify(payload) });
+      }
+    }
   }
 } catch (error) {
   logbook(`error: ${error && error.message ? error.message : error}`);

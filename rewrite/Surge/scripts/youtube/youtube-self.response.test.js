@@ -378,8 +378,8 @@ const playerWithCaptions = JSON.stringify({
   );
   assert.equal(
     decodedLengths.length,
-    3,
-    "each RichItemContent must be UTF-8 decoded at most once",
+    0,
+    "zero UTF-8 decodes required for binary protobuf browse cleanup",
   );
   assert.ok(elapsedMs < 150, `2 MB browse cleanup took ${elapsedMs}ms (expected < 150ms)`);
 
@@ -402,6 +402,99 @@ const playerWithCaptions = JSON.stringify({
       ),
     ),
   );
+}
+
+// JSON unchanged passthrough: clean browse JSON with no ads must return {}.
+{
+  const cleanFeedJson = JSON.stringify({
+    items: [{ videoRenderer: { videoId: "organic-1" } }],
+  });
+  const unchanged = execute(cleanFeedJson, "browse", {});
+  assert.equal(Object.keys(unchanged.output).length, 0);
+}
+
+// iOS Protobuf guide / PivotBarRenderer bottom-bar tab switches (default off).
+{
+  function makePivotTab(browseId) {
+    const idBytes = new TextEncoder().encode(browseId);
+    const browseEndpoint = encodeLengthField(2, idBytes);
+    const navEndpoint = encodeLengthField(48687626, browseEndpoint);
+    const pivotItem = concatBytes(
+      encodeLengthField(1, idBytes),
+      encodeLengthField(4, navEndpoint),
+    );
+    return encodeLengthField(1, encodeLengthField(117501096, pivotItem));
+  }
+
+  const homeTab = makePivotTab("FEwhat_to_watch");
+  const shortsTab = makePivotTab("FEshorts");
+  const uploadIconOnlyTab = encodeLengthField(
+    1,
+    encodeLengthField(318370163, encodeLengthField(1, new TextEncoder().encode("FEuploads"))),
+  );
+  const subsTab = makePivotTab("FEsubscriptions");
+  const musicImmersiveTab = makePivotTab("FEmusic_immersive");
+
+  const pivotBar = encodeLengthField(
+    117866661,
+    concatBytes(homeTab, shortsTab, uploadIconOnlyTab, subsTab, musicImmersiveTab),
+  );
+  const guidePayload = concatBytes(
+    encodeLengthField(1, new TextEncoder().encode("response-context")),
+    encodeLengthField(4, pivotBar),
+  );
+
+  // Default switches (all false): 100% passthrough.
+  const defaultGuide = execute(guidePayload, "guide", {});
+  assert.equal(Object.keys(defaultGuide.output).length, 0);
+
+  // blockUpload=true + blockShorts=true: strips Shorts and Upload tabs while keeping Home, Subs, Music.
+  const filteredGuide = execute(guidePayload, "guide", {
+    blockUpload: true,
+    blockShorts: true,
+    blockImmersive: false,
+  });
+  assert.ok(filteredGuide.output && filteredGuide.output.body instanceof Uint8Array);
+  const expectedPivot = encodeLengthField(
+    117866661,
+    concatBytes(homeTab, subsTab, musicImmersiveTab),
+  );
+  const expectedGuide = concatBytes(
+    encodeLengthField(1, new TextEncoder().encode("response-context")),
+    encodeLengthField(4, expectedPivot),
+  );
+  assert.deepEqual(Array.from(filteredGuide.output.body), Array.from(expectedGuide));
+
+  // Safety guard: never empty a PivotBarRenderer completely.
+  const singleShortsBar = encodeLengthField(
+    4,
+    encodeLengthField(117866661, shortsTab),
+  );
+  const guardedSingle = execute(singleShortsBar, "guide", { blockShorts: true });
+  assert.equal(Object.keys(guardedSingle.output).length, 0);
+}
+
+// iOS Protobuf Shorts ad stripping (reel/reel_watch_sequence).
+{
+  const responseCtx = encodeLengthField(1, textFilledItem("response-context-meta", 96));
+  const organicReel1 = encodeLengthField(5, textFilledItem("organic-short-video-1", 256));
+  const organicReel2 = encodeLengthField(5, textFilledItem("organic-short-video-2", 256));
+  const adReel = encodeLengthField(5, textFilledItem("reel_player_overlay_ad ad_badge.eml-fe", 256));
+
+  const reelSequence = concatBytes(responseCtx, organicReel1, adReel, organicReel2);
+  const cleanedReel = execute(reelSequence, "reel/reel_watch_sequence", {});
+  assertNoLogs(cleanedReel, "reel sequence ad cleanup");
+  assert.ok(cleanedReel.output && cleanedReel.output.body instanceof Uint8Array);
+  assert.deepEqual(
+    Array.from(cleanedReel.output.body),
+    Array.from(concatBytes(responseCtx, organicReel1, organicReel2)),
+  );
+
+  // Safety abort when all entries look like ads.
+  const allAdReels = concatBytes(responseCtx, adReel, adReel);
+  const abortedReel = execute(allAdReels, "reel/reel_watch_sequence", {});
+  assert.equal(Object.keys(abortedReel.output).length, 0);
+  assert.ok(abortedReel.logbookLogs.some((line) => line.includes("reel-schema-safety")));
 }
 
 console.log("YouTube Self tests passed");

@@ -124,4 +124,49 @@ assert.match(moduleText, /hostname = %APPEND% m5\.amap\.com, m5-zb\.amap\.com, m
   assert.deepEqual(result.data.recommend_ad, { status: 1, version: "", value: "" });
 }
 
+assert.deepEqual(
+  run("shield/frogserver/afootprint", { code: 1, data: { banner: "打卡足迹" } }, {}, "m6.amap.com"),
+  {},
+);
+
+{
+  const footprint = bodyOf(
+    run(
+      "shield/frogserver/afootprint",
+      { code: 1, data: { banner: "打卡足迹" } },
+      { cleanNearbyPromotions: true },
+      "m6.amap.com",
+    ),
+  );
+  assert.equal(footprint.code, 1);
+  assert.deepEqual(footprint.data, {});
+}
+
+{
+  const mainWithNearby = bodyOf(
+    run(
+      "faas/amap-navigation/main-page",
+      {
+        data: {
+          nearby: { title: "周边吃喝玩乐" },
+          cardList: {
+            commute: { dataType: "CommuteCard", title: "通勤" },
+            activityPromo: { dataType: "ActivityCard", title: "立减神券" },
+          },
+        },
+      },
+      { cleanNearbyPromotions: true },
+      "m6.amap.com",
+    ),
+  );
+  assert.equal(mainWithNearby.data.nearby, undefined);
+  assert.equal(mainWithNearby.data.cardList.commute.title, "通勤");
+  assert.equal(mainWithNearby.data.cardList.activityPromo, undefined);
+}
+
+assert.deepEqual(
+  run("valueadded/alimama/splash_screen", { data: [{ id: "ad" }] }, { cleanAds: false }),
+  {},
+);
+
 console.log("Amap Self tests passed");

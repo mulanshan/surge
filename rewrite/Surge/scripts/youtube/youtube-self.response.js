@@ -3,11 +3,12 @@
  *
  * Behavior:
  * - JSON responses (Web/desktop YouTube): conservative ad-field removal,
- *   plus optional player capability enhancement for picture-in-picture
- *   and background playback.
+ *   plus optional player capability enhancement for picture-in-picture,
+ *   background playback, and translated caption tracks.
  * - Binary protobuf responses (iOS/Android YouTube App, YouTube Music App):
- *   schema-light wire editing for player/get_watch/account settings, plus
- *   guarded cleanup for next ad fragments and home/search feed ad cards.
+ *   schema-light wire editing for player/get_watch/account settings,
+ *   zero-decode byte-pattern ad filtering for browse/search/next/Shorts feeds,
+ *   and optional bottom-bar tab simplification (guide / pivotBarRenderer).
  *   Binary bodies are handled as raw bytes (never UTF-8 re-encoded).
  *
  * Does not include any third-party source code.
@@ -60,6 +61,35 @@ function isTypedBinary(body) {
   return body instanceof Uint8Array || body instanceof ArrayBuffer;
 }
 
+function utf8Bytes(str) {
+  const bytes = [];
+  for (let i = 0; i < str.length; i += 1) {
+    let cp = str.charCodeAt(i);
+    if (cp >= 0xd800 && cp <= 0xdbff && i + 1 < str.length) {
+      const low = str.charCodeAt(i + 1);
+      if (low >= 0xdc00 && low <= 0xdfff) {
+        cp = ((cp - 0xd800) << 10) + (low - 0xdc00) + 0x10000;
+        i += 1;
+      }
+    }
+    if (cp < 0x80) {
+      bytes.push(cp);
+    } else if (cp < 0x800) {
+      bytes.push(0xc0 | (cp >> 6), 0x80 | (cp & 0x3f));
+    } else if (cp < 0x10000) {
+      bytes.push(0xe0 | (cp >> 12), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+    } else {
+      bytes.push(
+        0xf0 | (cp >> 18),
+        0x80 | ((cp >> 12) & 0x3f),
+        0x80 | ((cp >> 6) & 0x3f),
+        0x80 | (cp & 0x3f),
+      );
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
 // Surge may expose binary bodies as Uint8Array (binary-body-mode) or, on some
 // builds, as a byte-string where each character is one raw byte (0..255).
 // Never UTF-8-encode those byte-strings: that inflates protobufs and destroys
@@ -79,10 +109,8 @@ const UTF8_DECODER = new TextDecoder();
 
 function bodyText(body) {
   if (typeof body === "string") {
-    // Only treat as real text when it already looks like JSON text.
     const trimmed = body.trim();
     if (trimmed.startsWith("{") || trimmed.startsWith("[")) return body;
-    // Byte-string binary payload: decode as UTF-8 bytes, not JS string semantics.
     return UTF8_DECODER.decode(bodyBytes(body));
   }
   if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
@@ -102,15 +130,12 @@ function looksLikeJsonText(body) {
     return trimmed.startsWith("{") || trimmed.startsWith("[");
   }
   if (!isTypedBinary(body) && typeof body !== "string") return false;
-  // For binary views, only sniff a small ASCII prefix.
   const bytes = bodyBytes(body);
   let i = 0;
   while (i < bytes.length && (bytes[i] === 0x20 || bytes[i] === 0x0a || bytes[i] === 0x0d || bytes[i] === 0x09)) i += 1;
   return bytes[i] === 0x7b /* { */ || bytes[i] === 0x5b /* [ */;
 }
 
-// Only delete fields that are unambiguously ads. Keep this list narrow so
-// we never strip something the YouTube client needs to play a video.
 const AD_KEYS_TO_DELETE = [
   "adPlacements",
   "adSlots",
@@ -127,9 +152,6 @@ const AD_RENDERER_KEYS = [
   "searchPyvRenderer",
   "inFeedAdLayoutRenderer",
   "carouselAdRenderer",
-  // Recovered from the 2026-04 curated list; each names paid/promotional
-  // inventory only. Creator-intended commerce shelves (merchandiseShelf,
-  // shoppingShelf) and plain UI renderers stay out deliberately.
   "actionCompanionAdRenderer",
   "adVideoRenderer",
   "compactPromotedItemRenderer",
@@ -151,11 +173,16 @@ function isAdRenderer(value) {
 function isBlockedGuide(value) {
   if (!config.blockUpload && !config.blockImmersive && !config.blockShorts) return false;
   if (!value || typeof value !== "object") return false;
-  // Guide entries carry a browseId we can match on.
+  if (config.blockUpload && value.pivotBarIconOnlyItemRenderer) return true;
+  const candidate = value.pivotBarItemRenderer || value.guideEntryRenderer || value;
   const browseId =
-    (value.browseEndpoint && value.browseEndpoint.browseId) ||
-    (value.endpoint && value.endpoint.browseEndpoint && value.endpoint.browseEndpoint.browseId) ||
-    value.browseId;
+    (candidate.browseEndpoint && candidate.browseEndpoint.browseId) ||
+    (candidate.navigationEndpoint &&
+      candidate.navigationEndpoint.browseEndpoint &&
+      candidate.navigationEndpoint.browseEndpoint.browseId) ||
+    (candidate.endpoint && candidate.endpoint.browseEndpoint && candidate.endpoint.browseEndpoint.browseId) ||
+    candidate.pivotIdentifier ||
+    candidate.browseId;
   if (!browseId || typeof browseId !== "string") return false;
   if (config.blockUpload && browseId === "FEuploads") return true;
   if (config.blockImmersive && browseId === "FEmusic_immersive") return true;
@@ -163,29 +190,31 @@ function isBlockedGuide(value) {
   return false;
 }
 
-function walkJson(value) {
+function walkJson(value, state) {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
     for (let i = value.length - 1; i >= 0; i -= 1) {
       const item = value[i];
       if (isAdRenderer(item) || isBlockedGuide(item)) {
         value.splice(i, 1);
+        state.changed = true;
         continue;
       }
-      walkJson(item);
+      walkJson(item, state);
     }
     return;
   }
   for (const key of Object.keys(value)) {
     if (AD_KEYS_TO_DELETE.includes(key)) {
       delete value[key];
+      state.changed = true;
       continue;
     }
-    walkJson(value[key]);
+    walkJson(value[key], state);
   }
 }
 
-function enhanceJsonPlayer(payload) {
+function enhanceJsonPlayer(payload, state) {
   if (!config.enhancePlayer) return;
   payload.playabilityStatus = payload.playabilityStatus || {};
   payload.playabilityStatus.pictureInPictureRender = {
@@ -194,14 +223,11 @@ function enhanceJsonPlayer(payload) {
   payload.playabilityStatus.backgroundPlayerRender = {
     backgroundAbility: { active: true },
   };
-  addTranslatedCaptionTrack(payload);
+  state.changed = true;
+  addTranslatedCaptionTrack(payload, state);
 }
 
-// Append an auto-translated caption track (&tlang=) to JSON player responses.
-// Recovered from the archived 2026-04 implementation. JSON path only: caption
-// track structures in binary protobuf players are not mapped, so iOS app
-// responses pass through unchanged regardless of captionLang.
-function addTranslatedCaptionTrack(payload) {
+function addTranslatedCaptionTrack(payload, state) {
   const lang = String(config.captionLang || "off").trim();
   if (lang === "off" || lang === "") return;
 
@@ -210,7 +236,10 @@ function addTranslatedCaptionTrack(payload) {
   if (!Array.isArray(tracks) || tracks.length === 0) return;
 
   for (const track of tracks) {
-    track.isTranslatable = true;
+    if (track.isTranslatable !== true) {
+      track.isTranslatable = true;
+      state.changed = true;
+    }
   }
 
   if (tracks.some((track) => track.languageCode === lang)) return;
@@ -224,22 +253,23 @@ function addTranslatedCaptionTrack(payload) {
     vssId: `.${lang}`,
     name: { simpleText: `翻译 (${lang})` },
   });
+  state.changed = true;
 }
 
-function cleanJson(text, endpoint) {
+function cleanJsonResult(text, endpoint) {
   const payload = JSON.parse(text);
-  // player and get_watch both return playabilityStatus / streamingData;
-  // inject PiP + background playback capability on either.
+  const state = { changed: false };
   if (endpoint === "player" || endpoint === "get_watch") {
-    enhanceJsonPlayer(payload);
+    enhanceJsonPlayer(payload, state);
   }
-  walkJson(payload);
-  return JSON.stringify(payload);
+  walkJson(payload, state);
+  if (!state.changed) return { changed: false, body: text };
+  return { changed: true, body: JSON.stringify(payload) };
 }
 
 // Minimal protobuf wire editor. It preserves all unknown fields byte-for-byte
 // and only rewrites length-delimited messages that contain fields we explicitly
-// know. Field numbers below are observed from YouTube iOS player responses.
+// know.
 const WIRE_VARINT = 0;
 const WIRE_64BIT = 1;
 const WIRE_LENGTH = 2;
@@ -405,8 +435,12 @@ const NEXT_AD_STRONG_MARKERS = [
   "instream_content",
 ];
 
+const AD_MARKER_BYTES = AD_MARKERS.map(utf8Bytes);
+const NEXT_AD_STRONG_MARKER_BYTES = NEXT_AD_STRONG_MARKERS.map(utf8Bytes);
+
 let feedAdCardsRemoved = 0;
 let nextAdFieldsRemoved = 0;
+let guideItemsRemoved = 0;
 
 function readVarint(bytes, offset) {
   let value = 0;
@@ -455,6 +489,14 @@ function encodeLengthField(fieldNo, payload) {
   return concatBytes([encodeTag(fieldNo, WIRE_LENGTH), writeVarint(payload.length), payload]);
 }
 
+function bytesEqual(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 function bytesContainsSubsequence(bytes, seq) {
   if (!seq || seq.length === 0) return true;
   const limit = bytes.length - seq.length;
@@ -471,6 +513,13 @@ function bytesContainsSubsequence(bytes, seq) {
     }
     if (matched) return true;
     idx = bytes.indexOf(first, idx + 1);
+  }
+  return false;
+}
+
+function bytesContainsAnySubsequence(bytes, seqList) {
+  for (let i = 0; i < seqList.length; i += 1) {
+    if (bytesContainsSubsequence(bytes, seqList[i])) return true;
   }
   return false;
 }
@@ -530,14 +579,14 @@ function readFieldVarintValue(field) {
 }
 
 function makeBackgroundPlayerRender() {
-  const backgroundAbility = encodeVarintField(1, 1); // active=true
+  const backgroundAbility = encodeVarintField(1, 1);
   return encodeLengthField(64657230, backgroundAbility);
 }
 
 function makePictureInPictureRender() {
   const pictureAbility = concatBytes([
-    encodeVarintField(1, 1), // active=true
-    encodeVarintField(8, 1), // observed iOS capability flag
+    encodeVarintField(1, 1),
+    encodeVarintField(8, 1),
   ]);
   return encodeLengthField(151635310, pictureAbility);
 }
@@ -578,7 +627,6 @@ function cleanPlayerProtobuf(bytes) {
   const out = [];
 
   for (const field of parseFields(bytes)) {
-    // Known player ad containers observed on iOS.
     if (
       field.fieldNo === PLAYER_FIELDS.adPlacements ||
       field.fieldNo === PLAYER_FIELDS.adSlots
@@ -588,15 +636,13 @@ function cleanPlayerProtobuf(bytes) {
       continue;
     }
 
-    // Drop any length field that is compact/medium and clearly ad-marked.
     if (
       field.wireType === WIRE_LENGTH &&
       field.payload &&
       field.payload.length >= 80 &&
       field.payload.length <= 250000 &&
-      bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)
+      bytesContainStrongNextAdMarker(field.payload)
     ) {
-      // Keep very large structural blobs unless they are obviously ad-only.
       if (field.payload.length <= 120000 || isLikelyNextAdFragment(field.payload)) {
         removed += 1;
         changed = true;
@@ -619,7 +665,6 @@ function cleanPlayerProtobuf(bytes) {
       continue;
     }
 
-    // Recurse one level into unknown length fields to strip nested ad slots.
     if (field.wireType === WIRE_LENGTH && field.payload && field.payload.length > 0 && field.payload.length < 800000) {
       try {
         const nested = cleanNextAdFragmentsProtobuf(field.payload, 4);
@@ -657,18 +702,14 @@ function cleanWatchContentProtobuf(bytes) {
       continue;
     }
     if (field.fieldNo === WATCH_CONTENT_FIELDS.next && field.wireType === WIRE_LENGTH && field.payload) {
-      // The watch page recommendation feed uses the same richItemContents
-      // structure as browse/next. Remove the complete sponsored item before
-      // stripping any remaining non-card ad metadata.
       const structured = cleanFeedSurfaceProtobuf(field.payload, "watch-next");
       const payload = cleanNextAdFragmentsProtobuf(structured, 10);
       out.push({ raw: encodeLengthField(WATCH_CONTENT_FIELDS.next, payload) });
       changed = true;
       continue;
     }
-    // Some iOS get_watch blobs nest ads outside classic player/next fields.
     if (field.wireType === WIRE_LENGTH && field.payload && field.payload.length >= 120 && field.payload.length <= 300000) {
-      if (isLikelyNextAdFragment(field.payload) || bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)) {
+      if (isLikelyNextAdFragment(field.payload) || bytesContainStrongNextAdMarker(field.payload)) {
         nextAdFieldsRemoved += 1;
         changed = true;
         continue;
@@ -934,20 +975,16 @@ function textContainsAnyMarker(text, markers) {
 }
 
 function bytesContainAdMarker(bytes) {
-  return textContainsAnyMarker(UTF8_DECODER.decode(bytes), AD_MARKERS);
+  return bytesContainsAnySubsequence(bytes, AD_MARKER_BYTES);
 }
 
-function bytesContainMarker(bytes, marker) {
-  return UTF8_DECODER.decode(bytes).includes(marker);
-}
-
-function bytesContainAnyMarker(bytes, markers) {
-  return textContainsAnyMarker(UTF8_DECODER.decode(bytes), markers);
+function bytesContainStrongNextAdMarker(bytes) {
+  return bytesContainsAnySubsequence(bytes, NEXT_AD_STRONG_MARKER_BYTES);
 }
 
 function isLikelyNextAdFragment(payload) {
   if (payload.length < 180 || payload.length > 220000) return false;
-  if (!bytesContainAnyMarker(payload, NEXT_AD_STRONG_MARKERS)) return false;
+  if (!bytesContainStrongNextAdMarker(payload)) return false;
 
   try {
     const fields = parseFields(payload);
@@ -961,7 +998,7 @@ function isLikelyNextAdFragment(payload) {
 }
 
 function cleanNextAdFragmentsProtobuf(bytes, depth) {
-  if (depth <= 0 || bytes.length < 180 || !bytesContainAnyMarker(bytes, NEXT_AD_STRONG_MARKERS)) {
+  if (depth <= 0 || bytes.length < 180 || !bytesContainStrongNextAdMarker(bytes)) {
     return bytes;
   }
 
@@ -972,7 +1009,7 @@ function cleanNextAdFragmentsProtobuf(bytes, depth) {
       field.wireType !== WIRE_LENGTH ||
       !field.payload ||
       field.payload.length < 180 ||
-      !bytesContainAnyMarker(field.payload, NEXT_AD_STRONG_MARKERS)
+      !bytesContainStrongNextAdMarker(field.payload)
     ) {
       out.push(field);
       continue;
@@ -1004,15 +1041,6 @@ function cleanNextAdFragmentsProtobuf(bytes, depth) {
   return changed ? rebuildFields(out) : bytes;
 }
 
-function isLikelyNestedMessage(bytes) {
-  try {
-    const fields = parseFields(bytes);
-    return fields.length >= 2 && fields.some((field) => field.wireType === WIRE_LENGTH);
-  } catch {
-    return false;
-  }
-}
-
 function markerHits(bytes) {
   const text = UTF8_DECODER.decode(bytes);
   const checks = {
@@ -1041,16 +1069,21 @@ function markerHits(bytes) {
   return hits;
 }
 
-// Current YouTube iOS browse protobufs place homepage cards in:
-//   Content -> SectionListRenderer -> ItemSectionRenderer(50195462)
-//   -> repeated RichItemContent(field 1)
-// Removing the repeated field itself is important. Deleting an arbitrary
-// ad-marked descendant only hollows the card and leaves a grey placeholder.
 const ITEM_SECTION_RENDERER_FIELD = 50195462;
 const ITEM_SECTION_RENDERER_TAG = encodeTag(ITEM_SECTION_RENDERER_FIELD, WIRE_LENGTH);
 const RICH_ITEM_CONTENT_FIELD = 1;
 
-const FEED_AD_UI_MARKERS = [
+const PIVOT_BAR_RENDERER_FIELD = 117866661;
+const PIVOT_BAR_RENDERER_TAG = encodeTag(PIVOT_BAR_RENDERER_FIELD, WIRE_LENGTH);
+const PIVOT_BAR_ITEM_FIELD = 1;
+const PIVOT_BAR_ICON_ONLY_ITEM_RENDERER_FIELD = 318370163;
+const GUIDE_SECTION_RENDERER_FIELD = 46887524;
+
+const FE_UPLOADS_BYTES = utf8Bytes("FEuploads");
+const FE_SHORTS_BYTES = utf8Bytes("FEshorts");
+const FE_MUSIC_IMMERSIVE_BYTES = utf8Bytes("FEmusic_immersive");
+
+const FEED_AD_UI_MARKER_BYTES = [
   "inline_injection_entrypoint_layout.eml",
   "ad_badge.eml-fe",
   "ad_avatar.eml-fe",
@@ -1064,47 +1097,47 @@ const FEED_AD_UI_MARKERS = [
   "displayAdRenderer",
   "adSlotRenderer",
   "inFeedAdLayoutRenderer",
-];
+].map(utf8Bytes);
 
-const FEED_AD_NETWORK_MARKERS = [
+const FEED_AD_NETWORK_MARKER_BYTES = [
   "pagead",
   "googleads",
   "googleadservices",
   "doubleclick.net",
   "adclick",
   "adview",
-];
+].map(utf8Bytes);
 
-const FEED_AD_BADGE_TEXT_MARKERS = [
+const FEED_AD_BADGE_TEXT_MARKER_BYTES = [
   "赞助商广告",
   "付费宣传",
   "付费推广",
   "Sponsored",
-];
+].map(utf8Bytes);
+
+const REEL_AD_UI_MARKER_BYTES = [
+  "ad_badge.eml-fe",
+  "ad_button.eml-fe",
+  "inline_injection_entrypoint_layout.eml",
+  "reel_player_overlay_ad",
+  "reel_player_underlay_ad",
+  "adSlotRenderer",
+  "adClientParams",
+].map(utf8Bytes);
 
 function isDirectFeedAdItem(payload) {
   if (!payload || payload.length < 64) return false;
-  const text = UTF8_DECODER.decode(payload);
 
-  // Structural UI identifiers and ad-network payloads are stronger than
-  // translated CTA text and are stable across the live Chinese responses.
-  if (textContainsAnyMarker(text, FEED_AD_UI_MARKERS)) {
+  if (bytesContainsAnySubsequence(payload, FEED_AD_UI_MARKER_BYTES)) {
     return true;
   }
 
-  // Community implementations use pagead inside a sizeable unknown field as
-  // the fallback when YouTube has not exposed a known renderer/EML name.
-  if (payload.length >= 1000 && textContainsAnyMarker(text, FEED_AD_NETWORK_MARKERS)) {
+  if (payload.length >= 1000 && bytesContainsAnySubsequence(payload, FEED_AD_NETWORK_MARKER_BYTES)) {
     return true;
   }
 
-  // Text fallback for layouts whose technical EML marker has moved into an
-  // unknown protobuf field. Structural guards: require a card-sized payload
-  // (tiny fragments are labels, not whole removable items) and only exact
-  // badge strings. Generic lowercase words like "sponsored"/"advertisement"
-  // appear in organic titles and descriptions and risk deleting real videos.
   if (payload.length < 4096) return false;
-  return textContainsAnyMarker(text, FEED_AD_BADGE_TEXT_MARKERS);
+  return bytesContainsAnySubsequence(payload, FEED_AD_BADGE_TEXT_MARKER_BYTES);
 }
 
 function cleanItemSectionRenderer(payload, counters) {
@@ -1193,10 +1226,6 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
 
   const ratio = output.length / Math.max(bytes.length, 1);
   const remainingItems = counters.items - counters.removed;
-  // Judge safety by the repeated-item structure, not byte ratio. A single
-  // promoted card can contain most of the response bytes while still being
-  // only 1 of many homepage items. Preserve the response only if cleanup
-  // would empty the item arrays or remove an implausibly large share of them.
   const tooManyItemsRemoved =
     remainingItems <= 0 ||
     counters.removed > Math.max(4, Math.floor(counters.items / 2));
@@ -1218,9 +1247,216 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
   return output;
 }
 
+function activeBlockedGuideIds() {
+  const blocked = [];
+  if (config.blockUpload) blocked.push(FE_UPLOADS_BYTES);
+  if (config.blockShorts) blocked.push(FE_SHORTS_BYTES);
+  if (config.blockImmersive) blocked.push(FE_MUSIC_IMMERSIVE_BYTES);
+  return blocked;
+}
+
+function protobufHasExactBytesField(bytes, targetBytes, depth) {
+  if (depth <= 0 || !bytes || bytes.length < targetBytes.length) return false;
+  if (!bytesContainsSubsequence(bytes, targetBytes)) return false;
+
+  let fields;
+  try {
+    fields = parseFields(bytes);
+  } catch {
+    return false;
+  }
+
+  for (const field of fields) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload) continue;
+    if (bytesEqual(field.payload, targetBytes)) return true;
+    if (
+      field.payload.length > targetBytes.length &&
+      protobufHasExactBytesField(field.payload, targetBytes, depth - 1)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isBlockedPivotOrGuideItem(payload, blockedIds) {
+  if (!payload || payload.length === 0) return false;
+  if (config.blockUpload) {
+    try {
+      const topFields = parseFields(payload);
+      if (
+        topFields.some(
+          (f) => f.fieldNo === PIVOT_BAR_ICON_ONLY_ITEM_RENDERER_FIELD && f.wireType === WIRE_LENGTH,
+        )
+      ) {
+        return true;
+      }
+    } catch {
+      // fall through
+    }
+  }
+  for (let i = 0; i < blockedIds.length; i += 1) {
+    if (protobufHasExactBytesField(payload, blockedIds[i], 8)) return true;
+  }
+  return false;
+}
+
+function cleanPivotOrGuideSectionItems(payload, blockedIds, counters) {
+  let fields;
+  try {
+    fields = parseFields(payload);
+  } catch {
+    return payload;
+  }
+
+  let totalItems = 0;
+  let removed = 0;
+  const out = [];
+  for (const field of fields) {
+    if (field.fieldNo === PIVOT_BAR_ITEM_FIELD && field.wireType === WIRE_LENGTH && field.payload) {
+      totalItems += 1;
+      if (isBlockedPivotOrGuideItem(field.payload, blockedIds)) {
+        removed += 1;
+        continue;
+      }
+    }
+    out.push(field);
+  }
+
+  // Never empty all navigation tabs in a bar/section.
+  if (removed === 0 || totalItems - removed <= 0) return payload;
+  counters.removed += removed;
+  return rebuildFields(out);
+}
+
+function cleanGuideTree(bytes, depth, blockedIds, counters) {
+  if (depth <= 0) return bytes;
+
+  let fields;
+  try {
+    fields = parseFields(bytes);
+  } catch {
+    return bytes;
+  }
+
+  let changed = false;
+  const out = [];
+  for (const field of fields) {
+    if (field.wireType !== WIRE_LENGTH || !field.payload || field.payload.length === 0) {
+      out.push(field);
+      continue;
+    }
+
+    let payload = field.payload;
+    if (
+      field.fieldNo === PIVOT_BAR_RENDERER_FIELD ||
+      field.fieldNo === GUIDE_SECTION_RENDERER_FIELD
+    ) {
+      payload = cleanPivotOrGuideSectionItems(field.payload, blockedIds, counters);
+    } else if (
+      bytesContainsSubsequence(field.payload, PIVOT_BAR_RENDERER_TAG) ||
+      bytesContainsAnySubsequence(field.payload, blockedIds)
+    ) {
+      payload = cleanGuideTree(field.payload, depth - 1, blockedIds, counters);
+    }
+
+    if (payload !== field.payload) {
+      out.push({ raw: encodeLengthField(field.fieldNo, payload) });
+      changed = true;
+    } else {
+      out.push(field);
+    }
+  }
+
+  return changed ? rebuildFields(out) : bytes;
+}
+
+function cleanGuideProtobuf(bytes) {
+  const blockedIds = activeBlockedGuideIds();
+  if (blockedIds.length === 0) return bytes;
+  if (
+    !bytesContainsSubsequence(bytes, PIVOT_BAR_RENDERER_TAG) &&
+    !bytesContainsAnySubsequence(bytes, blockedIds)
+  ) {
+    return bytes;
+  }
+
+  const counters = { removed: 0 };
+  const output = cleanGuideTree(bytes, 10, blockedIds, counters);
+  if (counters.removed > 0) {
+    guideItemsRemoved += counters.removed;
+    debug(`guide-tabs removed=${counters.removed} ${bytes.length} -> ${output.length}`);
+  }
+  return output;
+}
+
+function isDirectReelAdEntry(payload) {
+  if (!payload || payload.length < 64) return false;
+  if (bytesContainsAnySubsequence(payload, REEL_AD_UI_MARKER_BYTES)) return true;
+  if (payload.length >= 256 && bytesContainsAnySubsequence(payload, FEED_AD_NETWORK_MARKER_BYTES)) {
+    return true;
+  }
+  if (payload.length >= 1024 && bytesContainsAnySubsequence(payload, FEED_AD_BADGE_TEXT_MARKER_BYTES)) {
+    return true;
+  }
+  return false;
+}
+
+function cleanReelWatchSequenceProtobuf(bytes) {
+  let fields;
+  try {
+    fields = parseFields(bytes);
+  } catch {
+    return bytes;
+  }
+
+  // ResponseContext is always field 1; sequence entries are repeated length-delimited messages.
+  const fieldCounts = new Map();
+  for (const field of fields) {
+    if (field.fieldNo !== 1 && field.wireType === WIRE_LENGTH && field.payload && field.payload.length >= 64) {
+      fieldCounts.set(field.fieldNo, (fieldCounts.get(field.fieldNo) || 0) + 1);
+    }
+  }
+
+  let totalEntries = 0;
+  let removedEntries = 0;
+  const out = [];
+  for (const field of fields) {
+    const isEntryCandidate =
+      field.fieldNo !== 1 &&
+      field.wireType === WIRE_LENGTH &&
+      field.payload &&
+      field.payload.length >= 64 &&
+      ((fieldCounts.get(field.fieldNo) || 0) >= 2 || field.fieldNo === 5);
+
+    if (isEntryCandidate) {
+      totalEntries += 1;
+      if (isDirectReelAdEntry(field.payload)) {
+        removedEntries += 1;
+        continue;
+      }
+    }
+    out.push(field);
+  }
+
+  if (removedEntries === 0) return bytes;
+  const remainingEntries = totalEntries - removedEntries;
+  if (remainingEntries <= 0 || removedEntries > Math.max(3, Math.floor(totalEntries / 2))) {
+    logbook(
+      `reel-schema-safety entries=${totalEntries} removed=${removedEntries} remaining=${remainingEntries}`,
+    );
+    return bytes;
+  }
+
+  feedAdCardsRemoved += removedEntries;
+  debug(`reel-sequence entries=${totalEntries} removed=${removedEntries} ${bytes.length} -> ${bytes.length}`);
+  return rebuildFields(out);
+}
+
 function cleanProtobuf(bytes, endpoint) {
   feedAdCardsRemoved = 0;
   nextAdFieldsRemoved = 0;
+  guideItemsRemoved = 0;
   if (endpoint === "player") return cleanPlayerProtobuf(bytes);
   if (endpoint === "next") {
     const structured = cleanFeedSurfaceProtobuf(bytes, "next");
@@ -1230,13 +1466,18 @@ function cleanProtobuf(bytes, endpoint) {
   if (endpoint === "account/get_setting" || endpoint === "account/get_setting_values") {
     return cleanSettingProtobuf(bytes);
   }
-  // Home/search feeds: only remove guarded ad cards. Keep guide/reel passthrough
-  // because those surfaces previously regressed metadata when rewritten broadly.
-  if (endpoint === "browse" || endpoint === "search") {
-    return cleanFeedSurfaceProtobuf(bytes, endpoint);
+  if (endpoint === "browse") {
+    const cleanedFeed = cleanFeedSurfaceProtobuf(bytes, "browse");
+    return cleanGuideProtobuf(cleanedFeed);
   }
-  if (endpoint === "guide" || endpoint === "reel/reel_watch_sequence") {
-    return bytes;
+  if (endpoint === "search") {
+    return cleanFeedSurfaceProtobuf(bytes, "search");
+  }
+  if (endpoint === "guide") {
+    return cleanGuideProtobuf(bytes);
+  }
+  if (endpoint === "reel/reel_watch_sequence") {
+    return cleanReelWatchSequenceProtobuf(bytes);
   }
   return bytes;
 }
@@ -1252,9 +1493,6 @@ function describeBodyType(body) {
   return typeof body;
 }
 
-// Return body in the same shape Surge handed us. Some iOS builds corrupt
-// protobufs when a Uint8Array is substituted for an original byte-string (or
-// vice versa), which shows up as multi-megabyte Content-Length inflation.
 function toResponseBody(bytes, original) {
   if (original instanceof Uint8Array || original instanceof ArrayBuffer) {
     return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -1275,18 +1513,19 @@ try {
   const inputType = describeBodyType(originalBody);
   if (looksLikeJsonText(originalBody)) {
     const textBody = typeof originalBody === "string" ? originalBody : bodyText(originalBody);
-    const output = cleanJson(textBody, endpoint);
-    debug(`json ${endpoint} type=${inputType} ${textBody.length} -> ${output.length}`);
-    $done({ body: output });
+    const result = cleanJsonResult(textBody, endpoint);
+    if (!result.changed) {
+      debug(`json-passthrough ${endpoint} type=${inputType} bytes=${textBody.length}`);
+      $done({});
+    } else {
+      debug(`json ${endpoint} type=${inputType} ${textBody.length} -> ${result.body.length}`);
+      $done({ body: result.body });
+    }
   } else {
     const input = bodyBytes(originalBody);
-    let output = cleanProtobuf(input, endpoint);
-    const removedCount = feedAdCardsRemoved + nextAdFieldsRemoved;
+    const output = cleanProtobuf(input, endpoint);
+    const removedCount = feedAdCardsRemoved + nextAdFieldsRemoved + guideItemsRemoved;
 
-    // Hard safety: never ship an inflated protobuf body.
-    // Setting responses (account/get_setting, account/get_setting_values) inject
-    // background-playback subSettings and settingItems (~101 bytes), so allow up
-    // to 256 additive bytes there while keeping the 64-byte cap everywhere else.
     const isSettingEndpoint =
       endpoint === "account/get_setting" || endpoint === "account/get_setting_values";
     const maxInflationBytes = isSettingEndpoint ? 256 : 64;
@@ -1296,19 +1535,15 @@ try {
     );
     if (output.length > input.length + maxInflationBytes) {
       logbook(
-        `protobuf-inflation-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
+        `protobuf-inflation-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`,
       );
       $done({});
     } else if (output.length > maxOutputBytes) {
       logbook(
-        `protobuf-growth-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`
+        `protobuf-growth-abort ${endpoint} type=${inputType} ${input.length} -> ${output.length}`,
       );
       $done({});
     } else {
-      // A protobuf edit can replace fixed-width varints without changing the
-      // encoded length (for example, false -> true capability flags). Always
-      // compare equal-length output byte-for-byte before deciding to pass the
-      // original body through.
       let changed = removedCount > 0 || output.length !== input.length;
       if (!changed && output !== input) {
         for (let i = 0; i < input.length; i += 1) {

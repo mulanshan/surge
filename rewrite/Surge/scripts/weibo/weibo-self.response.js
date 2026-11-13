@@ -14,6 +14,7 @@ const DEFAULTS = {
   debug: false,
 };
 
+const UTF8_DECODER = new TextDecoder();
 const config = parseArgument();
 
 function parseArgument() {
@@ -39,8 +40,8 @@ function hasOwn(value, key) {
 
 function bodyText(body) {
   if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
 }
 
@@ -81,17 +82,41 @@ function isSuccessfulResponse(response) {
   return typeof status !== "number" || (status >= 200 && status < 300);
 }
 
+const FAST_AD_KEYS = [
+  "is_ad",
+  "isAd",
+  "is_ads",
+  "isAds",
+  "ad_state",
+  "adFlag",
+  "ad_flag",
+  "ads_material_info",
+  "advertises",
+  "广告",
+  "推广",
+];
+
+const FAST_AD_LITERAL_RE = /"\s*(?:ads?|advert(?:ise(?:ment)?)?)\s*"/i;
+
+function mayContainAdMarkers(text) {
+  return FAST_AD_KEYS.some((key) => text.includes(key)) || FAST_AD_LITERAL_RE.test(text);
+}
+
 function trueFlag(value) {
   return value === true || value === 1 || value === "1";
 }
 
 function adType(value) {
   return typeof value === "string"
-    && ["ad", "ads", "advert", "advertise", "advertisement"].includes(value.trim().toLowerCase());
+    && ["ad", "ads", "advert", "advertise", "advertisement", "广告", "推广"].includes(
+      value.trim().toLowerCase(),
+    );
 }
 
 function exactAdvertisementLabel(value) {
-  return typeof value === "string" && value.trim() === "广告";
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  return trimmed === "广告" || trimmed === "推广";
 }
 
 function explicitAdvertisement(value) {
@@ -176,8 +201,12 @@ function cleanAdvertisementPaths(payload, kind, stats) {
     ["data", "cards", "*", "card_group"],
   ];
   const commentPaths = [
+    ["datas"],
+    ["items"],
     ["root_comments"],
     ["comments"],
+    ["data", "datas"],
+    ["data", "items"],
     ["data", "root_comments"],
     ["data", "comments"],
   ];
@@ -213,6 +242,10 @@ function processResponse() {
   const text = jsonText($response && $response.body);
   if (!text) {
     debug("pass-through reason=empty-body");
+    return {};
+  }
+  if (!mayContainAdMarkers(text)) {
+    debug("pass-through reason=fast-no-marker");
     return {};
   }
 
