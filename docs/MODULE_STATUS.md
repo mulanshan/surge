@@ -14,6 +14,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 | 微信 | candidate | 2026-07-13, iOS load and synthetic response-engine pass; real WeChat flow pending | 基础去广告模块 recommended | Official-account ads and exact mini-program ad hosts; native MMTLS feeds excluded |
 | 小红书 | stable | 2026-11-11, `.11.11` iOS 5.23.0 bundle load, external-resource readiness and canonical cloud promotion | none | Explicit structured ads only; save/watermark and search UI excluded |
 | 微博 | stable | 2026-11-11, `.11.11` iOS 5.23.0 bundle load, external-resource readiness and canonical cloud promotion | none | Endpoint/container allowlists; account, membership, messages and wallet excluded |
+| 哔哩哔哩 | candidate | staged in `rewrite/Surge/candidates/bilibili-self.sgmodule` for `surge-self-v2026.11.13`; iOS live validation pending | none | Dual JSON + unary gRPC ad cleanup; optional bottom Mall tab & PCDN switches; account/VIP/pay excluded |
 | 基础去广告模块 | stable | 2026-07-13 Mac/iOS domain review | none | Domain rules only; no script or MITM |
 
 ## Status meanings
