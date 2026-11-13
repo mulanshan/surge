@@ -52,7 +52,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - `guide` / `reel` 仍原样放行，避免导航和元数据回归
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13`，query 版本为 `v=20261113-1`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13.1`，query 版本为 `v=20261113-2`。
 
 能力边界（SSAP）：YouTube 自 2024 年起试验并逐步扩大服务端广告注入（SSAI，社区称 SSAP），把广告直接拼进视频流。本模块与所有 protobuf 改写路线一样，只能拦截客户端插入的广告；命中 SSAP 实验的账号或设备会出现"模块开着但仍有广告"，这是预期行为而非模块故障。
 
@@ -255,21 +255,22 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self.sgmodule
 ```
 
-这是自有可审计的微信去广告模块：
+这是自有可审计的微信去广告模块（固定到 `surge-self-v2026.11.13.1`）：
 
-- 清理公众号文章 `/mp/getappmsgad` 返回中的明确广告字段
-- 对公众号商品推广接口 `/mp/cps_product_info` 返回空 JSON
-- 精确拒绝三个社区长期交叉确认的小程序广告素材主机
+- 清理公众号文章 `/mp/getappmsgad` 与 `/mp/getappmsgext` 返回中的明确广告/推广字段，完整保留阅读数、点赞、合集与赞赏头像
+- 对公众号商品推广接口 `/mp/cps_product_info` 进行受控空列表清理（支持 `清理明确广告` 开关）
+- 提供可选开关 `隐藏文末推荐流`（默认 `false`），按需精简公众号文末瀑布流与相关推荐（`/mp/masonryfeed`、`/mp/relatedarticle`）
+- 精确管理三个小程序/文章内嵌广告素材主机（`wxa/wximg/wxsmw.wxs.qq.com`，支持 `小程序广告素材策略` 切换防激励视频误杀）及前端异常遥测 `badjs.weixinbridge.com`（默认 `REJECT-NO-DROP`）
 - 不使用第三方脚本；脚本不联网、不读取 Cookie/token、不上传请求或响应
 
 能力边界：
 
-- 不承诺清除朋友圈、视频号或其他微信原生 Feed 广告；大量原生流量使用 MMTLS，Surge 无法安全改写
-- 不整域拒绝 `weixin.qq.com`、`wxs.qq.com`、`servicewechat.com`、`tenpay.com`、`qpic.cn` 或 `qlogo.cn`
+- 不承诺清除朋友圈、视频号或其他微信原生 Feed 广告；原生信息流结构封装在私有 `MMTLS` 协议内，Surge 无法解密或无痕剥离
+- 不整域拒绝 `weixin.qq.com`、`wxs.qq.com`、`servicewechat.com`、`tenpay.com`、`qpic.cn`、`qlogo.cn` 或 `gdtimg.com`
 - 不修改消息、联系人、文章正文、评论、赞赏、小程序登录、微信支付、订单或会员状态
 - 未知 JSON 结构和非目标路径立即原样放行
 
-当前按微信 `8.0.75` 设计，模块状态为 `candidate`；详细调研、社区方案比较和真机回归清单见
+模块状态为 `limited`（在标准 HTTPS 公众号与明确广告主机边界内稳定运行）；详细调研、社区方案比较和真机回归清单见
 [docs/WECHAT_SELF_RESEARCH.md](docs/WECHAT_SELF_RESEARCH.md)。
 
 ### 小红书
@@ -285,7 +286,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/xiaohongshu
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的小红书正式云端去广告模块：
 
 - 模块：`rewrite/Surge/xiaohongshu-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13`）
+- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
 - 调研与安全边界：[docs/XIAOHONGSHU_SELF_RESEARCH.md](docs/XIAOHONGSHU_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -308,7 +309,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/weibo-self.
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的微博正式云端去广告模块：
 
 - 模块：`rewrite/Surge/weibo-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13`）
+- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
 - 调研与安全边界：[docs/WEIBO_SELF_RESEARCH.md](docs/WEIBO_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -331,7 +332,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/bilibili-se
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的哔哩哔哩正式云端去广告模块：
 
 - 模块：`rewrite/Surge/bilibili-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13`）
+- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13.1`）
 - 调研与安全边界：[docs/BILIBILI_SELF_RESEARCH.md](docs/BILIBILI_SELF_RESEARCH.md)
 
 当前范围与安全边界：

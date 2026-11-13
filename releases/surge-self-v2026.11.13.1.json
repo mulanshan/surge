@@ -2,7 +2,7 @@
   "schema_version": 2,
   "tag": "surge-self-v2026.11.13.1",
   "integrity": "intact",
-  "distribution": "candidate",
+  "distribution": "active",
   "live_device_validation": "passed",
   "live_device_evidence": "docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v202611131",
   "live_device_evidence_sha256": "7bf89d4c9cdbd378cfbcbddeb814ca6665b06885c6b7041206694285b06a78bf",
