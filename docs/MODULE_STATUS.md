@@ -165,3 +165,45 @@ the same pull request as the release notes.
   - Surge iOS `file` and `memory` logs recorded `0` warnings and `0` errors across
     the validation window (memory steady at `25.0 MB`), and the temporary
     candidate module was removed after verification.
+
+## Live-device evidence for surge-self-v2026.11.13.2
+
+- Registered payload commit: `3dd01c6de4fef056adfef84cbcd61d4a0652567d`.
+- Device and runtime: `iPhone18,3` running iOS `27.2 (24B119)` with
+  `Surge iOS 5.23.0 (3867)` (`Core 6010000`), exercised between
+  `2026-11-13 15:00 +08:00` and `2026-11-13 15:08 +08:00`; Surge Mac (`6.9.1`,
+  `Core 6009001`) remained free of candidate modules throughout.
+- Readiness, rule matching, and script pinning: staged and enabled
+  `京东 (候选 2026.11.13.2)`, `小红书 (候选 2026.11.13.2)`, `微博 (候选 2026.11.13.2)`,
+  `扫描全能王 (候选 2026.11.13.2)`, `高德地图 (候选 2026.11.13.2)`, and
+  `YouTube (候选 2026.11.13.2)` on iOS; refreshed all external resources
+  (`40/40` reported `ready=1`, `0` load errors) and verified `script list`
+  pinned all six upgraded scripts (`jd.self.response`, `xiaohongshu.self.response`,
+  `weibo.self.response`, `camscanner.self.response`, `amap.self.response`,
+  `youtube.self.response`) to immutable tag `surge-self-v2026.11.13.2`
+  (`?v=20261113-3`).
+- Exercised release change surface and result (`passed`):
+  - Verified live `rule match` across all six upgraded module surfaces (`16/16`
+    assertions): `dns.jd.com` -> `REJECT`, `speedv6.m.jd.com` -> `REJECT-NO-DROP`,
+    `jddebug.com/diagnose` -> `REJECT`, `ads-img-al.xhscdn.com` -> `REJECT`,
+    `dns.weibo.cn` & `httpdns.uve.weibo.com` -> `REJECT`, `ad.intsig.net` -> `REJECT`,
+    `adashx.ut.amap.com` -> `REJECT`, `amdc.m.taobao.com` with `AMap/16.05.0`
+    User-Agent -> `REJECT` while `amdc.m.taobao.com` with `MTOPSDK/3.1.1.7`
+    User-Agent remained `DIRECT` (confirming zero collateral impact on Taobao or
+    Alipay), and first-party business hosts (`api.m.jd.com`,
+    `edith.xiaohongshu.com`, `api.weibo.cn`, `open.camscanner.com`,
+    `api.intsig.net`, `m6.amap.com`) remained `DIRECT`.
+  - Executed all six tagged `.11.13.2` scripts directly inside the on-device
+    `Surge iOS 5.23.0` JavaScriptCore engine (`15:06–15:08 +08:00`) with zero
+    exceptions: `jd.self.response` (`welcomeHome` `2 ms`, `openUpgrade` `< 1 ms`),
+    `xiaohongshu.self.response` (`ads/resource` envelope-preserving cleanup `1 ms`,
+    `homefeed` `< 1 ms`), `weibo.self.response` (`mix_comments` sub-comment ad
+    filtering `1 ms`), `camscanner.self.response` (`user/cs/operating/app/get_startpic`
+    `2 ms`, `purchase/cs/query_property` verified untouched `< 1 ms`),
+    `amap.self.response` (`main-page` `1 ms`, opt-in `afootprint` `1 ms`), and
+    `youtube.self.response` (Protobuf `guide` bottom-bar `PivotBarRenderer`
+    filtering `3 ms`, `reel/reel_watch_sequence` Shorts ad stripping `< 1 ms`, and
+    zero-`TextDecoder` raw-byte scan over a `2.10 MB` `browse` payload in `31 ms`).
+  - Surge iOS `dump summary` and logs recorded `0` module/configuration warnings
+    (memory steady at `31.7 MB`), and all six temporary candidate modules were
+    disabled and removed after verification.
