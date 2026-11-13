@@ -26,7 +26,7 @@ Reviewed public architectural discussions and Surge module conventions across `B
 
 ## Self-hosted module design
 
-- Staged candidate path: `rewrite/Surge/candidates/bilibili-self.sgmodule` (`#!name=哔哩哔哩 (候选 2026.11.13)`), promoted to canonical `rewrite/Surge/bilibili-self.sgmodule` (`#!name=哔哩哔哩`) only after tagged iPhone validation passes.
+- Canonical cloud path: `rewrite/Surge/bilibili-self.sgmodule` (`#!name=哔哩哔哩`), promoted from staged `rewrite/Surge/candidates/bilibili-self.sgmodule` after passed live-device validation on `surge-self-v2026.11.13`.
 - Single response script: `rewrite/Surge/scripts/bilibili/bilibili-self.response.js` (`binary-body-mode=1`, `max-size=6291456`).
 - Network and header rules:
   - `DOMAIN,httpdns.bilivideo.com,REJECT` to prevent HTTPDNS MITM bypass without whole-domain blocking `bilibili.com`, `biliapi.net`, `bilivideo.com`, or `cm.bilibili.com`.

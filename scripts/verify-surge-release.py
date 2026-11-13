@@ -68,7 +68,7 @@ EXPECTED = {
         "rewrite/Surge/scripts/weibo/weibo-self.response.js",
     ),
     "Bilibili": (
-        "candidates/bilibili-self.sgmodule",
+        "bilibili-self.sgmodule",
         "rewrite/Surge/scripts/bilibili/bilibili-self.response.js",
     ),
 }
