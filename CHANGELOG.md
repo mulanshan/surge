@@ -5,6 +5,12 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-13
 
+Activated canonical bundle `surge-self-v2026.11.13.1` and promoted WeChat (`微信`) to `limited` cloud status:
+
+- Activated immutable nine-script bundle `surge-self-v2026.11.13.1` after passed iOS 5.23.0 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v202611131`), transitioning `surge-self-v2026.11.13` to `inactive` and updating all nine canonical cloud modules under `rewrite/Surge/` to `surge-self-v2026.11.13.1` (`?v=20261113-2`).
+- Upgraded `rewrite/Surge/wechat-self.sgmodule` and `rewrite/Surge/scripts/wechat/wechat-self.response.js`: extended whitelisted `mp.weixin.qq.com` response cleanup to `/mp/getappmsgext` (strictly preserving `appmsgstat` read/like metrics, albums, and rewards), `/mp/cps_product_info` (replacing static `[Map Local]` `{}` with schema-safe empty response under `cleanAds`), and optional `/mp/masonryfeed` + `/mp/relatedarticle` (`隐藏文末推荐流:false`), plus parameterized `{{{小程序广告素材策略}}}` (`wxa/wximg/wxsmw.wxs.qq.com`) and `{{{前端遥测策略}}}` (`badjs.weixinbridge.com` `REJECT-NO-DROP`).
+- Promoted `微信` in `docs/MODULE_STATUS.md` from `candidate` to `limited` within its documented HTTPS boundary (explicitly excluding `MMTLS` Moments and Channels feeds and avoiding whole-domain blocks on `gdtimg.com` / `wxs.qq.com`).
+
 Activated canonical bundle `surge-self-v2026.11.13` and promoted Bilibili (`哔哩哔哩`) to a public cloud module:
 
 - Activated immutable nine-script bundle `surge-self-v2026.11.13` after passed iOS 5.23.0 + Bilibili 9.19.0 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v20261113`), transitioning `surge-self-v2026.11.11` to `inactive` and updating all nine canonical cloud modules under `rewrite/Surge/` to `surge-self-v2026.11.13` (`?v=20261113-1`).

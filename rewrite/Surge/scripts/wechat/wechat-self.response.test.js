@@ -329,11 +329,13 @@ assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,gdtimg\.com/);
 assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,ugdtimg\.com/);
 assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,wxsnsdy\.wxs\.qq\.com/);
 assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,dns\.weixin\.qq\.com/);
-assert.match(moduleText, /wxa\.wxs\.qq\.com/);
-assert.match(moduleText, /wximg\.wxs\.qq\.com/);
-assert.match(moduleText, /wxsmw\.wxs\.qq\.com/);
-assert.match(moduleText, /getappmsgad/);
-assert.match(moduleText, /cps_product_info/);
+assert.doesNotMatch(moduleText, /\[Map Local\]/);
+assert.match(moduleText, /DOMAIN,wxa\.wxs\.qq\.com,\{\{\{小程序广告素材策略\}\}\}/);
+assert.match(moduleText, /DOMAIN,wximg\.wxs\.qq\.com,\{\{\{小程序广告素材策略\}\}\}/);
+assert.match(moduleText, /DOMAIN,wxsmw\.wxs\.qq\.com,\{\{\{小程序广告素材策略\}\}\}/);
+assert.match(moduleText, /DOMAIN,badjs\.weixinbridge\.com,\{\{\{前端遥测策略\}\}\}/);
+assert.match(moduleText, /getappmsgad\|getappmsgext\|cps_product_info\|masonryfeed\|relatedarticle/);
+assert.match(moduleText, /max-size=1048576/);
 assert.match(moduleText, /debug=\{\{\{启用调试模式\}\}\}/);
 assert.match(moduleText, /hostname = %APPEND% mp\.weixin\.qq\.com/);
 

@@ -1,28 +1,26 @@
 #!name=微信
-#!desc=固定云端订阅，自有可审计微信去广告模块：清理公众号文章广告与商品推广接口，并拒绝部分明确的小程序广告素材主机。不含第三方脚本；不承诺清除朋友圈或视频号原生广告。
+#!desc=固定云端订阅，自有可审计微信去广告模块：覆盖公众号文章广告(getappmsgad/getappmsgext)与商品推广卡(cps_product_info)，并提供文末推荐流精简、小程序广告素材防误杀与前端遥测可控开关。不含第三方脚本；不承诺清除朋友圈或视频号原生广告。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=微信
 #!openUrl=https://apps.apple.com/cn/app/id414478124
-#!arguments=启用调试模式:false
-#!arguments-desc=- 调试参数：[true, false]\n\n当前只处理普通 HTTPS 可见的公众号广告与少量明确广告素材。微信朋友圈、视频号及其他 MMTLS 原生流量不在本模块能力范围内。不会整域拦截 weixin.qq.com、wxs.qq.com、servicewechat.com、tenpay.com、qpic.cn 或 qlogo.cn。
+#!arguments=清理明确广告:true,隐藏文末推荐流:false,小程序广告素材策略:REJECT,前端遥测策略:REJECT-NO-DROP,启用调试模式:false
+#!arguments-desc=- 清理明确广告：[true, false]，默认 true；清理公众号文章广告(getappmsgad/getappmsgext)与带货推广卡(cps_product_info)，完整保留阅读数、点赞、评论与合集数据\n- 隐藏文末推荐流：[true, false]，默认 false；开启后清理公众号文末瀑布流与相关推荐(masonryfeed/relatedarticle)\n- 小程序广告素材策略：[REJECT, DIRECT]，默认 REJECT；遇到小程序看激励视频领券/解锁异常或样式缺失时可改为 DIRECT\n- 前端遥测策略：[REJECT-NO-DROP, DIRECT]，默认 REJECT-NO-DROP；静默拦截 badjs.weixinbridge.com 前端异常上报，小程序开发者调试时可改为 DIRECT\n- 启用调试模式：[true, false]\n\n当前只处理普通 HTTPS 可见的公众号广告与少量明确广告素材。微信朋友圈、视频号及其他 MMTLS 原生流量不在本模块能力范围内。不会整域拦截 weixin.qq.com、wxs.qq.com、servicewechat.com、tenpay.com、qpic.cn、qlogo.cn 或 gdtimg.com。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-11-13
 
 [Rule]
-# 社区长期交叉确认的微信小程序广告素材主机。保持精确 DOMAIN，避免误伤 wxs.qq.com 其他资源。
-DOMAIN,wxa.wxs.qq.com,REJECT
-DOMAIN,wximg.wxs.qq.com,REJECT
-DOMAIN,wxsmw.wxs.qq.com,REJECT
+# 社区长期交叉确认的微信小程序与文章内嵌广告素材主机。保持精确 DOMAIN 并支持参数切换，避免激励视频回调受阻。
+DOMAIN,wxa.wxs.qq.com,{{{小程序广告素材策略}}}
+DOMAIN,wximg.wxs.qq.com,{{{小程序广告素材策略}}}
+DOMAIN,wxsmw.wxs.qq.com,{{{小程序广告素材策略}}}
+# 微信内嵌网页/小程序前端 JS 异常遥测上报主机，默认静默丢弃避免控制台重试风暴。
+DOMAIN,badjs.weixinbridge.com,{{{前端遥测策略}}}
 
 [Script]
-# 公众号文章广告接口。脚本只识别根对象中的明确 advertisement_* 字段，未知结构原样放行。
-wechat.self.response = type=http-response,pattern=^https:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad(?:\?.*)?$,requires-body=1,max-size=524288,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13/rewrite/Surge/scripts/wechat/wechat-self.response.js?v=20261113-1,argument="{\"debug\":{{{启用调试模式}}}}"
-
-[Map Local]
-# 公众号文章内的商品推广专用接口；不覆盖文章、评论、赞赏或账号接口。
-^https:\/\/mp\.weixin\.qq\.com\/mp\/cps_product_info(?:\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"
+# 公众号文章广告、动态扩展、商品推广卡及可选文末推荐流清理。未知结构与非白名单接口立即原样放行。
+wechat.self.response = type=http-response,pattern=^https:\/\/mp\.weixin\.qq\.com\/mp\/(?:getappmsgad|getappmsgext|cps_product_info|masonryfeed|relatedarticle)(?:\?.*)?$,requires-body=1,max-size=1048576,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/wechat/wechat-self.response.js?v=20261113-2,argument="{\"cleanAds\":{{{清理明确广告}}},\"hideBottomFeed\":{{{隐藏文末推荐流}}},\"debug\":{{{启用调试模式}}}}"
 
 [MITM]
 hostname = %APPEND% mp.weixin.qq.com

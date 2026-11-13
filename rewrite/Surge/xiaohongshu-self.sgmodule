@@ -17,7 +17,7 @@ DOMAIN,ads-video-qc.xhscdn.com,REJECT
 DOMAIN,t-ads.xiaohongshu.com,REJECT
 
 [Script]
-xiaohongshu.self.response = type=http-response,pattern=^https:\/\/(?:edith|rec|so|www)\.xiaohongshu\.com\/api\/sns\/v\d+\/(?:homefeed|followfeed|user\/followings\/followfeed|search\/notes|note\/(?:imagefeed|feed|videofeed)|system_service\/splash_config)(?:\?.*)?$,requires-body=1,max-size=6291456,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13/rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js?v=20261113-1,argument="{\"cleanAds\":{{{清理明确广告}}},\"debug\":{{{启用调试模式}}}}"
+xiaohongshu.self.response = type=http-response,pattern=^https:\/\/(?:edith|rec|so|www)\.xiaohongshu\.com\/api\/sns\/v\d+\/(?:homefeed|followfeed|user\/followings\/followfeed|search\/notes|note\/(?:imagefeed|feed|videofeed)|system_service\/splash_config)(?:\?.*)?$,requires-body=1,max-size=6291456,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js?v=20261113-2,argument="{\"cleanAds\":{{{清理明确广告}}},\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 # 仅处理路径名明确为广告资源的读接口。
