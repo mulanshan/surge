@@ -111,3 +111,27 @@ the same pull request as the release notes.
   - Surge iOS `file` and `memory` logs recorded zero warnings or errors across the
     validation window, confirming bundle integrity and readiness for canonical
     cloud activation.
+
+## Live-device evidence for surge-self-v2026.11.13
+
+- Registered payload commit: `02b44c891ccb4e7d3d16111c17cac28d0d7cd69d`.
+- Device and runtime: `iPhone18,3` running iOS `27.2 (24B119)` with
+  `Surge iOS 5.23.0 (3867)` (`Core 6010000`), exercised between
+  `2026-11-13 12:36 +08:00` and `2026-11-13 12:49 +08:00`; Surge Mac (`6.9.1`,
+  `Core 6009001`) remained free of candidate modules throughout.
+- Readiness, rule matching, and script pinning: enabled `哔哩哔哩 (候选 2026.11.13)`
+  on iOS; refreshed all external resources (`40/40` reported `ready=1`, `0` load
+  errors), verified `script list` pinned `bilibili.self.response` to immutable tag
+  `surge-self-v2026.11.13` (`?v=20261113-1`), and verified `rule match` hit
+  `DOMAIN,httpdns.bilivideo.com,REJECT` while preserving `DIRECT` on
+  `app.bilibili.com`, `grpc.biliapi.net`, and `cm.bilibili.com`.
+- Exercised release change surface and result (`passed`):
+  - Cold-launched Bilibili iOS `9.19.0` and exercised splash, two-column home feed,
+    video detail + related recommendations, comment threads, and dynamic timeline:
+    `14` live HTTP/2 JSON and unary gRPC `bilibili.self.response` sessions between
+    `2026-11-13 12:46:59–12:48:14 +08:00` completed cleanly (`7.1–38.2 ms`
+    steady-state, `error: (null)`, zero residual ads, and memory steady at
+    `27.8 MB`).
+  - Surge iOS `file` and `memory` logs recorded `0` warnings and `0` errors across
+    the validation window, confirming bundle integrity and readiness for canonical
+    cloud activation.
