@@ -5,6 +5,7 @@
   "distribution": "candidate",
   "live_device_validation": "pending",
   "rollback_eligible": false,
+  "release_commit": "6736c5274e10d294763bb682db9ea00e9b7d557c",
   "supersedes": "surge-self-v2026.11.13",
   "scripts": [
     {
