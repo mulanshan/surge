@@ -224,6 +224,32 @@ assert.deepEqual(run(
   { data: [{ id: "ad", ads_info: { trace_id: "synthetic" } }] },
   { argument: { cleanAds: false } },
 ), {});
+{
+  const adsRes = bodyOf(run(
+    "https://edith.xiaohongshu.com/api/sns/v3/ads/resource?scene=splash",
+    { code: 0, success: true, data: { splash: [{ id: "ad-res-1" }] } },
+  ));
+  assert.equal(adsRes.code, 0);
+  assert.deepEqual(adsRes.data, {});
+  assert.deepEqual(run(
+    "https://www.xiaohongshu.com/api/sns/v3/ads/resource",
+    { code: 0, success: true, data: { splash: [{ id: "ad-res-1" }] } },
+    { argument: { cleanAds: false } },
+  ), {});
+}
+{
+  const feedAdsObj = bodyOf(run(
+    "https://edith.xiaohongshu.com/api/sns/v6/homefeed",
+    {
+      data: [
+        { id: "ad-via-ads-key", ads: { impression_url: "https://example.invalid" } },
+        { id: "ad-uppercase-type", model_type: "AD" },
+        { id: "kept-organic", model_type: "note" },
+      ],
+    },
+  ));
+  assert.deepEqual(feedAdsObj.data.map((x) => x.id), ["kept-organic"]);
+}
 assert.deepEqual(run(
   "https://edith.xiaohongshu.com/api/sns/v2/note/feed?note_id=redacted",
   { data: [{ note_list: [{ media_save_config: { disable_save: true } }] }] },

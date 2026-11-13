@@ -1,6 +1,6 @@
 # 京东社区调研与设计边界
 
-调研日期：2026-07-12。
+更新日期：2026-11-13（初版调研：2026-07-12）。
 
 ## 当前客户端
 
@@ -46,7 +46,8 @@
 设计原则：
 
 - 只 MITM `api.m.jd.com`，不做 `jd.com` 整域 MITM 或拒绝。
-- 模块覆盖当前观察到的 `/`、`/api`、`/client.action` 三种入口，但脚本先从 URL 或最多 1 MiB 的请求体中提取 `functionId`；不在内置白名单中的请求立即原样放行，不解析响应体。
+- 模块覆盖当前观察到的 `/`、`/api`、`/client.action` 三种入口，并通过 ICU 负向先行断言在 URL 正则层直接放行携带非白名单 `?functionId=`（如商详 `wareBusiness`、购物车 `cart`）的请求，仅对无 URL `functionId=`（POST 请求体传参）或白名单 `functionId` 缓冲响应体；脚本内再次核验白名单，不在内置白名单中的请求立即原样放行。
+- 新增支持 `openUpgrade`（清理应用内升级强推弹窗，保留 `code: "0"` 外壳）与 `清理明确广告` 总开关，并通过参数化 `DOMAIN,dns.jd.com,{{{HTTPDNS策略}}}`（默认 `REJECT`）防止冷启动绕过 `api.m.jd.com` 解密。
 - 当前版本真机出现的 `logConfig`、`netMonitor`、`weGameIcon`、`getStaticResource`、`interact_pre_executor`、`resources_delivery` 等接口暂不拦截：仅凭名称不足以证明它们是广告响应。
 - 只清理具有明确广告标志、广告类型、广告字段名或“广告/推广”等标签的节点。
 - 账号、购物车、商品、价格、订单、支付、退款、地址、物流、PLUS、会员、优惠券和钱包子树受到保护，不递归改写。

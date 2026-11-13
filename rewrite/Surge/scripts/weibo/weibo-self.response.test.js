@@ -150,12 +150,42 @@ for (const bodyType of [undefined, "uint8array", "arraybuffer"]) {
         { id: "kept-comment", text: "normal", user: { id: "kept-user" } },
         { id: "synthetic-comment-ad", ads_material_info: { is_ads: true } },
       ],
+      datas: [
+        { type: 0, data: { id: "kept-datas-comment", text: "good" } },
+        { type: 1, adType: "广告", data: { id: "datas-ad-1" } },
+        { type: 1, adType: "推广", data: { id: "datas-ad-2" } },
+        { type: 2, adType: "相关内容", data: { id: "kept-related-header" } },
+      ],
       comment_config: { can_reply: true },
     },
   ));
   assert.deepEqual(result.root_comments.map((item) => item.id), ["kept-comment"]);
+  assert.deepEqual(result.datas.map((item) => item.data.id), [
+    "kept-datas-comment",
+    "kept-related-header",
+  ]);
   assert.equal(result.root_comments[0].user.id, "kept-user");
   assert.equal(result.comment_config.can_reply, true);
+}
+
+{
+  const detailComments = bodyOf(run(
+    "https://api.weibo.cn/2/statuses/container_detail_comment?id=redacted",
+    {
+      data: {
+        datas: [
+          { data: { id: "kept-detail-comment" } },
+          { data: { id: "detail-comment-ad", is_ad: 1 } },
+        ],
+        items: [
+          { data: { id: "kept-detail-item" } },
+          { adType: "广告", data: { id: "detail-item-ad" } },
+        ],
+      },
+    },
+  ));
+  assert.deepEqual(detailComments.data.datas.map((x) => x.data.id), ["kept-detail-comment"]);
+  assert.deepEqual(detailComments.data.items.map((x) => x.data.id), ["kept-detail-item"]);
 }
 
 {

@@ -142,4 +142,26 @@ assert.deepEqual(run("welcomeHome", "not-json"), {});
   assert.deepEqual(result.data.wareList, []);
 }
 
+{
+  const result = bodyOf(run("openUpgrade", {
+    code: "0",
+    data: { version: "15.9.0", downloadUrl: "https://example.invalid/jd.ipa" },
+    upgradeInfo: { force: 0, title: "发现新版本" },
+  }));
+  assert.equal(result.code, "0");
+  assert.deepEqual(result.data, {});
+  assert.deepEqual(result.upgradeInfo, {});
+}
+
+assert.deepEqual(
+  run("welcomeHome", { data: { adList: [{ id: 1 }] } }, { cleanAds: false }),
+  {},
+);
+assert.deepEqual(
+  run("basicConfig", {
+    data: { JDHttpToolKit: { httpdns: { httpdns: 1 } } },
+  }, { disableDiagnostics: false }),
+  {},
+);
+
 console.log("JD Self tests passed");

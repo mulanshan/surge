@@ -2,8 +2,8 @@
  * Self-written JD cleaner for Surge.
  *
  * Security boundaries:
- * - Only processes selected api.m.jd.com/client.action JSON responses.
- * - Removes strongly identified advertising, splash, popup and marketing nodes.
+ * - Only processes selected api.m.jd.com JSON responses on whitelisted functionIds.
+ * - Removes strongly identified advertising, splash, popup, upgrade-nag and marketing nodes.
  * - Preserves account, cart, product, order, payment, refund, address,
  *   logistics, membership and coupon business data.
  * - Does not forge privileges, prices, balances, orders or membership state.
@@ -12,18 +12,33 @@
  */
 
 const DEFAULTS = {
+  cleanAds: true,
   debug: false,
   disableDiagnostics: true,
   cleanOrderPromotions: true,
 };
 
+const UTF8_DECODER = new TextDecoder();
 const config = parseArgument();
 
 function parseArgument() {
   try {
-    return Object.assign({}, DEFAULTS, JSON.parse(typeof $argument === "string" ? $argument : "{}"));
+    const parsed = JSON.parse(typeof $argument === "string" ? $argument : "{}");
+    if (!isPlainObject(parsed)) return { ...DEFAULTS };
+    return {
+      cleanAds: typeof parsed.cleanAds === "boolean" ? parsed.cleanAds : DEFAULTS.cleanAds,
+      debug: parsed.debug === true,
+      disableDiagnostics:
+        typeof parsed.disableDiagnostics === "boolean"
+          ? parsed.disableDiagnostics
+          : DEFAULTS.disableDiagnostics,
+      cleanOrderPromotions:
+        typeof parsed.cleanOrderPromotions === "boolean"
+          ? parsed.cleanOrderPromotions
+          : DEFAULTS.cleanOrderPromotions,
+    };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
@@ -45,9 +60,14 @@ function debug(message) {
 
 function bodyText(body) {
   if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
+}
+
+function isSuccessfulResponse(response) {
+  const status = response && response.status;
+  return typeof status !== "number" || (status >= 200 && status < 300);
 }
 
 function functionIdFromUrl(url) {
@@ -333,6 +353,24 @@ function cleanRecommendationPayload(payload, stats) {
   cleanTree(payload.data, stats, 0);
 }
 
+function cleanUpgradePayload(payload, stats) {
+  if (Array.isArray(payload.data) && payload.data.length > 0) {
+    payload.data = [];
+    stats.neutralized += 1;
+  } else if (isPlainObject(payload.data) && Object.keys(payload.data).length > 0) {
+    payload.data = {};
+    stats.neutralized += 1;
+  }
+  for (const key of ["upgradeInfo", "popInfo", "versionInfo", "remindInfo"]) {
+    if (!hasOwn(payload, key)) continue;
+    const val = payload[key];
+    if ((isPlainObject(val) && Object.keys(val).length > 0) || (Array.isArray(val) && val.length > 0)) {
+      payload[key] = neutralValue(val);
+      stats.neutralized += 1;
+    }
+  }
+}
+
 const ORDER_ENDPOINTS = new Set(["myOrderInfo", "orderTrackBusiness"]);
 const CONTENT_ENDPOINTS = new Set([
   "deliverLayer",
@@ -346,6 +384,7 @@ const CONTENT_ENDPOINTS = new Set([
 
 const KNOWN_ENDPOINTS = new Set([
   "basicConfig",
+  "openUpgrade",
   ...RECOMMENDATION_ENDPOINTS,
   ...CONTENT_ENDPOINTS,
 ]);
@@ -359,7 +398,16 @@ function cleanPayload(payload, functionId) {
   };
 
   if (functionId === "basicConfig") {
-    if (config.disableDiagnostics) disableDiagnostics(payload, stats);
+    if (!config.disableDiagnostics) {
+      stats.skipped = true;
+      return stats;
+    }
+    disableDiagnostics(payload, stats);
+    return stats;
+  }
+
+  if (!config.cleanAds) {
+    stats.skipped = true;
     return stats;
   }
 
@@ -368,7 +416,9 @@ function cleanPayload(payload, functionId) {
     return stats;
   }
 
-  if (RECOMMENDATION_ENDPOINTS.has(functionId)) {
+  if (functionId === "openUpgrade") {
+    cleanUpgradePayload(payload, stats);
+  } else if (RECOMMENDATION_ENDPOINTS.has(functionId)) {
     cleanRecommendationPayload(payload, stats);
   } else if (CONTENT_ENDPOINTS.has(functionId)) {
     cleanTree(payload, stats, 0);
@@ -388,8 +438,16 @@ try {
   const functionId = functionIdFromRequest($request);
   if (!KNOWN_ENDPOINTS.has(functionId)) {
     doneUnchanged(`unknown ${functionId || "functionId"}`);
+  } else if (!isSuccessfulResponse($response)) {
+    doneUnchanged("non-success status");
+  } else if (functionId === "basicConfig" && !config.disableDiagnostics) {
+    doneUnchanged("diagnostics enabled");
+  } else if (functionId !== "basicConfig" && !config.cleanAds) {
+    doneUnchanged("cleanAds disabled");
+  } else if (ORDER_ENDPOINTS.has(functionId) && !config.cleanOrderPromotions) {
+    doneUnchanged(`order promotions kept for ${functionId}`);
   } else {
-    const text = bodyText($response.body);
+    const text = bodyText($response && $response.body);
     if (!text) {
       doneUnchanged("empty body");
     } else if (!/^\s*[\[{]/.test(text)) {

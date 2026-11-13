@@ -13,16 +13,23 @@
  */
 
 const DEFAULTS = {
+  cleanAds: true,
   debug: false,
 };
 
+const UTF8_DECODER = new TextDecoder();
 const config = parseArgument();
 
 function parseArgument() {
   try {
-    return Object.assign({}, DEFAULTS, JSON.parse(typeof $argument === "string" ? $argument : "{}"));
+    const parsed = JSON.parse(typeof $argument === "string" ? $argument : "{}");
+    if (!isPlainObject(parsed)) return { ...DEFAULTS };
+    return {
+      cleanAds: typeof parsed.cleanAds === "boolean" ? parsed.cleanAds : DEFAULTS.cleanAds,
+      debug: parsed.debug === true,
+    };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
@@ -44,9 +51,14 @@ function debug(message) {
 
 function bodyText(body) {
   if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
+}
+
+function isSuccessfulResponse(response) {
+  const status = response && response.status;
+  return typeof status !== "number" || (status >= 200 && status < 300);
 }
 
 function hasOwn(value, key) {
@@ -54,7 +66,7 @@ function hasOwn(value, key) {
 }
 
 function isPlainObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value);
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function textOf(value) {
@@ -65,16 +77,11 @@ function textOf(value) {
 }
 
 function endpointFromUrl(url) {
-  try {
-    const parsed = new URL(url);
-    return parsed.pathname.replace(/^\/+/, "");
-  } catch {
-    const match = String(url || "").match(/^https?:\/\/[^/]+\/([^?]+)/);
-    return match ? match[1] : "";
-  }
+  const match = String(url || "").match(/^https?:\/\/[^/]+\/([^?#]+)/);
+  return match ? match[1].replace(/^\/+/, "") : "";
 }
 
-const MEMBERSHIP_MARKERS = [
+const SENSITIVE_ENDPOINT_MARKERS = [
   "account",
   "balance",
   "billing",
@@ -94,9 +101,25 @@ const MEMBERSHIP_MARKERS = [
   "subscribe",
   "subscription",
   "trial",
-  "user",
   "vip",
   "wallet",
+];
+
+const PROTECTED_KEY_MARKERS = [
+  ...SENSITIVE_ENDPOINT_MARKERS,
+  "camera",
+  "cloud",
+  "doc",
+  "document",
+  "export",
+  "folder",
+  "ocr",
+  "pdf",
+  "scan",
+  "share",
+  "sync",
+  "template",
+  "user",
 ];
 
 const AD_VALUE_TOKENS = new Set([
@@ -113,6 +136,7 @@ const AD_VALUE_TOKENS = new Set([
   "popup",
   "promotion",
   "splash",
+  "startpic",
 ]);
 
 const AD_VALUE_SUBSTRINGS = [
@@ -120,6 +144,7 @@ const AD_VALUE_SUBSTRINGS = [
   "interstitial",
   "popup",
   "splash",
+  "startpic",
 ];
 
 const SAFE_KEYS = new Set([
@@ -130,6 +155,8 @@ const SAFE_KEYS = new Set([
   "advisor",
   "badge",
   "download",
+  "float_btn",
+  "float_button",
   "metadata",
   "recommend_name",
   "upload",
@@ -146,17 +173,18 @@ const AD_KEY_TOKENS = new Set([
   "campaign",
   "commercial",
   "displayad",
-  "float",
+  "floatad",
+  "floatingad",
   "funcpopup",
   "interstitial",
-  "market",
   "marketing",
   "popup",
   "popwindow",
   "promotion",
   "recommendad",
   "splash",
-  "startup",
+  "startpic",
+  "startupad",
   "tracking",
 ]);
 
@@ -166,6 +194,8 @@ const AD_KEY_SUBSTRINGS = [
   "advert",
   "displayad",
   "display_ad",
+  "float_ad",
+  "floating_ad",
   "func_popup",
   "funcpopup",
   "interstitial",
@@ -175,16 +205,24 @@ const AD_KEY_SUBSTRINGS = [
   "recommend_ad",
   "recommendad",
   "splash",
+  "start_pic",
+  "startpic",
+  "startup_ad",
 ];
+
+const SUPPORTED_ENDPOINT_RE =
+  /^(?:sync\/(?:get_ad_(?:data|control|cfg)|get_page_cfg(?:_v2)?|get_new_func_popup_cfg)|user\/cs\/operating\/app\/get_startpic)$/i;
 
 function endpointLooksSensitive(endpoint) {
   const lower = String(endpoint || "").toLowerCase();
-  return MEMBERSHIP_MARKERS.some((marker) => lower.includes(marker));
+  return SENSITIVE_ENDPOINT_MARKERS.some((marker) => lower.includes(marker));
 }
 
-function keyLooksSensitive(key) {
+function keyLooksProtected(key) {
   const lower = String(key || "").toLowerCase();
-  return MEMBERSHIP_MARKERS.some((marker) => lower.includes(marker));
+  if (!lower || SAFE_KEYS.has(lower)) return true;
+  const tokens = keyTokens(key);
+  return tokens.some((token) => PROTECTED_KEY_MARKERS.includes(token));
 }
 
 function keyTokens(key) {
@@ -204,7 +242,7 @@ function textTokens(text) {
 
 function keyLooksLikeAd(key) {
   const lower = String(key || "").toLowerCase();
-  if (!lower || SAFE_KEYS.has(lower) || keyLooksSensitive(lower)) return false;
+  if (!lower || keyLooksProtected(key)) return false;
   const tokens = keyTokens(key);
   return (
     tokens.some((token) => AD_KEY_TOKENS.has(token)) ||
@@ -270,11 +308,15 @@ function removeAdLikeFields(value, stats, depth) {
   if (!isPlainObject(value)) return;
 
   for (const key of Object.keys(value)) {
+    if (keyLooksProtected(key)) continue;
     const child = value[key];
 
     if (keyLooksLikeAd(key)) {
-      value[key] = neutralValue(child);
-      stats.neutralized += 1;
+      const next = neutralValue(child);
+      if (JSON.stringify(child) !== JSON.stringify(next)) {
+        value[key] = next;
+        stats.neutralized += 1;
+      }
       continue;
     }
 
@@ -287,8 +329,10 @@ function removeAdLikeFields(value, stats, depth) {
     }
 
     if (isPlainObject(child) && valueLooksLikeAd(child)) {
-      value[key] = {};
-      stats.neutralized += 1;
+      if (Object.keys(child).length > 0) {
+        value[key] = {};
+        stats.neutralized += 1;
+      }
       continue;
     }
 
@@ -318,6 +362,9 @@ function normalizeKnownContainers(payload, stats, endpoint) {
     "promotionList",
     "splash_list",
     "splashList",
+    "startpic_list",
+    "startpicList",
+    "start_pic_list",
   ];
   const objectKeys = [
     "ad",
@@ -330,11 +377,21 @@ function normalizeKnownContainers(payload, stats, endpoint) {
     "popup",
     "promotion",
     "splash",
+    "startpic",
+    "start_pic",
   ];
 
-  if (endpoint.endsWith("get_new_func_popup_cfg")) {
+  const lowerEndpoint = endpoint.toLowerCase();
+  if (lowerEndpoint.endsWith("get_new_func_popup_cfg")) {
     arrayKeys.push("func_popup_list", "funcPopupList", "new_func_popup_list", "newFuncPopupList");
     objectKeys.push("func_popup", "funcPopup", "new_func_popup", "newFuncPopup", "popwindow");
+  }
+  if (lowerEndpoint.endsWith("get_startpic") || /get_ad_(?:data|control|cfg)$/.test(lowerEndpoint)) {
+    arrayKeys.push("list", "items", "pic_list");
+    if (isPlainObject(payload.data) && Object.keys(payload.data).length > 0) {
+      payload.data = {};
+      stats.neutralized += 1;
+    }
   }
 
   for (const root of roots) {
@@ -345,9 +402,12 @@ function normalizeKnownContainers(payload, stats, endpoint) {
       }
     }
     for (const key of objectKeys) {
-      if (hasOwn(root, key) && !keyLooksSensitive(key)) {
-        root[key] = neutralValue(root[key]);
-        stats.neutralized += 1;
+      if (hasOwn(root, key) && !keyLooksProtected(key)) {
+        const next = neutralValue(root[key]);
+        if (JSON.stringify(root[key]) !== JSON.stringify(next)) {
+          root[key] = next;
+          stats.neutralized += 1;
+        }
       }
     }
   }
@@ -357,15 +417,10 @@ function cleanPayload(payload, endpoint) {
   const stats = {
     filtered: 0,
     neutralized: 0,
+    skipped: false,
   };
 
-  if (endpointLooksSensitive(endpoint)) {
-    stats.skipped = true;
-    return stats;
-  }
-
-  const supported = /(?:^|\/)sync\/(?:get_ad_(?:data|control|cfg)|get_page_cfg(?:_v2)?|get_new_func_popup_cfg)$/.test(endpoint);
-  if (!supported) {
+  if (endpointLooksSensitive(endpoint) || !SUPPORTED_ENDPOINT_RE.test(endpoint)) {
     stats.skipped = true;
     return stats;
   }
@@ -381,20 +436,32 @@ function doneUnchanged(reason) {
 }
 
 try {
-  const endpoint = endpointFromUrl($request.url);
-  const text = bodyText($response.body);
-  if (!text) doneUnchanged("empty body");
-  else if (!/^\s*[\[{]/.test(text)) doneUnchanged("non-json body");
-  else {
-    const payload = JSON.parse(text);
-    const stats = cleanPayload(payload, endpoint);
-    if (stats.skipped) {
-      doneUnchanged(`sensitive endpoint ${endpoint}`);
-    } else {
-      debug(`${endpoint} filtered=${stats.filtered} neutralized=${stats.neutralized}`);
-      const changed = stats.filtered + stats.neutralized;
-      if (!changed) $done({});
-      else $done({ body: JSON.stringify(payload) });
+  const endpoint = endpointFromUrl($request && $request.url);
+  if (!config.cleanAds) {
+    doneUnchanged("cleanAds disabled");
+  } else if (!isSuccessfulResponse($response)) {
+    doneUnchanged("non-success status");
+  } else if (endpointLooksSensitive(endpoint) || !SUPPORTED_ENDPOINT_RE.test(endpoint)) {
+    doneUnchanged(`unsupported or sensitive endpoint ${endpoint || "unknown"}`);
+  } else {
+    const text = bodyText($response && $response.body);
+    if (!text) doneUnchanged("empty body");
+    else if (!/^\s*[\[{]/.test(text)) doneUnchanged("non-json body");
+    else {
+      const payload = JSON.parse(text);
+      if (!isPlainObject(payload)) {
+        doneUnchanged("non-object JSON");
+      } else {
+        const stats = cleanPayload(payload, endpoint);
+        if (stats.skipped) {
+          doneUnchanged(`skipped ${endpoint}`);
+        } else {
+          debug(`${endpoint} filtered=${stats.filtered} neutralized=${stats.neutralized}`);
+          const changed = stats.filtered + stats.neutralized;
+          if (!changed) $done({});
+          else $done({ body: JSON.stringify(payload) });
+        }
+      }
     }
   }
 } catch (error) {

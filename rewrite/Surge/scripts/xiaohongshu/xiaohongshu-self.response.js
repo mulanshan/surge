@@ -2,7 +2,7 @@
  * Self-written Xiaohongshu response cleaner for Surge.
  *
  * Security boundaries:
- * - Only processes selected feed, search-result, note and splash JSON responses.
+ * - Only processes selected feed, search-result, note, splash and ads/resource JSON responses.
  * - Removes array entries only when they carry explicit advertisement fields.
  * - Does not issue network requests, read cookies or tokens, upload data, use
  *   eval, forge account state, or include third-party source code.
@@ -13,6 +13,7 @@ const DEFAULTS = {
   debug: false,
 };
 
+const UTF8_DECODER = new TextDecoder();
 const config = parseArgument();
 
 function parseArgument() {
@@ -38,8 +39,8 @@ function hasOwn(value, key) {
 
 function bodyText(body) {
   if (typeof body === "string") return body;
-  if (body instanceof Uint8Array) return new TextDecoder().decode(body);
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(new Uint8Array(body));
+  if (body instanceof Uint8Array) return UTF8_DECODER.decode(body);
+  if (body instanceof ArrayBuffer) return UTF8_DECODER.decode(new Uint8Array(body));
   return "";
 }
 
@@ -64,12 +65,34 @@ function requestKind(url) {
     return "note";
   }
   if (/\/v\d+\/system_service\/splash_config$/i.test(endpoint)) return "splash-config";
+  if (/\/v\d+\/ads\/resource$/i.test(endpoint)) return "ads-resource";
   return "";
 }
 
 function isSuccessfulResponse(response) {
   const status = response && response.status;
   return typeof status !== "number" || (status >= 200 && status < 300);
+}
+
+const FAST_AD_KEYS = [
+  "ads_info",
+  "ad_info",
+  "advertise_info",
+  "advertisement_info",
+  "is_ad",
+  "isAd",
+  "is_ads",
+  "isAds",
+  "ad_flag",
+  "adFlag",
+];
+
+const FAST_AD_LITERAL_RE = /"\s*(?:ads?|advert(?:ise(?:ment)?)?)\s*"/i;
+
+function mayContainAdMarkers(text, kind) {
+  if (kind === "ads-resource") return true;
+  if (kind === "splash-config") return text.includes("ads_groups");
+  return FAST_AD_KEYS.some((key) => text.includes(key)) || FAST_AD_LITERAL_RE.test(text);
 }
 
 function trueFlag(value) {
@@ -86,7 +109,7 @@ function explicitAdvertisement(value) {
   for (const key of ["is_ad", "isAd", "is_ads", "isAds", "ad_flag", "adFlag"]) {
     if (hasOwn(value, key) && trueFlag(value[key])) return true;
   }
-  for (const key of ["ads_info", "ad_info", "advertise_info", "advertisement_info"]) {
+  for (const key of ["ads_info", "ad_info", "advertise_info", "advertisement_info", "ads"]) {
     if (!hasOwn(value, key)) continue;
     const marker = value[key];
     if (isPlainObject(marker) && Object.keys(marker).length > 0) return true;
@@ -149,6 +172,26 @@ function cleanSplashGroups(payload, stats) {
   data.ads_groups = kept;
 }
 
+function cleanAdsResource(payload, stats) {
+  if (Array.isArray(payload.data) && payload.data.length > 0) {
+    stats.removedAds += payload.data.length;
+    payload.data = [];
+  } else if (isPlainObject(payload.data) && Object.keys(payload.data).length > 0) {
+    stats.removedAds += 1;
+    payload.data = {};
+  }
+  for (const key of ["ads", "ad_list", "splash"]) {
+    if (!hasOwn(payload, key)) continue;
+    if (Array.isArray(payload[key]) && payload[key].length > 0) {
+      stats.removedAds += payload[key].length;
+      payload[key] = [];
+    } else if (isPlainObject(payload[key]) && Object.keys(payload[key]).length > 0) {
+      stats.removedAds += 1;
+      payload[key] = {};
+    }
+  }
+}
+
 function logbook(message) {
   const text = `[Xiaohongshu Self] ${message}`;
   console.log(text);
@@ -172,10 +215,18 @@ function processResponse() {
     debug(`pass-through kind=${kind}; reason=non-success`);
     return {};
   }
+  if (!config.cleanAds) {
+    debug(`pass-through kind=${kind}; reason=disabled`);
+    return {};
+  }
 
   const text = jsonText($response && $response.body);
   if (!text) {
     debug(`pass-through kind=${kind}; reason=empty-body`);
+    return {};
+  }
+  if (!mayContainAdMarkers(text, kind)) {
+    debug(`pass-through kind=${kind}; reason=fast-no-marker`);
     return {};
   }
 
@@ -195,13 +246,13 @@ function processResponse() {
     removedAds: 0,
   };
 
-  if (config.cleanAds && kind === "splash-config") cleanSplashGroups(payload, stats);
-  if (config.cleanAds && ["feed", "note"].includes(kind)) {
+  if (kind === "ads-resource") cleanAdsResource(payload, stats);
+  else if (kind === "splash-config") cleanSplashGroups(payload, stats);
+  else if (kind === "feed" || kind === "note") {
     cleanAdvertisementPaths(payload, kind, stats);
   }
 
-  const changed = stats.removedAds > 0;
-  if (!changed) {
+  if (stats.removedAds <= 0) {
     debug(`pass-through kind=${kind}; reason=no-change`);
     return {};
   }

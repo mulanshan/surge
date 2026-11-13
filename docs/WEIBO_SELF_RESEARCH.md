@@ -1,6 +1,6 @@
 # 微博去广告模块：社区调研、安全边界与真机计划
 
-更新日期：2026-08-15。
+更新日期：2026-11-13。
 
 ## 结论
 
@@ -58,10 +58,10 @@ Surge 社区中有多个微博国内版/国际版去广告方案。它们通常�
 
 - 脚本只处理已列入白名单的 `api.weibo.cn` / `mapi.weibo.cn` / `mapi.weibo.com`
   Feed、搜索、详情和评论 JSON 接口；个人页、账号、私信和通知接口排除。
-- 只删除带 `is_ad`、`mblogtypename` 明确含“广告”、`promotion.type=ad`、
-  `ads_material_info.is_ads=true` 等强标志的整个数组条目。普通热议、话题、用户、商品或未知卡片不因
+- 只删除带 `is_ad`、`mblogtypename` / `adType` 明确为“广告”或“推广”、`promotion.type=ad`、
+  `ads_material_info.is_ads=true` 等强标志的整个数组条目；评论接口同步覆盖微博 16.x 新版 `datas` / `items` 与传统 `root_comments` / `comments` 容器，保留“相关内容”分隔与正常楼层。普通热议、话题、用户、商品或未知卡片不因
   `card_type` 数字被删除。
-- Map Local 只覆盖路径名明确为广告实时、预加载或素材接口的精确路径；
+- Map Local 覆盖 `uve.weibo.com` 实时、预加载、`sdkad.php` / `actionad.php` 等明确广告接口，并通过可选 `HTTPDNS策略`（默认 `REJECT`）处理 `dns.weibo.cn` 与 `httpdns.uve.weibo.com`；
   不整域拒绝 `biz.weibo.com` 或 `uve.weibo.com`。
 - 只在已知 Feed 容器键中过滤，不递归删除未知数组；不调用 `new.vip.weibo.*`，不修改会员、皮肤、
   App 图标、余额、钱包、关注关系或账号状态。
