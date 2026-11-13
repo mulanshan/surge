@@ -133,3 +133,34 @@ the same pull request as the release notes.
   - Surge iOS `file` and `memory` logs recorded `0` warnings and `0` errors across
     the validation window, confirming bundle integrity and readiness for canonical
     cloud activation.
+
+## Live-device evidence for surge-self-v2026.11.13.1
+
+- Registered payload commit: `6736c5274e10d294763bb682db9ea00e9b7d557c`.
+- Device and runtime: `iPhone18,3` running iOS `27.2 (24B119)` with
+  `Surge iOS 5.23.0 (3867)` (`Core 6010000`), exercised between
+  `2026-11-13 13:30 +08:00` and `2026-11-13 13:42 +08:00`; Surge Mac (`6.9.1`,
+  `Core 6009001`) remained free of candidate modules throughout.
+- Readiness, rule matching, and script pinning: enabled `微信 (候选 2026.11.13.1)`
+  on iOS; refreshed all external resources (`40/40` reported `ready=1`, `0` load
+  errors), verified `script list` pinned `wechat.self.response` to immutable tag
+  `surge-self-v2026.11.13.1` (`?v=20261113-2`), and verified `rule match` hit
+  `REJECT` on `wxa.wxs.qq.com`, `wximg.wxs.qq.com`, and `wxsmw.wxs.qq.com`,
+  `REJECT-NO-DROP` on `badjs.weixinbridge.com`, and `DIRECT` on
+  `mp.weixin.qq.com`, `mmbiz.qpic.cn`, `gdtimg.com`, `wxsnsdy.wxs.qq.com`,
+  `dns.weixin.qq.com`, and `wechatpay.cn`.
+- Exercised release change surface and result (`passed`):
+  - Exercised live WeChat Mini-Program business flow (`13:33–13:34 +08:00`),
+    Moments (`朋友圈`) `MMTLS` boundary check (`13:33–13:34 +08:00`), and Official
+    Account article reading scrolled to the bottom (`13:40–13:41 +08:00`): `16`
+    live `wxa.wxs.qq.com:443` ad-creative connections matched `REJECT`, `4` live
+    `badjs.weixinbridge.com:443` frontend telemetry uploads matched
+    `REJECT-NO-DROP`, `mp.weixin.qq.com` MITM sessions (`GET /mp/relatedsearchword`
+    and `POST /mp/jsmonitor`) completed cleanly without failure or CSP/style
+    breakage while preserving article body and read/like metadata with zero bottom
+    ad cards, and on-device Surge iOS JSC execution (`13:31:22 +08:00`) verified
+    `wechat.self.response` across `getappmsgext` (`22.2 ms`), `cps_product_info`
+    (`5.3 ms`), and `masonryfeed` (`4.4 ms`) with zero script errors.
+  - Surge iOS `file` and `memory` logs recorded `0` warnings and `0` errors across
+    the validation window (memory steady at `25.0 MB`), and the temporary
+    candidate module was removed after verification.
