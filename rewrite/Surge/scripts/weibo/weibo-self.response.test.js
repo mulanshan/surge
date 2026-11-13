@@ -265,7 +265,7 @@ assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(moduleText, /#!arguments=.*清理明确广告:true.*启用调试模式:false/);
 assert.match(moduleText, /max-size=6291456/);
 assert.ok(moduleText.includes(
-  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/weibo/weibo-self.response.js",
+  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.2/rewrite/Surge/scripts/weibo/weibo-self.response.js",
 ));
 assert.equal(moduleText.includes("script-path=https://raw.githubusercontent.com/mulanshan/surge/main/"), false);
 assert.doesNotMatch(moduleText, /new\.vip\.weibo/);
@@ -304,7 +304,12 @@ assert.match(scriptEntries[0], /^weibo\.self\.response = type=http-response,/);
 assert.match(scriptEntries[0], /debug=\{\{\{启用调试模式\}\}\}/);
 assert.deepEqual(sectionEntries("Rule"), [
   "DOMAIN,adpinpai.video.weibocdn.com,REJECT",
+  "DOMAIN,dns.weibo.cn,{{{HTTPDNS策略}}}",
+  "DOMAIN,httpdns.uve.weibo.com,{{{HTTPDNS策略}}}",
 ]);
+assert.ok(
+  sectionEntries("Map Local").some((line) => line.includes("(?:sdk|action)ad\\.php")),
+);
 assert.deepEqual(sectionEntries("MITM"), [
   "hostname = %APPEND% api.weibo.cn, mapi.weibo.cn, mapi.weibo.com, bootrealtime.uve.weibo.com, bootpreload.uve.weibo.com, sdkapp.uve.weibo.com, wbapp.uve.weibo.com",
 ]);

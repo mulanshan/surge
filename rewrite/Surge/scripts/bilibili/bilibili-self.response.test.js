@@ -429,7 +429,7 @@ assert.match(moduleText, /binary-body-mode=1/);
 assert.match(moduleText, /max-size=6291456/);
 assert.ok(
   moduleText.includes(
-    "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/bilibili/bilibili-self.response.js?v=20261113-2",
+    "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.2/rewrite/Surge/scripts/bilibili/bilibili-self.response.js?v=20261113-3",
   ),
 );
 assert.equal(

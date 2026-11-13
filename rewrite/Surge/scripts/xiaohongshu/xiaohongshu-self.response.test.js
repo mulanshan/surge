@@ -290,7 +290,7 @@ assert.match(moduleText, /#!arguments=.*清理明确广告:true.*启用调试模
 assert.doesNotMatch(moduleText, /恢复无水印保存:true|清理搜索提示:true/);
 assert.match(moduleText, /max-size=6291456/);
 assert.ok(moduleText.includes(
-  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
+  "script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.2/rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js",
 ));
 assert.equal(moduleText.includes("script-path=https://raw.githubusercontent.com/mulanshan/surge/main/"), false);
 assert.doesNotMatch(moduleText, /DOMAIN-SUFFIX,xiaohongshu\.com/);
@@ -328,8 +328,8 @@ assert.match(scriptEntries[0], /debug=\{\{\{启用调试模式\}\}\}/);
 assert.deepEqual(sectionEntries("MITM"), [
   "hostname = %APPEND% edith.xiaohongshu.com, rec.xiaohongshu.com, so.xiaohongshu.com, www.xiaohongshu.com",
 ]);
-assert.deepEqual(sectionEntries("Map Local"), [
-  '^https:\\/\\/www\\.xiaohongshu\\.com\\/api\\/sns\\/v\\d+\\/ads\\/resource(?:\\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"',
-]);
+assert.doesNotMatch(moduleText, /\[Map Local\]/);
+assert.match(scriptEntries[0], /ads\\\/resource/);
+assert.ok(sectionEntries("Rule").includes("DOMAIN,ads-img-al.xhscdn.com,REJECT"));
 
 console.log("Xiaohongshu Self tests passed");

@@ -2,7 +2,7 @@
   "schema_version": 2,
   "tag": "surge-self-v2026.11.13.2",
   "integrity": "intact",
-  "distribution": "candidate",
+  "distribution": "active",
   "live_device_validation": "passed",
   "rollback_eligible": false,
   "release_commit": "3dd01c6de4fef056adfef84cbcd61d4a0652567d",

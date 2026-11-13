@@ -1,11 +1,11 @@
 #!name=京东
-#!desc=固定云端订阅，自有可审计京东去广告模块：清理开屏、首页/我的页营销卡、弹层和搜索推荐，并可关闭京东诊断上报。不含第三方脚本，不修改账号、订单、支付或会员状态。
+#!desc=固定云端订阅，自有可审计京东去广告模块：清理开屏、首页/我的页营销卡、弹层、升级弹窗和搜索推荐，支持 HTTPDNS 阻断与京东诊断开关。不含第三方脚本，不修改账号、订单、支付或会员状态。
 #!author=mulanshan
 #!category=AdBlock
 #!tag=京东
 #!openUrl=https://apps.apple.com/cn/app/id414245413
-#!arguments=启用调试模式:false,禁用京东诊断:true,清理订单推广:true
-#!arguments-desc=- 调试参数：[true, false]\n- 禁用京东诊断：[true, false]\n- 清理订单推广：[true, false]\n\n兼容 api.m.jd.com 的 /、/api、/client.action 三种当前入口；脚本只处理内置白名单 functionId，未知接口立即原样放行。保留登录、购物车、商品详情、下单、支付、退款、地址、物流主体、PLUS 和优惠权益。
+#!arguments=清理明确广告:true,禁用京东诊断:true,清理订单推广:true,HTTPDNS策略:REJECT,启用调试模式:false
+#!arguments-desc=- 清理明确广告：[true, false]，默认 true；清理开屏、首页/我的页营销横幅、活动浮层与升级弹窗\n- 禁用京东诊断：[true, false]，默认 true\n- 清理订单推广：[true, false]，默认 true\n- HTTPDNS策略：[REJECT, DIRECT]，默认 REJECT；阻断 dns.jd.com 直连 IP 下发以保障 MITM 稳定命中\n- 启用调试模式：[true, false]\n\n兼容 api.m.jd.com 的 /、/api、/client.action 入口；URL 正则层负向预查跳过非白名单带参请求，脚本只处理内置白名单 functionId。保留登录、购物车、商品详情、下单、支付、退款、地址、物流主体、PLUS 和优惠权益。
 #!system=ios
 #!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'
 #!date=2026-11-13
@@ -15,9 +15,11 @@
 URL-REGEX,^http:\/\/[a-fA-F0-9]{32}\.jddebug\.com\/diagnose\?,REJECT,extended-matching
 # 京东纯 IPv6 测速探针。关闭 IPv6 (ipv6 = false) 时仅返回 AAAA 会导致每分钟高频 DNS failed 告警，静默拒绝。
 DOMAIN,speedv6.m.jd.com,REJECT-NO-DROP
+# 阻断京东 HTTPDNS 直连 IP 调度，确保 api.m.jd.com MITM 稳定生效。
+DOMAIN,dns.jd.com,{{{HTTPDNS策略}}}
 
 [Script]
-jd.self.response = type=http-response,pattern=^https:\/\/api\.m\.jd\.com\/(?:client\.action|api)?(?:\?.*)?$,requires-body=1,max-size=4194304,script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.1/rewrite/Surge/scripts/jd/jd-self.response.js?v=20261113-2,argument="{\"debug\":{{{启用调试模式}}},\"disableDiagnostics\":{{{禁用京东诊断}}},\"cleanOrderPromotions\":{{{清理订单推广}}}}"
+jd.self.response = type=http-response,pattern=^https:\/\/api\.m\.jd\.com\/(?:client\.action|api)?(?:\?(?!(?:[^#]*&)?functionId=(?!(?:basicConfig|deliverLayer|getTabHomeInfo|myOrderInfo|openUpgrade|orderTrackBusiness|personinfoBusiness|searchBoxWord|start|stationPullService|uniformRecommend(?:0|6)?|welcomeHome)(?:&|$)))[^#]*)?$,requires-body=1,max-size=4194304,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.2/rewrite/Surge/scripts/jd/jd-self.response.js?v=20261113-3,argument="{\"cleanAds\":{{{清理明确广告}}},\"debug\":{{{启用调试模式}}},\"disableDiagnostics\":{{{禁用京东诊断}}},\"cleanOrderPromotions\":{{{清理订单推广}}}}"
 
 [MITM]
 hostname = %APPEND% api.m.jd.com
