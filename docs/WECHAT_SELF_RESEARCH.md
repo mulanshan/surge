@@ -1,14 +1,13 @@
 # 微信去广告模块：调研、能力边界与真机验证计划
 
-更新时间：2026-07-13
+更新时间：2026-11-13
 
 ## 结论
 
-首版只处理 Surge 能稳定观察到的普通 HTTP(S) 流量：公众号文章广告接口、公众号商品推广接口，
-以及三个用途明确的小程序广告素材主机。它不能安全承诺清除朋友圈、视频号或微信原生信息流广告。
-
-2026-07-13 通过 Apple Lookup API 核对的中国区微信版本为 `8.0.75`，发布日期为 2026-06-14。
-这类版本信息会变化，因此模块最终行为仍以本次 iOS 真机请求为准。
+本模块只处理 Surge 能稳定解密与审计的普通 HTTP(S) 公众号流量与精确主机规则：覆盖公众号文章广告接口
+（`/mp/getappmsgad` 与 `/mp/getappmsgext` 中的内嵌广告字段）、公众号带货返佣商品卡（`/mp/cps_product_info`），
+并提供可选的公众号文末推荐流精简开关（`/mp/masonryfeed` 与 `/mp/relatedarticle`）、小程序广告素材策略开关与
+WebView 前端异常遥测开关。它不能安全承诺清除朋友圈、视频号或微信原生 MMTLS 信息流广告。
 
 ## 为什么不做“全微信递归去广告”
 
@@ -23,47 +22,42 @@
 - [Citizen Lab MMTLS analysis](https://citizenlab.ca/research/should-we-chat-too-security-analysis-of-wechats-mmtls-encryption-protocol/)：
   微信使用独立的 MMTLS 协议承载大量核心流量，普通 HTTPS 工具无法覆盖全部链路。
 
-## 首版实现
+## 2026-11-13 运行日志与社区调研升级要点
 
-### 公众号文章广告
+结合 iPhone（`Surge iOS 5.23.0`）与 Mac（`Surge Mac 6.9.1`）运行日志、`traffic-stat-host` 流量统计、
+`https://mp.weixin.qq.com/` 实时 CSP 响应头以及 2025–2026 社区反馈，模块在 `surge-self-v2026.11.13.1`
+完成以下增强：
 
-仅 MITM `mp.weixin.qq.com`，只对下列精确路径生效：
+### 1. 公众号接口精准覆盖与业务数据无损保留（仅 MITM `mp.weixin.qq.com`）
 
-- `/mp/getappmsgad`：自写响应脚本只识别根对象中的 `advertisement_num` 和
-  `advertisement_info`。字段不存在、类型未知、JSON 解析失败或路径不匹配时立即原样放行。
-- `/mp/cps_product_info`：公众号文章商品推广专用接口，通过 Map Local 返回空 JSON。
+- `/mp/getappmsgad` 与 `/mp/getappmsgext`：除专用广告接口外，部分公众号图文模板会在扩展互动接口
+  `/mp/getappmsgext` 中下发根级 `advertisement_num`、`advertisement_info`、`promotion_info`、
+  `cps_ad_info` 或 `drama_advertisement_info`。自写脚本严格验证目标字段类型与 `base_resp.ret === 0`：
+  仅清空明确广告字段，**100% 原样保留 `appmsgstat`（阅读数、点赞、在看）、`appmsg_album_info`（合集）、
+  赞赏与评论开关**；无广告字段、后端返回错误码或结构未知时直接 `$done({})` 零改动直通。
+- `/mp/cps_product_info`：由早期写死的 `[Map Local]` 空 `{}` 升级为脚本纳管，既受 `清理明确广告` 参数开关控制，
+  又保留标准 `base_resp: { ret: 0 }` 与空列表结构，避免前端读取 `res.base_resp.ret` 抛出异常。
+- `/mp/masonryfeed` 与 `/mp/relatedarticle`（默认直通）：通过 `隐藏文末推荐流:false` 默认保留相关阅读；
+  用户主动改为 `true` 时，清空瀑布流列表并同步归零 `continue_flag` / `has_more` / `is_continue`，防止底部无限滚动重试。
+- `max-size` 由 `524288` 提升至 `1048576`（`1 MiB`），兼顾富媒体互动元数据与 iOS Network Extension 内存安全边界。
 
-响应脚本最大读取 `524288` 字节，不使用旧社区规则常见的无限制 `max-size=0`。脚本只处理成功的
-HTTP 响应，接受 Surge 官方支持的字符串、`Uint8Array` 与 `ArrayBuffer` 响应体，兼容单个 UTF-8 BOM，
-并保持字符串型广告计数字段的原始类型。所有出现的目标字段会先整体完成类型校验；任一字段属于未知
-结构时整包原样放行，不做部分修改。调试模式只记录命中结果或安全的放行原因，不记录 URL 参数、
-请求头、Cookie、token 或原始响应体。
+### 2. 小程序广告素材防误杀与前端遥测参数化
 
-`/mp/cps_product_info` 的 Map Local 响应显式设置 `Content-Type: application/json`。Surge 官方说明指出
-`data-type=text` 未指定 header 时默认使用 `text/plain`；明确 JSON 类型可以避免客户端按错误 MIME 类型
-处理空对象。
+- `小程序广告素材策略`（默认 `REJECT`，可选 `DIRECT`）：精确控制 `wxa.wxs.qq.com`、`wximg.wxs.qq.com`、
+  `wxsmw.wxs.qq.com`。社区实测与微信官方 CSP 头（`style-src ... wxa.wxs.qq.com ...`）表明，当用户主动使用小程序
+  “看激励视频领优惠券/小游戏奖励”时，硬编码 `REJECT` 可能导致回调失败；参数化后可一键切回 `DIRECT`，无需停用整个模块。
+- `前端遥测策略`（默认 `REJECT-NO-DROP`，可选 `DIRECT`）：iPhone 月度流量统计确认 `badjs.weixinbridge.com`
+  持续产生内置浏览器前端异常上报流量，默认采用 `REJECT-NO-DROP` 静默拒绝且不触发重试风暴；小程序开发者调试时可切回 `DIRECT`。
 
-### 小程序广告素材
+## 明确排除（防误伤边界）
 
-只拒绝三个精确主机：
-
-- `wxa.wxs.qq.com`
-- `wximg.wxs.qq.com`
-- `wxsmw.wxs.qq.com`
-
-不使用 `DOMAIN-SUFFIX,wxs.qq.com`。2025 年的 iOS 社区实测指出整后缀拒绝虽然可能挡住公众号广告图片，
-但会留下广告位置并扩大误伤范围：
-[V2EX discussion](https://www.v2ex.com/t/1135567)。
-
-## 明确排除
-
-- 不整域拒绝 `weixin.qq.com`、`wxs.qq.com`、`servicewechat.com`、`tenpay.com`、`qpic.cn`、
-  `qlogo.cn` 或微信 IP 段。
-- 不默认拦截 `relatedarticle`、`masonryfeed`、`relatedsearchword`；推荐内容不等于广告。
-- 不默认拦截 `jsmonitor`、`report` 或 `ad_complaint`；遥测不等于广告，投诉接口也可能是用户功能。
-- 不首版加入 `szextshort.weixin.qq.com/cgi-bin/mmoc-bin/ad/` 或更多视频素材域；只有当前真机日志证明
-  它们仍走普通 HTTP(S) 且用途明确后再评估。
-- 不修改账号、联系人、消息、文章正文、评论、赞赏、小程序登录、微信支付、订单或会员状态。
+- 不整域拒绝 `weixin.qq.com`、`wxs.qq.com`、`servicewechat.com`、`tenpay.com`、`wechatpay.cn`、
+  `qpic.cn`、`qlogo.cn` 或微信 IP 段。
+- 不拦截 `gdtimg.com` / `ugdtimg.com`（位于公众号官方 CSP 样式/图片源白名单，整域拦截会导致公众号裂图与小程序 UI 残缺；
+  广点通控制入口由 `基础去广告模块` 精确拦截）。
+- 不拦截 `wxsnsdy.wxs.qq.com` / `wxsnsdythumb.wxs.qq.com`（与视频号及公众号内嵌视频共用分发，拦截会导致视频转圈与封面丢失）。
+- 不拦截 `dns.weixin.qq.com` / `aedns.weixin.qq.com`（封禁微信 HTTPDNS 无法解开 MMTLS 原生广告，反而引发弱网连接缓慢）。
+- 不默认拦截 `/mp/appmsg_comment` 或 `/mp/ad_complaint`；不修改账号、联系人、消息、文章正文、评论、赞赏、小程序登录或微信支付。
 
 ## 社区方案如何使用
 
@@ -72,27 +66,14 @@ HTTP 响应，接受 Surge 官方支持的字符串、`Uint8Array` 与 `ArrayBuf
 
 - [NobyDa historical WeChat script](https://github.com/NobyDa/Script/blob/master/QuantumultX/File/Wechat.js)：
   用于确认 `/mp/getappmsgad` 的历史字段名称。
-- [2026-07 community module snapshot](https://github.com/Repcz/Tool/blob/699238c6148b9c279785911b867925d5fbbd0bc6/Surge/Module/Kelee/Weixin_Official_Accounts_remove_ads.sgmodule)：
-  用于核对当前社区仍使用的接口范围；其中宽泛域名规则没有照搬。
+- [V2EX iOS WeChat domain discussion](https://www.v2ex.com/t/1135567)：
+  用于交叉核对 `wxs.qq.com` 泛后缀与激励视频误伤边界。
 
 ## 真机验证清单
 
-1. 在 iOS Surge 安装候选模块，确认 MITM、Rewrite 和 Scripting 已开启，且 Surge CA 已安装并信任。
-2. 打开微信 8.0.75 的公众号文章，确认正文、图片、评论、赞赏和跳转正常。
-3. 观察 `/mp/getappmsgad` 是否出现、是否由脚本修改、是否有脚本错误；只记录脱敏后的 hostname、path、
-   状态和命中结果。
-4. 打开包含商品推广的文章，确认 `/mp/cps_product_info` 返回空 JSON 且正文不受影响。
-5. 使用常用小程序，确认三个精确素材主机被拒绝后登录、页面加载、支付和正常图片不受影响。
-6. 朋友圈和视频号只观察，不把“仍有广告”当作脚本失效；它们属于已声明的 MMTLS 限制。
-
-完成上述回归并确认无脚本错误后，模块才可从 `candidate` 调整为 `limited` 或 `stable`。
-
-## 2026-07-13 iOS 运行时检查
-
-- 目标 iOS Surge 实例的 External Controller 与 HTTPS HTTP API 均可认证。
-- `微信` 模块同时出现在 `available` 与 `enabled`，Rewrite、Scripting、MITM 均已开启。
-- `wechat.self.response` 已加载并启用，固定 tag 脚本与工作区源码 SHA-256 一致。
-- 使用 Surge iOS 自身的脚本评估引擎和合成的 `/mp/getappmsgad` 响应验证，广告计数被清零，
-  广告数组被清空，并产生不含敏感数据的完成日志。
-- 当时最近请求缓冲区没有真实 `/mp/getappmsgad` 或 `/mp/cps_product_info` 命中，因此公众号文章、
-  商品推广与常用小程序的人工回归仍需保留为发布前门禁，不能仅凭合成测试晋升为 `stable`。
+1. 在 iOS Surge 加载候选模块 `微信 (候选 2026.11.13.1)`（Mac 端保持不安装候选模块），确认外部资源全部 `ready=1`，
+   且 `wechat.self.response` 锁定到不可变标签 `surge-self-v2026.11.13.1`。
+2. 验证规则匹配：`wxa.wxs.qq.com` -> `REJECT`，`badjs.weixinbridge.com` -> `REJECT-NO-DROP`，
+   `mp.weixin.qq.com` / `mmbiz.qpic.cn` / `wxsnsdy.wxs.qq.com` -> `DIRECT`。
+3. 打开微信内的公众号文章与常用小程序，确认正文、图片、阅读点赞数、评论、跳转与小程序加载正常，无残留公众号文章广告，
+   且 Surge 脚本与系统日志零报错后，将模块生命周期从 `candidate` 晋升为 `limited`。

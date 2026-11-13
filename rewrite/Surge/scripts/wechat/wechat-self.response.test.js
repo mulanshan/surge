@@ -56,6 +56,7 @@ function bodyOf(result) {
   return result && result.body ? JSON.parse(result.body) : null;
 }
 
+// 1. Official Account getappmsgad cleaning
 {
   const result = bodyOf(run({
     advertisement_num: 2,
@@ -104,6 +105,157 @@ for (const bodyType of ["uint8array", "arraybuffer"]) {
   assert.deepEqual(result.advertisement_info, []);
 }
 
+// 2. Official Account getappmsgext cleaning while strictly preserving stats/albums/rewards
+{
+  const result = bodyOf(run({
+    base_resp: { ret: 0, errmsg: "ok" },
+    appmsgstat: {
+      read_num: 10240,
+      like_num: 356,
+      old_like_num: 289,
+      watching_num: 42,
+    },
+    appmsg_album_info: { id: "album-1", title: "Series" },
+    reward_head_imgs: ["https://wx.qlogo.cn/avatar1"],
+    advertisement_num: 2,
+    advertisement_info: [{ ad_id: "ad-1" }, { ad_id: "ad-2" }],
+    promotion_info: [{ promo_id: "p-1" }],
+    drama_advertisement_info: [{ drama_id: "d-1" }],
+  }, {
+    url: "https://mp.weixin.qq.com/mp/getappmsgext?__biz=redacted",
+  }));
+  assert.equal(result.advertisement_num, 0);
+  assert.deepEqual(result.advertisement_info, []);
+  assert.deepEqual(result.promotion_info, []);
+  assert.deepEqual(result.drama_advertisement_info, []);
+  assert.deepEqual(result.appmsgstat, {
+    read_num: 10240,
+    like_num: 356,
+    old_like_num: 289,
+    watching_num: 42,
+  });
+  assert.deepEqual(result.appmsg_album_info, { id: "album-1", title: "Series" });
+  assert.deepEqual(result.reward_head_imgs, ["https://wx.qlogo.cn/avatar1"]);
+}
+
+// getappmsgext without ad fields passes through untouched
+assert.deepEqual(run({
+  base_resp: { ret: 0 },
+  appmsgstat: { read_num: 512, like_num: 18 },
+}, {
+  url: "https://mp.weixin.qq.com/mp/getappmsgext?__biz=redacted",
+}), {});
+
+// getappmsgext backend error envelope (ret != 0) is never rewritten
+assert.deepEqual(run({
+  base_resp: { ret: 1200001, err_msg: "invalid key" },
+  advertisement_num: 1,
+  advertisement_info: [{ id: "ad" }],
+}, {
+  url: "https://mp.weixin.qq.com/mp/getappmsgext?__biz=redacted",
+}), {});
+
+// 3. CPS affiliate product card (cps_product_info) cleaning & cleanAds switch
+{
+  const result = bodyOf(run({
+    base_resp: { ret: 0 },
+    product_list: [{ product_id: "p1", price: 9900 }],
+    cps_info: { pid: "cps-1" },
+    total_count: 1,
+  }, {
+    url: "https://mp.weixin.qq.com/mp/cps_product_info?action=get",
+  }));
+  assert.deepEqual(result, {
+    base_resp: { ret: 0 },
+    product_list: [],
+    total_count: 0,
+  });
+}
+
+{
+  const result = bodyOf(run({
+    product: { product_id: "p2" },
+  }, {
+    url: "https://mp.weixin.qq.com/mp/cps_product_info",
+  }));
+  assert.deepEqual(result, {
+    base_resp: { ret: 0 },
+  });
+}
+
+assert.deepEqual(run({
+  base_resp: { ret: 0 },
+  product_list: [],
+  total_count: 0,
+}, {
+  url: "https://mp.weixin.qq.com/mp/cps_product_info",
+}), {});
+
+// cleanAds: false bypasses getappmsgad, getappmsgext, and cps_product_info immediately
+for (const url of [
+  "https://mp.weixin.qq.com/mp/getappmsgad?__biz=redacted",
+  "https://mp.weixin.qq.com/mp/getappmsgext?__biz=redacted",
+  "https://mp.weixin.qq.com/mp/cps_product_info?action=get",
+]) {
+  assert.deepEqual(run("not-even-parsed-when-disabled", {
+    url,
+    argument: { cleanAds: false },
+  }), {});
+}
+
+// 4. Optional bottom waterfall / related feed (masonryfeed & relatedarticle)
+assert.deepEqual(run({
+  base_resp: { ret: 0 },
+  list: [{ title: "Recommended article" }],
+  continue_flag: 1,
+}, {
+  url: "https://mp.weixin.qq.com/mp/masonryfeed?action=get",
+}), {});
+
+assert.deepEqual(run({
+  base_resp: { ret: 0 },
+  related_article_list: [{ title: "Related article" }],
+}, {
+  url: "https://mp.weixin.qq.com/mp/relatedarticle?action=get",
+}), {});
+
+{
+  const result = bodyOf(run({
+    base_resp: { ret: 0 },
+    list: [{ title: "Waterfall item 1" }, { title: "Waterfall item 2" }],
+    continue_flag: 1,
+    has_more: true,
+    total_count: "2",
+  }, {
+    url: "https://mp.weixin.qq.com/mp/masonryfeed?action=get",
+    argument: { hideBottomFeed: true },
+  }));
+  assert.deepEqual(result, {
+    base_resp: { ret: 0 },
+    list: [],
+    continue_flag: 0,
+    has_more: false,
+    total_count: "0",
+  });
+}
+
+{
+  const result = bodyOf(run({
+    base_resp: { ret: 0 },
+    related_article_list: [{ title: "Related item 1" }],
+    is_continue: "1",
+  }, {
+    url: "https://mp.weixin.qq.com/mp/relatedarticle?action=get",
+    argument: { hideBottomFeed: true },
+  }));
+  assert.deepEqual(result, {
+    base_resp: { ret: 0 },
+    related_article_list: [],
+    is_continue: "0",
+  });
+}
+
+// 5. Defensive schema & boundary pass-through invariants
 assert.deepEqual(run({ advertisement_num: 0, advertisement_info: [] }), {});
 assert.deepEqual(run({ article_context: { title: "normal article" } }), {});
 assert.deepEqual(run({ advertisement_num: "unknown", advertisement_info: { item: "unknown schema" } }), {});
@@ -122,7 +274,7 @@ assert.deepEqual(run([{
 assert.deepEqual(run("not-json"), {});
 assert.deepEqual(run({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] }, { status: 500 }), {});
 assert.deepEqual(run({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] }, {
-  url: "https://mp.weixin.qq.com/mp/getappmsgext?__biz=redacted",
+  url: "https://mp.weixin.qq.com/mp/appmsg_comment?action=getcomment",
 }), {});
 assert.deepEqual(run({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] }, {
   url: "https://mp.weixin.qq.com/mp/getappmsgad#fragment",
@@ -132,9 +284,9 @@ assert.deepEqual(run({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] 
   const diagnostics = execute({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] }, {
     argument: { debug: true },
   });
-  assert.match(diagnostics.consoleLogs.join("\n"), /reset_count=1; removed_items=1/);
-  assert.match(diagnostics.logbookLogs.join("\n"), /reset_count=1; removed_items=1/);
-  assert.doesNotMatch(diagnostics.consoleLogs.join("\n"), /synthetic-ad|advertisement_num|advertisement_info/);
+  assert.match(diagnostics.consoleLogs.join("\n"), /cleaned getappmsgad; reset_count=1; removed_items=1/);
+  assert.match(diagnostics.logbookLogs.join("\n"), /cleaned getappmsgad; reset_count=1; removed_items=1/);
+  assert.doesNotMatch(diagnostics.consoleLogs.join("\n"), /synthetic-ad|advertisement_num|advertisement_info|redacted/);
 }
 
 {
@@ -171,15 +323,18 @@ assert.deepEqual(run({ advertisement_num: 1, advertisement_info: [{ id: "ad" }] 
   assert.deepEqual(diagnostics.consoleLogs, []);
 }
 
-assert.match(moduleText, /DOMAIN,wxa\.wxs\.qq\.com,REJECT/);
-assert.match(moduleText, /DOMAIN,wximg\.wxs\.qq\.com,REJECT/);
-assert.match(moduleText, /DOMAIN,wxsmw\.wxs\.qq\.com,REJECT/);
+// 6. Module safety invariants
 assert.doesNotMatch(moduleText, /DOMAIN-SUFFIX,wxs\.qq\.com/);
-assert.match(moduleText, /\/mp\\\/getappmsgad/);
-assert.match(moduleText, /\/mp\\\/cps_product_info/);
-assert.match(moduleText, /max-size=524288/);
+assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,gdtimg\.com/);
+assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,ugdtimg\.com/);
+assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,wxsnsdy\.wxs\.qq\.com/);
+assert.doesNotMatch(moduleText, /DOMAIN(?:-SUFFIX)?,dns\.weixin\.qq\.com/);
+assert.match(moduleText, /wxa\.wxs\.qq\.com/);
+assert.match(moduleText, /wximg\.wxs\.qq\.com/);
+assert.match(moduleText, /wxsmw\.wxs\.qq\.com/);
+assert.match(moduleText, /getappmsgad/);
+assert.match(moduleText, /cps_product_info/);
 assert.match(moduleText, /debug=\{\{\{启用调试模式\}\}\}/);
-assert.match(moduleText, /header="Content-Type:application\/json"/);
 assert.match(moduleText, /hostname = %APPEND% mp\.weixin\.qq\.com/);
 
 function sectionEntries(sectionName) {
@@ -195,23 +350,12 @@ function sectionEntries(sectionName) {
   return entries;
 }
 
-assert.deepEqual(sectionEntries("Rule"), [
-  "DOMAIN,wxa.wxs.qq.com,REJECT",
-  "DOMAIN,wximg.wxs.qq.com,REJECT",
-  "DOMAIN,wxsmw.wxs.qq.com,REJECT",
-]);
-
 const scriptEntries = sectionEntries("Script");
 assert.equal(scriptEntries.length, 1);
 assert.match(scriptEntries[0], /^wechat\.self\.response = type=http-response,/);
 assert.match(scriptEntries[0], /pattern=\^https:\\\/\\\/mp\\\.weixin\\\.qq\\\.com/);
 assert.match(scriptEntries[0], /requires-body=1/);
-assert.match(scriptEntries[0], /max-size=524288/);
 assert.match(scriptEntries[0], /script-path=https:\/\/raw\.githubusercontent\.com\/mulanshan\/surge\/surge-self-v\d{4}\.\d{2}\.\d{2}(?:\.\d+)?\//);
-
-assert.deepEqual(sectionEntries("Map Local"), [
-  '^https:\\/\\/mp\\.weixin\\.qq\\.com\\/mp\\/cps_product_info(?:\\?.*)?$ data-type=text data="{}" status-code=200 header="Content-Type:application/json"',
-]);
 
 assert.deepEqual(sectionEntries("MITM"), [
   "hostname = %APPEND% mp.weixin.qq.com",
