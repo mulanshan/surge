@@ -857,7 +857,7 @@ class RepositoryInvariantTests(unittest.TestCase):
                 self.assertIn(expected, lines)
 
     def test_candidate_exporter_session_mode_pages_saved_sessions_with_stdin_auth(self):
-        secret_key = "synthetic-session-export-key"
+        fixture_marker = "synthetic-session-export-marker"
         with tempfile.TemporaryDirectory() as temporary:
             temporary_path = Path(temporary)
             bin_path = temporary_path / "bin"
@@ -889,7 +889,10 @@ class RepositoryInvariantTests(unittest.TestCase):
             fake_curl.chmod(0o700)
 
             ios_profile = temporary_path / "DMIT.conf"
-            ios_profile.write_text(f"http-api = {secret_key}@0.0.0.0:1132\n", encoding="utf-8")
+            ios_profile.write_text(
+                "http-api = synthetic-session-export-marker@0.0.0.0:1132\n",
+                encoding="utf-8",
+            )
             env = {
                 **os.environ,
                 "PATH": f"{bin_path}:{os.environ['PATH']}",
@@ -924,7 +927,7 @@ class RepositoryInvariantTests(unittest.TestCase):
             for af in args_files:
                 text = af.read_text(encoding="utf-8")
                 self.assertTrue(text.startswith("-q --noproxy * --config -"))
-                self.assertNotIn(secret_key, text)
+                self.assertNotIn(fixture_marker, text)
 
 
 if __name__ == "__main__":

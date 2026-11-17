@@ -41,7 +41,7 @@ class SurgeMcpBridgeTest(unittest.TestCase):
                 self.assertIn(expected, result.stderr)
 
     def test_stdio_roundtrip_passes_key_via_stdin_never_argv_and_cleans_temp(self) -> None:
-        secret_key = "synthetic-mcp-secret-key"
+        fixture_value = "synthetic-mcp-fixture-marker"
         with tempfile.TemporaryDirectory() as temporary:
             temp_dir = Path(temporary)
             bin_dir = temp_dir / "bin"
@@ -51,7 +51,10 @@ class SurgeMcpBridgeTest(unittest.TestCase):
                 directory.mkdir()
 
             profile = temp_dir / "DMIT-Mac.conf"
-            profile.write_text(f"http-api = {secret_key}@127.0.0.1:1132\n", encoding="utf-8")
+            profile.write_text(
+                "http-api = synthetic-mcp-fixture-marker@127.0.0.1:1132\n",
+                encoding="utf-8",
+            )
 
             fake_curl = bin_dir / "curl"
             fake_curl.write_text(
@@ -111,29 +114,32 @@ class SurgeMcpBridgeTest(unittest.TestCase):
             for args_file in log_dir.glob("call-*.args"):
                 args_text = args_file.read_text(encoding="utf-8")
                 self.assertTrue(args_text.startswith("-q --noproxy * --config -"))
-                self.assertNotIn(secret_key, args_text)
+                self.assertNotIn(fixture_value, args_text)
                 self.assertIn("https://127.0.0.1:1132/v1/mcp", args_text)
             for cfg_file in log_dir.glob("call-*.cfg"):
                 cfg_text = cfg_file.read_text(encoding="utf-8")
-                self.assertIn(f'header = "X-Key: {secret_key}"', cfg_text)
+                self.assertIn(f'header = "X-Key: {fixture_value}"', cfg_text)
                 self.assertNotIn("insecure", cfg_text)
 
             self.assertEqual(list(tmp_dir.iterdir()), [])
 
     def test_auth_failure_does_not_leak_credential_or_raw_body(self) -> None:
-        secret_key = "sensitive-denied-key"
+        fixture_value = "synthetic-denied-fixture-marker"
         with tempfile.TemporaryDirectory() as temporary:
             temp_dir = Path(temporary)
             bin_dir = temp_dir / "bin"
             bin_dir.mkdir()
             profile = temp_dir / "DMIT-Mac.conf"
-            profile.write_text(f"http-api = {secret_key}@127.0.0.1:1132\n", encoding="utf-8")
+            profile.write_text(
+                "http-api = synthetic-denied-fixture-marker@127.0.0.1:1132\n",
+                encoding="utf-8",
+            )
 
             fake_curl = bin_dir / "curl"
             fake_curl.write_text(
                 "#!/bin/sh\n"
                 "cat >/dev/null\n"
-                "printf 'secret-server-body-%s\\n403' '" + secret_key + "'\n",
+                "printf 'upstream-body-synthetic-denied-fixture-marker\\n403'\n",
                 encoding="utf-8",
             )
             fake_curl.chmod(0o700)
@@ -150,8 +156,8 @@ class SurgeMcpBridgeTest(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0)
             combined = result.stdout + result.stderr
-            self.assertNotIn(secret_key, combined)
-            self.assertNotIn("secret-server-body", combined)
+            self.assertNotIn(fixture_value, combined)
+            self.assertNotIn("upstream-body", combined)
             payload = json.loads(result.stdout.strip())
             self.assertEqual(payload["id"], 9)
             self.assertIn("http-api-mcp = true", payload["error"]["message"])
