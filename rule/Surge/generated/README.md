@@ -32,7 +32,7 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | ID | Compatibility file | Optimized files | Suggested policy | Unique rules |
 | --- | --- | --- | --- | ---: |
 | microsoft | `microsoft.list` | `microsoft.domainset` (664) + `microsoft.non-domain.list` (7) | `DIRECT` | 671 |
-| china-direct | `china-direct.list` | `china-direct.domainset` (3691) + `china-direct.non-domain.list` (61) | `DIRECT` | 3752 |
+| china-direct | `china-direct.list` | `china-direct.domainset` (3691) + `china-direct.non-domain.list` (69) | `DIRECT` | 3760 |
 | private-tracker | `private-tracker.list` | `private-tracker.domainset` (241) + `private-tracker.non-domain.list` (7) | `DIRECT` | 248 |
 | apple-bm7 | `apple-bm7.list` | - | `DIRECT` | 53 |
 | apple-sukka | `apple-sukka.list` | - | `DIRECT` | 35 |

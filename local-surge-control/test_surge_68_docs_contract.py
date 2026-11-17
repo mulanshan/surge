@@ -239,6 +239,35 @@ class Surge68DocumentationContractTest(unittest.TestCase):
                     r".{0,320}transcript",
                 )
 
+    def test_surge_611_commands_and_mcp_loopback_boundaries_are_documented(self) -> None:
+        for name, text in self.docs.items():
+            with self.subTest(document=name):
+                for command in (
+                    "profile section",
+                    "policy-avoid",
+                    "module show",
+                    "capture-filter",
+                    "capture-session",
+                    "rule explain",
+                ):
+                    self.assertIn(command, text)
+                self.assertRegex(
+                    text,
+                    r"(?s)`profile section get <name>`.{0,240}"
+                    r"(?:unredacted|secrets|passwords).{0,160}transcript",
+                )
+                self.assertRegex(
+                    text,
+                    r"(?s)`capture-session data`.{0,240}"
+                    r"(?:raw|bodies).{0,160}transcript",
+                )
+                self.assertRegex(
+                    text,
+                    r"(?s)`http-api-mcp = true`.{0,320}`127\.0\.0\.1:1132`",
+                )
+                self.assertIn("surge-mcp-bridge.py", text)
+                self.assertNotIn("mcp_config.json = ", text)
+
 
 if __name__ == "__main__":
     unittest.main()

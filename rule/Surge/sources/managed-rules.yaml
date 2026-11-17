@@ -28,11 +28,20 @@ sets:
 
   - id: china-direct
     name: China Direct Base
-    description: Mainland China service baseline for DIRECT routing.
+    description: Mainland China service baseline for DIRECT routing, including major domestic carrier and CERNET2 IPv6 fast-path blocks.
     output: china-direct.list
     domain_set_output: china-direct.domainset
     non_domain_output: china-direct.non-domain.list
     suggested_policy: DIRECT
+    include_rules:
+      - IP-CIDR6,2001:250::/31,no-resolve
+      - IP-CIDR6,2001:da8::/32,no-resolve
+      - IP-CIDR6,2400:3200::/32,no-resolve
+      - IP-CIDR6,2402:4e00::/32,no-resolve
+      - IP-CIDR6,2402:f000::/32,no-resolve
+      - IP-CIDR6,2408:8000::/20,no-resolve
+      - IP-CIDR6,2409:8000::/20,no-resolve
+      - IP-CIDR6,240e::/18,no-resolve
     sources:
       - name: blackmatrix7 China All No Resolve
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/China/China_All_No_Resolve.list

@@ -509,6 +509,13 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/%E7%95%AA%E8%8
 SURGE_REMOTE_HOST=ios-surge.local rule/Surge/scripts/export-fanqie-candidates.sh
 ```
 
+针对 Surge Mac 6.11+ / Surge iOS 6.0+ 已落盘的 HTTP 抓包会话（避免内存 `recent` 缓冲区冲刷丢失请求），也可通过 `--session latest`（或指定会话名）分页导出完整会话：
+
+```bash
+SURGE_REMOTE_HOST=127.0.0.1 SURGE_IOS_PROFILE="$HOME/Library/Mobile Documents/iCloud~com~nssurge~inc/Documents/DMIT-Mac.conf" \
+  rule/Surge/scripts/export-fanqie-candidates.sh --session latest
+```
+
 也可以复盘之前保存的 `dump request` JSON：
 
 ```bash

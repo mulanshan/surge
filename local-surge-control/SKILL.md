@@ -111,14 +111,32 @@ different device's credential.
 
 - `status`, `version`, and `dump summary` establish version, uptime, active
   profile, mode, feature states, interfaces, DNS, and configuration warnings.
-- `profile current`, `profile list`, and `profile check <name>` inspect profile
-  state without switching it. Listing and validation are macOS-only.
+- `profile current`, `profile list`, `profile check <name>`, and
+  `profile section <list|get|set>` inspect or update profile state. Listing and
+  validation are macOS-only; `profile section` requires controller protocol 31+
+  (Surge Mac 6.11.0+). `profile section get <name>` prints unredacted proxy
+  secrets and passwords — never print raw `profile section get` output into the
+  task transcript. Prefer `profile section set <name> <file> <revision>` over
+  editing `.conf` or `.dconf` files directly when targeting a compatible engine.
 - `policy-group list` and `policy-group get <group>` inspect selections. Use
   `policy-group set <group> <policy>` to make a manual selection or pass `auto`
-  as the policy to clear an automatic-group override.
-- `module list`, `feature list`, and `feature get <name>` inspect runtime
-  modules and features. `module enable <name...>` and
-  `module disable <name...>` each accept multiple module names in one operation.
+  as the policy to clear an automatic-group override. On controller protocol 40+
+  (Surge Mac 6.11.0+), `policy-avoid <list|add|remove|clear>` temporarily skips
+  underperforming policies in automatic groups (`url-test`, `fallback`,
+  `load-balance`, `smart`) until restart.
+- `module list`, `module show <name>`, `feature list`, and `feature get <name>`
+  inspect runtime modules and features (`module show` requires Surge Mac 6.11.0+).
+  `module enable <name...>` and `module disable <name...>` each accept multiple
+  module names in one operation.
+- `rule match` and `rule explain` evaluate routing offline; on controller
+  protocol 41+ (Surge Mac 6.11.0+), both report `rule-source` (profile file/line
+  or module) and `matched-sub-rules` inside `RULE-SET`/`DOMAIN-SET`.
+- `capture-filter <list|get|set>` and `capture-session <list|dump|data>` manage
+  saved HTTP capture sessions on controller protocol 36+/37+ (Surge Mac 6.11.0+).
+  `capture-session data` returns raw request or response bodies and is
+  secret-bearing; never print unfiltered capture bodies into the task transcript.
+- `dump traffic-stat-breakdown` and `dump traffic-stat-records` inspect aggregated
+  traffic rankings on controller protocol 38+/39+.
 - `device` is macOS-only and lists or inspects Gateway Mode clients. Device
   identifiers and MAC addresses are sensitive; redact them together with
   private addresses before quoting results.
@@ -170,10 +188,11 @@ update automatically.
 
 Commands that change settings return the resulting state and a nonzero status
 on failure. Always re-query the resulting state independently after `mode set`,
-`global-policy set`, `policy-group set`, `profile switch`, `module enable` or
-`module disable`, `feature set`, and `set <key-path>=<value>`. System Proxy and
-Enhanced Mode changes wait for the actual transition, but still read them back
-with `feature get` before reporting success. System Proxy and Enhanced Mode are
+`global-policy set`, `policy-group set`, `policy-avoid`, `profile switch`,
+`profile section set`, `module enable` or `module disable`, `feature set`,
+`capture-filter set`, and `set <key-path>=<value>`. System Proxy and Enhanced
+Mode changes wait for the actual transition, but still read them back with
+`feature get` before reporting success. System Proxy and Enhanced Mode are
 macOS-only features.
 
 Do not gate the read-back on the mutation's exit status. A timeout or nonzero
@@ -256,11 +275,26 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
   and tests; update external resources; and mutate runtime settings.
 - HTTP API `1132` is also privileged. Use HTTPS with certificate verification
   and a strong key. Bind it to `127.0.0.1` unless LAN access is intentional.
+- MCP endpoint `/v1/mcp` (`http-api-mcp = true`, Surge Mac 6.11.0+ / iOS 6.0+)
+  exposes full CLI-equivalent inspection and mutation over HTTP API auth. Enable
+  `http-api-mcp = true` **only** on loopback-bound instances (`127.0.0.1:1132`
+  with `http-api-tls = true`, i.e., `DMIT-Mac.conf`). Keep `http-api-mcp` off on
+  LAN-bound `0.0.0.0:1132` profiles (`DMIT.conf`, `DMIT-ATV.conf`). Connect local
+  Stdio MCP clients through `scripts/surge-mcp-bridge.py` so `X-Key` is read at
+  runtime and never stored in `mcp_config.json` or process `argv`.
+- When Mac runs a newer engine (e.g., Surge Mac 6.11.0, Core `6011000`) than
+  App Store stable iOS/tvOS (e.g., 5.23.0, Core `6010000`), keep shared
+  `DMIT-Common.dconf` strictly compatible with the older Core; place
+  6.11-specific `[General]` keys (`http-api-mcp`, `log-file-size-limit`) only in
+  `DMIT-Mac.conf`, and use cross-compatible values (`block-quic = auto`,
+  `ipv6 = true`, `ipv6-vif = auto`).
 - `GET /v1/profiles/current?sensitive=0` is only partially redacted. Current
   Surge versions may still return HTTP API and External Controller settings
   even when proxy credentials and CA passwords are masked. Treat the entire
   response as sensitive, do not print it during routine diagnostics, and do
-  not describe it as safe merely because `sensitive=0` is present.
+  not describe it as safe merely because `sensitive=0` is present. Apply the
+  same redaction boundary to MCP tools `get_profile`, `get_profile_section`,
+  `get_captured_body`, `get_capture_session_body`, and `get_logs`.
 - Editing the iCloud profile is a persistent change. Create a timestamped
   backup, apply the smallest edit, run `surge-cli --check`, then reload and
   verify each explicit target.
@@ -299,3 +333,4 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
 
 - Official docs and endpoint notes: `references/surge-control-reference.md`.
 - Safe status helper: `scripts/surge-status.sh`.
+- Loopback-only MCP Stdio bridge: `scripts/surge-mcp-bridge.py`.

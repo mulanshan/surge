@@ -3,6 +3,15 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-17
+
+Upgraded `local-surge-control`, candidate-export tooling, and Mainland China IPv6 fast-path routing for Surge Mac 6.11.0 (Controller Protocol 41), local MCP integration, and native dual-stack IPv6:
+
+- Added `local-surge-control/scripts/surge-mcp-bridge.py` plus unit tests (`local-surge-control/test_surge_mcp_bridge.py`): provides a credential-safe, loopback-only (`127.0.0.1` / `[::1]` / `localhost`) Stdio-to-Streamable-HTTP bridge to `https://127.0.0.1:1132/v1/mcp` that reads `X-Key` from `DMIT-Mac.conf` at runtime and passes it to TLS-verified `curl --config -` over `stdin` so API keys never enter `mcp_config.json` or process `argv`.
+- Updated `local-surge-control/SKILL.md`, `local-surge-control/references/surge-control-reference.md`, and `local-surge-control/test_surge_68_docs_contract.py` for Surge Mac 6.11.0 (build 12800, Controller Protocol 41) and cross-version compatibility with App Store stable Surge iOS/tvOS 5.23.0: documented `profile section` (including the unredacted secret boundary on `profile section get`), `policy-avoid`, `module show`, `capture-filter`, `capture-session` (including the raw-body redaction boundary on `capture-session data`), `rule explain` source tracing, loopback-only `http-api-mcp = true`, `block-quic = auto`, and `ipv6 = true` / `ipv6-vif = auto`.
+- Upgraded `rule/Surge/scripts/export-fanqie-candidates.sh`, `rule/Surge/scripts/export-camscanner-candidates.sh`, and `rule/Surge/scripts/surge_candidate_common.py`: added `--session <latest|name>` and `--session-filter` paged export over `/v1/capture/sessions[/requests]` using verified `stdin` `X-Key` authentication, and hardened `extract_host()` / `base_domain()` to preserve bracketed and unbracketed IPv6 literals under dual-stack traffic.
+- Added verified Mainland China carrier and CERNET2 IPv6 fast-path blocks (`240e::/18`, `2408:8000::/20`, `2409:8000::/20`, `2400:3200::/32`, `2402:4e00::/32`, `2001:da8::/32`, `2001:250::/31`, `2402:f000::/32`, all `no-resolve`) to `china-direct` in `rule/Surge/sources/managed-rules.yaml` and regenerated `rule/Surge/generated/china-direct.*` so domestic P2P/PT and CDN IPv6 traffic short-circuits to `DIRECT` without scanning down to `GEOIP,CN`.
+
 ## 2026-11-13
 
 Activated canonical bundle `surge-self-v2026.11.13.2`, upgraded six script-backed modules (`京东`, `小红书`, `微博`, `扫描全能王`, `高德地图`, `YouTube`), and promoted `高德地图` and `扫描全能王` to `stable`:
