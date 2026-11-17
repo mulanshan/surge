@@ -68,9 +68,12 @@ different device's credential.
 | Commands | Boundary | Platform, output, and acceptance |
 | --- | --- | --- |
 | `status`, `version`, `dump summary` | Read-only snapshot | The full profile path, device/OS details, interface addresses, routers, and DNS data are sensitive. |
-| `profile current`, `profile list`, `profile check <name>` | Read-only inspection and validation | Listing and validation are macOS-only. Switching is a mutation covered below. |
-| `policy-group list`, `policy-group get <group>`, `policy-group set <group> <policy>` | Inspection or selection mutation | Pass `auto` as the policy to clear a manual override on an automatic group; independently read back the resulting selection. |
-| `module list`, `feature list`, `feature get <name>` | Read-only runtime state | Feature availability depends on the target; System Proxy and Enhanced Mode are macOS-only. `module enable <name...>` and `module disable <name...>` accept multiple module names in one operation. |
+| `profile current`, `profile list`, `profile check <name>`, `profile section <list\|get\|set>` | Read-only inspection, validation, or atomic section replacement | Listing and validation are macOS-only; `profile section` requires controller protocol 31+ (Surge Mac 6.11.0+). `profile section get <name>` prints unredacted proxy secrets and must never enter a task transcript. Switching is a mutation covered below. |
+| `policy-group list`, `policy-group get <group>`, `policy-group set <group> <policy>`, `policy-avoid <list\|add\|remove\|clear>` | Inspection, selection mutation, or temporary automatic-group avoidance | Pass `auto` as the policy to clear a manual override on an automatic group; `policy-avoid` requires controller protocol 40+ and clears on restart. Independently read back the resulting selection or avoidance list. |
+| `module list`, `module show <name>`, `feature list`, `feature get <name>` | Read-only runtime state and module inspection | Feature availability depends on the target; System Proxy and Enhanced Mode are macOS-only. `module show` requires Surge Mac 6.11.0+. `module enable <name...>` and `module disable <name...>` accept multiple module names in one operation. |
+| `rule match`, `rule explain` | Read-only offline routing evaluation | On controller protocol 41+ (Surge Mac 6.11.0+), returns `rule-source` (profile file/line or module) and `matched-sub-rules` inside `RULE-SET`/`DOMAIN-SET`. |
+| `capture-filter <list\|get\|set>`, `capture-session <list\|dump\|data>` | Capture filter management and saved capture inspection | Requires controller protocol 36+/37+ (Surge Mac 6.11.0+). `capture-session data` returns raw HTTP request/response bodies and must never enter a task transcript unfiltered. |
+| `dump traffic-stat-breakdown`, `dump traffic-stat-records` | Read-only aggregated traffic rankings | Requires controller protocol 38+/39+ (Surge Mac 6.11.0+); summarize sensitive hostnames before quoting. |
 | `device` | Read-only Gateway Mode inventory or lookup | macOS-only. Device identifiers and MAC addresses are sensitive, as are private addresses in the result. |
 | `script list`, `script-log <log-name> <session-id>` | Read-only script metadata and prior execution log | Use identifiers returned in known script execution metadata or provided by the user. `script-log` does not run a script, and `script list` does not supply a replacement session ID. Do not guess a session identifier or rerun a script to manufacture one. Output and exceptions may contain tokens or private request data. |
 | `log file <count>`, `log memory <count>`, `log watch`, `logbook <limit>` | Read-only finite retrieval or continuous observation | A finite log retrieval accepts up to 10,000 lines. The persistent file log provides longer history at the configured level; the in-memory log provides more detailed recent entries from all levels. `log watch` streams newly generated, unfiltered logs. Unfiltered logs are sensitive; redact URLs, headers, tokens, identifiers, and private addresses. |
@@ -196,9 +199,23 @@ pattern for this repository. Useful documented resources include:
 - `/v1/profiles/current?sensitive=0`: partially redacted current profile. It may
   still contain controller/API settings and must not be printed or shared.
 - `/v1/profiles/reload`: reload current profile.
-- `/v1/policies`, `/v1/policy_groups`: policy inspection.
+- `/v1/policies`, `/v1/policy_groups`, `/v1/policies/avoided`: policy inspection
+  and temporary automatic-group avoidance (`include_external=true` supported on
+  `/v1/policies` in 6.11+).
+- `/v1/capture/filters`, `/v1/capture/sessions`, `/v1/capture/sessions/requests`,
+  `/v1/capture/sessions/data`: capture filter and saved session endpoints (6.11+).
+  Treat session request lists and raw body payloads as sensitive.
 - `/v1/features/mitm`, `/v1/features/rewrite`, `/v1/features/scripting`,
   `/v1/features/capture`: feature state and toggles.
+- `/v1/mcp`: Model Context Protocol Streamable HTTP endpoint (`http-api-mcp = true`
+  in `[General]`, Surge Mac 6.11.0+ / iOS 6.0+). Enable `http-api-mcp = true`
+  **only** on loopback-bound `127.0.0.1:1132` (`DMIT-Mac.conf`) with TLS enabled;
+  keep it disabled on LAN-exposed `0.0.0.0:1132` profiles (`DMIT.conf`,
+  `DMIT-ATV.conf`). Local Stdio MCP clients should use
+  `../scripts/surge-mcp-bridge.py` so `X-Key` is read at runtime and never stored
+  in `mcp_config.json` or process `argv`. MCP tools `get_profile`,
+  `get_profile_section`, `get_captured_body`, `get_capture_session_body`, and
+  `get_logs` carry secret-bearing data and must be summarized/redacted locally.
 
 Query parameter `x-key` is acceptable only for special browser cases described
 by the official documentation, such as downloading a CA certificate. Do not use
@@ -271,3 +288,29 @@ Verified on 2026-11-10 against the local Mac (6.9.1, build 12290), iOS 5.23.0
   which requires Mac 6.10.0 or later. On 6.9.1 it provides highlighting only;
   validate with `surge-cli --check <profile>`.
 - The hourly `SGNTPClient` warning described above is still present on 6.9.1.
+
+## Surge Mac 6.11.0 / Cross-Version Dual-Stack Notes
+
+Verified on 2026-11-17 against local Mac (6.11.0, build 12800, Core `6011000`,
+controller protocol `41`), while App Store stable iOS 5.23.0 (3867) and tvOS
+5.23.0 (3869) remain at Core `6010000` / controller protocol `25` (Surge iOS 6.0
+is in TestFlight).
+
+- **Cross-version detached profile rule**: Keep shared `DMIT-Common.dconf`
+  compatible with Core `6010000` (`5.23.0`) until iOS/tvOS 6.0 reaches App Store
+  stable. Put 6.11-only `[General]` keys (`http-api-mcp = true`,
+  `log-file-size-limit`) in `DMIT-Mac.conf` only.
+- **Adaptive QUIC**: Setting `block-quic = auto` in all three `[General]`
+  profiles is valid on both 5.23.0 and 6.11.0, and automatically activates
+  `adaptive` mode for non-DIRECT policies on Mac 6.11.0 (and future iOS/tvOS 6.0)
+  while preserving Snell v6 zero-wait UDP.
+- **Dual-stack IPv6**: All three profiles run `ipv6 = true` and `ipv6-vif = auto`
+  so native China Telecom `/64` SLAAC+RDNSS traffic uses direct IPv6 while VIF
+  prevents raw IPv6/WebRTC bypass leaks on proxied destinations.
+- **Mac listener & MCP hardening**: `DMIT-Mac.conf` binds `http-listen`,
+  `socks5-listen`, `http-api`, and `external-controller-access` strictly to
+  `127.0.0.1`, allowing `http-api-mcp = true` safely over local TLS (`1132`) via
+  `scripts/surge-mcp-bridge.py`.
+- **VS Code LSP**: On Mac 6.10.0+, `SurgeNetworks.surge-language-support` runs
+  `surge-cli lsp --stdio` offline and ignores module `#!system` / `#!requirement`
+  headers during editor diagnostics so iOS-only `.sgmodule` files validate on Mac.

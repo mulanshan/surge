@@ -824,6 +824,108 @@ class RepositoryInvariantTests(unittest.TestCase):
             self.assertEqual(invalid_ca.returncode, 2)
             self.assertIn("must not contain a newline", invalid_ca.stderr)
 
+    def test_ipv6_host_extraction_and_base_domain_preserve_ipv6_literals(self):
+        self.assertEqual(
+            common.extract_host({"URL": "https://[240e:39d::1]:8443/path"}),
+            "240e:39d::1",
+        )
+        self.assertEqual(
+            common.extract_host({"URL": "[2402:f000:1:400::2]:443"}),
+            "2402:f000:1:400::2",
+        )
+        self.assertEqual(
+            common.extract_host({"remoteHost": "240e:39d::8080"}),
+            "240e:39d::8080",
+        )
+        self.assertEqual(common.base_domain("240e:39d::8080"), "240e:39d::8080")
+
+    def test_china_direct_non_domain_includes_major_carrier_and_cernet2_ipv6_blocks(self):
+        lines = set(
+            (ROOT / "rule/Surge/generated/china-direct.non-domain.list")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        for expected in (
+            "IP-CIDR6,240e::/18,no-resolve",
+            "IP-CIDR6,2408:8000::/20,no-resolve",
+            "IP-CIDR6,2409:8000::/20,no-resolve",
+            "IP-CIDR6,2001:da8::/32,no-resolve",
+            "IP-CIDR6,2001:250::/31,no-resolve",
+            "IP-CIDR6,2402:f000::/32,no-resolve",
+        ):
+            with self.subTest(rule=expected):
+                self.assertIn(expected, lines)
+
+    def test_candidate_exporter_session_mode_pages_saved_sessions_with_stdin_auth(self):
+        secret_key = "synthetic-session-export-key"
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            bin_path = temporary_path / "bin"
+            log_path = temporary_path / "log"
+            tmp_path = temporary_path / "tmp"
+            output_path = temporary_path / "out"
+            for path in (bin_path, log_path, tmp_path):
+                path.mkdir()
+
+            fake_curl = bin_path / "curl"
+            fake_curl.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, os, sys\n"
+                "from pathlib import Path\n"
+                "cfg = sys.stdin.read()\n"
+                "log = Path(os.environ['SURGE_TEST_LOG'])\n"
+                "idx = len(list(log.glob('call-*.args')))\n"
+                "(log / f'call-{idx}.args').write_text(' '.join(sys.argv[1:]), encoding='utf-8')\n"
+                "(log / f'call-{idx}.cfg').write_text(cfg, encoding='utf-8')\n"
+                "url = sys.argv[-1]\n"
+                "if url.endswith('/v1/capture/sessions'):\n"
+                "    print(json.dumps({'sessions': [{'name': '2026-11-17-100000', 'requestCount': 2}]}))\n"
+                "elif 'offset=0' in url:\n"
+                "    print(json.dumps({'session': '2026-11-17-100000', 'total': 2, 'offset': 0, 'returned': 1, 'requests': [{'URL': 'https://ad-p1.fqnovel.com/ad', 'policyName': 'DIRECT'}]}))\n"
+                "else:\n"
+                "    print(json.dumps({'session': '2026-11-17-100000', 'total': 2, 'offset': 1, 'returned': 1, 'requests': [{'URL': 'https://ad-p2.fqnovel.com/ad', 'policyName': 'DIRECT'}]}))\n",
+                encoding="utf-8",
+            )
+            fake_curl.chmod(0o700)
+
+            ios_profile = temporary_path / "DMIT.conf"
+            ios_profile.write_text(f"http-api = {secret_key}@0.0.0.0:1132\n", encoding="utf-8")
+            env = {
+                **os.environ,
+                "PATH": f"{bin_path}:{os.environ['PATH']}",
+                "SURGE_TEST_LOG": str(log_path),
+                "TMPDIR": str(tmp_path),
+            }
+            result = subprocess.run(
+                [
+                    str(ROOT / "rule/Surge/scripts/export-fanqie-candidates.sh"),
+                    "--host",
+                    "ios-surge.local",
+                    "--profile",
+                    str(ios_profile),
+                    "--session",
+                    "latest",
+                    "--out-dir",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            candidates = next(output_path.glob("*.candidate-rules.list")).read_text(encoding="utf-8")
+            self.assertIn("DOMAIN,ad-p1.fqnovel.com,REJECT", candidates)
+            self.assertIn("DOMAIN,ad-p2.fqnovel.com,REJECT", candidates)
+            self.assertIn("raw_json=not-retained", result.stdout)
+            self.assertFalse(list(tmp_path.iterdir()))
+            args_files = sorted(log_path.glob("call-*.args"))
+            self.assertEqual(len(args_files), 3)
+            for af in args_files:
+                text = af.read_text(encoding="utf-8")
+                self.assertTrue(text.startswith("-q --noproxy * --config -"))
+                self.assertNotIn(secret_key, text)
+
 
 if __name__ == "__main__":
     unittest.main()

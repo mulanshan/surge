@@ -2,12 +2,21 @@
   "id": "china-direct",
   "name": "China Direct Base",
   "output": "rule/Surge/generated/china-direct.list",
-  "description": "Mainland China service baseline for DIRECT routing.",
+  "description": "Mainland China service baseline for DIRECT routing, including major domestic carrier and CERNET2 IPv6 fast-path blocks.",
   "suggested_policy": "DIRECT",
   "suggested_options": [],
-  "included_rules": [],
+  "included_rules": [
+    "IP-CIDR6,2001:250::/31,no-resolve",
+    "IP-CIDR6,2001:da8::/32,no-resolve",
+    "IP-CIDR6,2400:3200::/32,no-resolve",
+    "IP-CIDR6,2402:4e00::/32,no-resolve",
+    "IP-CIDR6,2402:f000::/32,no-resolve",
+    "IP-CIDR6,2408:8000::/20,no-resolve",
+    "IP-CIDR6,2409:8000::/20,no-resolve",
+    "IP-CIDR6,240e::/18,no-resolve"
+  ],
   "excluded_rules": [],
-  "unique_rule_count": 3752,
+  "unique_rule_count": 3760,
   "sources": [
     {
       "name": "blackmatrix7 China All No Resolve",
@@ -24,5 +33,5 @@
   "domain_set_output": "rule/Surge/generated/china-direct.domainset",
   "non_domain_output": "rule/Surge/generated/china-direct.non-domain.list",
   "domain_set_rule_count": 3691,
-  "non_domain_rule_count": 61
+  "non_domain_rule_count": 69
 }

@@ -19,6 +19,8 @@ OUT_DIR="${OUT_DIR:-$ROOT_DIR/reports/camscanner}"
 HTTP_CA="${SURGE_HTTP_CA:-}"
 HTTP_INSECURE="${SURGE_HTTP_INSECURE:-0}"
 INPUT_JSON=""
+SESSION_NAME=""
+SESSION_FILTER=""
 KEEP_RAW=0
 
 usage() {
@@ -28,6 +30,10 @@ Usage:
 
 Options:
   -i, --input FILE      Re-process an existing Surge dump request JSON.
+      --session NAME    Export from a Surge 6.11+ / iOS 6.0+ saved capture session
+                        (pass 'latest' for the newest saved session).
+      --session-filter TEXT
+                        Optional substring filter passed to /v1/capture/sessions/requests.
   -o, --out-dir DIR     Output directory. Default: reports/camscanner
       --keep-raw        Retain a mode-0600 copy of the raw request JSON.
       --host HOST       Remote Surge host. Required without --input.
@@ -60,6 +66,14 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     -i|--input)
       INPUT_JSON="${2:-}"
+      shift 2
+      ;;
+    --session)
+      SESSION_NAME="${2:-}"
+      shift 2
+      ;;
+    --session-filter)
+      SESSION_FILTER="${2:-}"
       shift 2
       ;;
     -o|--out-dir)
@@ -146,6 +160,11 @@ valid_port() {
   [[ "$1" =~ ^[0-9]+$ ]] && ((10#$1 >= 1 && 10#$1 <= 65535))
 }
 
+if [[ -n "$INPUT_JSON" && -n "$SESSION_NAME" ]]; then
+  echo "--input and --session cannot be combined." >&2
+  exit 2
+fi
+
 if [ -n "$INPUT_JSON" ]; then
   if [ ! -f "$INPUT_JSON" ]; then
     echo "Input JSON not found: $INPUT_JSON" >&2
@@ -185,9 +204,36 @@ else
   TEMP_RAW="$(mktemp "${TMPDIR:-/tmp}/surge-camscanner.requests.XXXXXX")"
   chmod 600 "$TEMP_RAW"
   RAW_JSON="$TEMP_RAW"
-  SOURCE_LABEL="temporary live capture (deleted after export)"
-  curl_config "$HTTP_KEY" |
-    curl -q --noproxy '*' --config - "https://${REMOTE_HOST}:${REMOTE_PORT}/v1/requests/recent" > "$RAW_JSON"
+  if [ -n "$SESSION_NAME" ]; then
+    RESOLVED_SESSION="$(
+      python3 - "$ROOT_DIR" "$PROFILE" "$REMOTE_HOST" "$REMOTE_PORT" "$SESSION_NAME" "$RAW_JSON" "$HTTP_CA" "$HTTP_INSECURE" "$SESSION_FILTER" <<'PY'
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(sys.argv[1]) / "rule" / "Surge" / "scripts"))
+from surge_candidate_common import fetch_capture_session_dump  # noqa: E402
+
+print(
+    fetch_capture_session_dump(
+        profile_path=Path(sys.argv[2]),
+        remote_host=sys.argv[3],
+        remote_port=sys.argv[4],
+        session_spec=sys.argv[5],
+        output_path=Path(sys.argv[6]),
+        ca_path=sys.argv[7],
+        insecure=(sys.argv[8] == "1"),
+        filter_text=sys.argv[9],
+    )
+)
+PY
+    )"
+    SOURCE_LABEL="saved capture session ${RESOLVED_SESSION} (temporary export deleted)"
+  else
+    SOURCE_LABEL="temporary live capture (deleted after export)"
+    curl_config "$HTTP_KEY" |
+      curl -q --noproxy '*' --config - "https://${REMOTE_HOST}:${REMOTE_PORT}/v1/requests/recent" > "$RAW_JSON"
+  fi
   if [[ $KEEP_RAW -eq 1 ]]; then
     RAW_OUTPUT="$OUT_DIR/$STAMP.requests.json"
     mv "$TEMP_RAW" "$RAW_OUTPUT"
