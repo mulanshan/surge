@@ -53,6 +53,10 @@ class AIRoutingTests(unittest.TestCase):
     def test_ai_requests_use_us_before_broad_vendor_or_china_rules(self):
         for host in (
             "muse.ai", "api.muse.ai", "www.meta.ai", "vm.metaaivm.com",
+            "auth.meta.com", "accountscenter.meta.com",
+            "www.facebook.com", "accountscenter.facebook.com", "www.instagram.com", "x.com", "twitter.com",
+            "www.threads.net", "web.whatsapp.com", "www.reddit.com", "discord.com", "cdn.discordapp.com",
+            "www.google.com", "www.youtube.com",
             "api.anthropic.com", "claude.ai", "claude.com", "files.claudeusercontent.com",
             "chatgpt.com", "api.openai.com", "cdn.oaistatic.com", "files.oaiusercontent.com",
             "copilot.microsoft.com", "api.githubcopilot.com", "copilot-proxy.githubusercontent.com",
@@ -69,6 +73,13 @@ class AIRoutingTests(unittest.TestCase):
         for host in ("google.com", "mail.google.com", "microsoft.com", "login.microsoftonline.com", "github.com", "ordinary.ai", "notmuse.ai"):
             with self.subTest(host=host):
                 self.assertFalse(any(matches(rule, host) for rule in rules))
+
+    def test_social_list_uses_exact_suffixes_without_keyword_rules(self):
+        rules = payload(ROOT / "rule/Surge/social.list")
+        self.assertTrue(rules)
+        for rule in rules:
+            with self.subTest(rule=rule):
+                self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
 
 
 if __name__ == "__main__":

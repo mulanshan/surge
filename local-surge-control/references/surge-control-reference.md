@@ -314,3 +314,19 @@ is in TestFlight).
 - **VS Code LSP**: On Mac 6.10.0+, `SurgeNetworks.surge-language-support` runs
   `surge-cli lsp --stdio` offline and ignores module `#!system` / `#!requirement`
   headers during editor diagnostics so iOS-only `.sgmodule` files validate on Mac.
+
+## Surge Mac 6.12.0 & Multi-Client DNS Notes
+
+Verified on 2026-11-19 against local Mac (6.12.0, build 12880, Core `6012000`,
+controller protocol `43`), alongside iPhone (`5.23.0`, build 3867), iPad
+(`5.23.0`, build 3867), and Apple TV (`5.23.0`, build 3869):
+
+- **Shared iOS/iPadOS shell**: Both iPhone and iPad run `DMIT.conf` from iCloud
+  Drive; verify module inventory on both devices so retired third-party modules
+  do not linger on secondary iPadOS instances.
+- **Public DoH `429` mitigation**: Sharing one residential NAT IP across four
+  Surge instances plus periodic `url-test` groups trips DNSPod public DoH
+  (`https://1.12.12.12/dns-query`) `HTTP 429` / `502` rate limits. Use dual
+  AliDNS DoH (`https://223.5.5.5/dns-query, https://223.6.6.6/dns-query`) in
+  `encrypted-dns-server`, pin `*.mulanshan.uk = server:119.29.29.29` in `[Host]`,
+  and prefer `smart` over `url-test` for large external `policy-path` node lists.

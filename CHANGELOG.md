@@ -3,6 +3,13 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-19
+
+Added `rule/Surge/social.list`, expanded Meta AI SSO coverage in `rule/Surge/ai.list`, aligned Google & social routing to `us`, and updated `local-surge-control` for Surge Mac 6.12.0 (Controller Protocol 43) and multi-device DoH rate-limit mitigation:
+
+- Added `rule/Surge/social.list` (pure `DOMAIN-SUFFIX` coverage for Meta/Facebook/Instagram/Threads/WhatsApp/Oculus, X/Twitter, Reddit, and Discord without `DOMAIN-KEYWORD` substring scans), added `auth.meta.com` and `accountscenter.meta.com` to `rule/Surge/ai.list`, and aligned `rule/Surge/generated/rule-section-managed.conf` (`google.{domainset,non-domain.list}` and `social.list` -> `us`) with `scripts/test_ai_routing.py`.
+- Updated `local-surge-control/SKILL.md` and `local-surge-control/references/surge-control-reference.md` for Surge Mac 6.12.0 (build 12880, Core `6012000`, Controller Protocol `43`), multi-iOS/iPadOS `DMIT.conf` client inventory, and domestic DoH `HTTP 429` / `502` rate-limit mitigation (`encrypted-dns-server = https://223.5.5.5/dns-query, https://223.6.6.6/dns-query` with `[Host]` `*.mulanshan.uk = server:119.29.29.29`).
+
 ## 2026-11-17
 
 Upgraded `local-surge-control`, candidate-export tooling, and Mainland China IPv6 fast-path routing for Surge Mac 6.11.0 (Controller Protocol 41), local MCP integration, and native dual-stack IPv6:
