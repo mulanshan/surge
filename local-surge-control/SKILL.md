@@ -17,8 +17,8 @@ mirroring is not required for these API-based checks.
 - Surge CLI is usually not in `PATH`; its standard path is
   `/Applications/Surge.app/Contents/Applications/surge-cli`.
 - Detached-profile defaults in the iCloud Surge directory are `DMIT.conf` for
-  iOS, `DMIT-Mac.conf` for Mac, `DMIT-ATV.conf` for Apple TV, and
-  `DMIT-Common.dconf` for shared content. Use `SURGE_IOS_PROFILE`,
+  iOS/iPadOS (shared by iPhone and iPad), `DMIT-Mac.conf` for Mac, `DMIT-ATV.conf`
+  for Apple TV, and `DMIT-Common.dconf` for shared content. Use `SURGE_IOS_PROFILE`,
   `SURGE_MAC_PROFILE`, and `SURGE_ATV_PROFILE` for device-specific overrides.
   `SURGE_PROFILE` remains a legacy compatibility override for old setups where
   all three devices intentionally use one profile.
@@ -282,11 +282,12 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
   LAN-bound `0.0.0.0:1132` profiles (`DMIT.conf`, `DMIT-ATV.conf`). Connect local
   Stdio MCP clients through `scripts/surge-mcp-bridge.py` so `X-Key` is read at
   runtime and never stored in `mcp_config.json` or process `argv`.
-- When Mac runs a newer engine (e.g., Surge Mac 6.11.0, Core `6011000`) than
-  App Store stable iOS/tvOS (e.g., 5.23.0, Core `6010000`), keep shared
+- When Mac runs a newer engine (e.g., Surge Mac 6.12.0, Core `6012000`,
+  controller protocol `43`, or 6.11.0, Core `6011000`) than App Store stable
+  iOS/iPadOS/tvOS (e.g., 5.23.0, Core `6010000`), keep shared
   `DMIT-Common.dconf` strictly compatible with the older Core; place
-  6.11-specific `[General]` keys (`http-api-mcp`, `log-file-size-limit`) only in
-  `DMIT-Mac.conf`, and use cross-compatible values (`block-quic = auto`,
+  6.11+/6.12-specific `[General]` keys (`http-api-mcp`, `log-file-size-limit`)
+  only in `DMIT-Mac.conf`, and use cross-compatible values (`block-quic = auto`,
   `ipv6 = true`, `ipv6-vif = auto`).
 - `GET /v1/profiles/current?sensitive=0` is only partially redacted. Current
   Surge versions may still return HTTP API and External Controller settings
