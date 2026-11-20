@@ -330,3 +330,24 @@ controller protocol `43`), alongside iPhone (`5.23.0`, build 3867), iPad
   AliDNS DoH (`https://223.5.5.5/dns-query, https://223.6.6.6/dns-query`) in
   `encrypted-dns-server`, pin `*.mulanshan.uk = server:119.29.29.29` in `[Host]`,
   and prefer `smart` over `url-test` for large external `policy-path` node lists.
+
+## Surge 6 Unified Core 6012000 / Protocol 45 Notes
+
+Verified on 2026-11-20 against local Mac (`6.12.0`, build `12900`, Core
+`6012000`, controller protocol `45`, macOS `27.2.1`) and Apple TV (`6.0.1`,
+build `4039`, Core `6012000`, controller protocol `45`, tvOS `27.2.1`), with
+iPhone and iPad upgraded to Surge 6:
+
+- **Unified Core & VLESS**: Mac `6.12.0 (12900)` and tvOS `6.0.1 (4039)` both
+  report Core `6012000` / protocol `45`, matching Surge iOS/iPadOS 6. Native
+  VLESS policy groups (e.g., `自留地`) are now supported across all Surge 6
+  clients.
+- **Zero-warning DoH confirmation**: Persistent logs on both Mac and Apple TV
+  recorded `0 WARNING / 0 ERROR` after switching to dual AliDNS DoH
+  (`223.5.5.5` / `223.6.6.6`), with all 32 Apple TV external resources `ready`
+  and `7.1 MB` runtime memory.
+- **Loopback MCP live verification**: `scripts/surge-mcp-bridge.py` verified
+  end-to-end against `https://127.0.0.1:1132/v1/mcp` using `/usr/bin/python3`
+  with TLS verification and runtime `X-Key` lookup, exposing 72 native Surge MCP
+  tools while keeping `http-api-mcp` disabled on LAN-bound `DMIT.conf` and
+  `DMIT-ATV.conf`.

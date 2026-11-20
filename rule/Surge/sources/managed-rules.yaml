@@ -116,14 +116,16 @@ sets:
 
   - id: google
     name: 谷歌
-    description: 谷歌通用服务及 YouTube 视频与音乐合并规则集。Google AI 相关域名在前面的 ai.list 中单独走 us，其余谷歌与 YouTube 服务统一走 HK。
+    description: 谷歌通用服务及 YouTube 视频与音乐合并规则集（含 Google IPv6 2001:4860::/32），与前面的 ai.list 统一走 us。
     output: google.list
     domain_set_output: google.domainset
     non_domain_output: google.non-domain.list
-    suggested_policy: HK
+    suggested_policy: us
     suggested_options:
       - extended-matching
       - no-resolve
+    include_rules:
+      - IP-CIDR6,2001:4860::/32,no-resolve
     sources:
       - name: blackmatrix7 Google
         url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/0b6897dc17e0c513d25449c935a9694818e32f0c/rule/Surge/Google/Google.list
