@@ -1,0 +1,10 @@
+# Overseas Shopping & Regional Payment Gateways routed to 自留地 (aligned with DMIT-Common.dconf)
+# Pure DOMAIN-SUFFIX rules only (no DOMAIN-KEYWORD substring scans)
+
+# Oyunfor (Turkey digital storefront)
+DOMAIN-SUFFIX,oyunfor.com
+
+# PayTR & Turkey 3-D Secure payment redirect chain (keep storefront and checkout on same exit IP)
+DOMAIN-SUFFIX,paytr.com
+DOMAIN-SUFFIX,bkm.com.tr
+DOMAIN-SUFFIX,isbank.com.tr

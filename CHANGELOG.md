@@ -5,7 +5,9 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-20
 
-Added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):
+Added `rule/Surge/shopping.list` for regional storefront and payment-gateway routing (`自留地`), added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):
+
+- Added `rule/Surge/shopping.list` (pure `DOMAIN-SUFFIX` rules for `oyunfor.com`, `paytr.com`, `bkm.com.tr`, and `isbank.com.tr` routed to `自留地`), wired it into `rule/Surge/generated/rule-section-managed.conf` and `README.md`, and added routing + syntax assertions in `scripts/test_ai_routing.py`.
 
 - Added `IP-CIDR6,2001:4860::/32,no-resolve` to `google` in `rule/Surge/sources/managed-rules.yaml`, updated `suggested_policy` / description to `us`, regenerated `rule/Surge/generated/google.*` and `rule/Surge/generated/README.md`, added a regression test in `scripts/test_rule_hardening.py`, and documented the GitHub Pages raw mirror (`https://mulanshan.github.io/surge/rule/Surge/...`) in `rule/Surge/generated/rule-section-managed.conf`.
 - Updated `local-surge-control/SKILL.md` and `local-surge-control/references/surge-control-reference.md` for unified Surge 6 (`Core 6012000`, Controller Protocol `45`) across Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6, verified 72 live loopback MCP tools via `surge-mcp-bridge.py`, and confirmed zero DoH `429`/`502` warnings on Mac and Apple TV under dual AliDNS DoH.

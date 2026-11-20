@@ -81,6 +81,22 @@ class AIRoutingTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
 
+    def test_shopping_list_routes_storefront_and_payment_chain_to_ziliudi(self):
+        rules = payload(ROOT / "rule/Surge/shopping.list")
+        self.assertTrue(rules)
+        for rule in rules:
+            with self.subTest(rule=rule):
+                self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
+        for host in (
+            "www.oyunfor.com",
+            "node2.oyunfor.com",
+            "www.paytr.com",
+            "acs.bkm.com.tr",
+            "3dsecure.isbank.com.tr",
+        ):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "自留地")
+
 
 if __name__ == "__main__":
     unittest.main()
