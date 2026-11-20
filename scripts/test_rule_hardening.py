@@ -856,6 +856,14 @@ class RepositoryInvariantTests(unittest.TestCase):
             with self.subTest(rule=expected):
                 self.assertIn(expected, lines)
 
+    def test_google_non_domain_includes_google_ipv6_prefix(self):
+        lines = set(
+            (ROOT / "rule/Surge/generated/google.non-domain.list")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        self.assertIn("IP-CIDR6,2001:4860::/32,no-resolve", lines)
+
     def test_candidate_exporter_session_mode_pages_saved_sessions_with_stdin_auth(self):
         fixture_marker = "synthetic-session-export-marker"
         with tempfile.TemporaryDirectory() as temporary:

@@ -3,6 +3,14 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-20
+
+Added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):
+
+- Added `IP-CIDR6,2001:4860::/32,no-resolve` to `google` in `rule/Surge/sources/managed-rules.yaml`, updated `suggested_policy` / description to `us`, regenerated `rule/Surge/generated/google.*` and `rule/Surge/generated/README.md`, added a regression test in `scripts/test_rule_hardening.py`, and documented the GitHub Pages raw mirror (`https://mulanshan.github.io/surge/rule/Surge/...`) in `rule/Surge/generated/rule-section-managed.conf`.
+- Updated `local-surge-control/SKILL.md` and `local-surge-control/references/surge-control-reference.md` for unified Surge 6 (`Core 6012000`, Controller Protocol `45`) across Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6, verified 72 live loopback MCP tools via `surge-mcp-bridge.py`, and confirmed zero DoH `429`/`502` warnings on Mac and Apple TV under dual AliDNS DoH.
+- Bumped pinned `actions/setup-python` (`v7.1.0`, `6d4fd22b20465ccc0f7354476588e8df7c9ca0e0`) and `actions/setup-node` (`v7.1.0`, `949feb2413d6458794dcd2491c4babbbce0c15c1`) across `.github/workflows/*.yml`, `scripts/check_workflow_contracts.rb`, and `scripts/test_workflow_contracts.py` (superseding Dependabot PR #29).
+
 ## 2026-11-19
 
 Added `rule/Surge/social.list`, expanded Meta AI SSO coverage in `rule/Surge/ai.list`, aligned Google & social routing to `us`, and updated `local-surge-control` for Surge Mac 6.12.0 (Controller Protocol 43) and multi-device DoH rate-limit mitigation:

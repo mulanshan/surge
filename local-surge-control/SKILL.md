@@ -282,13 +282,14 @@ curl -x http://127.0.0.1:6152 -fsS -o /dev/null -w '%{http_code}\n' http://cp.cl
   LAN-bound `0.0.0.0:1132` profiles (`DMIT.conf`, `DMIT-ATV.conf`). Connect local
   Stdio MCP clients through `scripts/surge-mcp-bridge.py` so `X-Key` is read at
   runtime and never stored in `mcp_config.json` or process `argv`.
-- When Mac runs a newer engine (e.g., Surge Mac 6.12.0, Core `6012000`,
-  controller protocol `43`, or 6.11.0, Core `6011000`) than App Store stable
-  iOS/iPadOS/tvOS (e.g., 5.23.0, Core `6010000`), keep shared
-  `DMIT-Common.dconf` strictly compatible with the older Core; place
-  6.11+/6.12-specific `[General]` keys (`http-api-mcp`, `log-file-size-limit`)
-  only in `DMIT-Mac.conf`, and use cross-compatible values (`block-quic = auto`,
-  `ipv6 = true`, `ipv6-vif = auto`).
+- When Mac, iOS/iPadOS, and tvOS all run Surge 6 (Core `6012000`, controller
+  protocol `45`, e.g., Surge Mac `6.12.0 (12900)` and Surge tvOS `6.0.1 (4039)`),
+  shared `DMIT-Common.dconf` is no longer constrained to legacy `5.23.0`
+  (Core `6010000`). Still keep loopback-only `http-api-mcp = true` and
+  Mac-specific `[General]` keys (`log-file-size-limit`) in `DMIT-Mac.conf`, and
+  use cross-compatible values (`block-quic = auto`, `ipv6 = true`,
+  `ipv6-vif = auto`) across all three shells. If any secondary device has not
+  yet upgraded, keep `DMIT-Common.dconf` compatible with its Core until verified.
 - `GET /v1/profiles/current?sensitive=0` is only partially redacted. Current
   Surge versions may still return HTTP API and External Controller settings
   even when proxy credentials and CA passwords are masked. Treat the entire
