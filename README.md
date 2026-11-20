@@ -11,7 +11,7 @@
 
 - [公开使用](#公开使用)
 - [rewrite / Surge（模块）](#rewrite--surge)：[YouTube](#youtube) · [Instagram](#instagram) · [高德地图](#高德地图) · [扫描全能王](#扫描全能王) · [基础去广告模块](#基础去广告模块) · [京东](#京东) · [微信](#微信) · [小红书](#小红书) · [微博](#微博) · [哔哩哔哩](#哔哩哔哩)
-- [rule / Surge（规则）](#rule--surge)：[自托管生成镜像](#自托管生成镜像) · [AI / LLM / Coding](#ai--llm--coding) · [海外社交平台](#海外社交平台) · [Apple 系统服务](#apple-系统服务) · [豆瓣](#豆瓣) · [TMDb](#tmdb) · [Docker / OCI](#docker--oci-镜像拉取) · [番茄小说](#番茄小说回国分流) · [示例配置](#示例配置)
+- [rule / Surge（规则）](#rule--surge)：[自托管生成镜像](#自托管生成镜像) · [AI / LLM / Coding](#ai--llm--coding) · [海外社交平台](#海外社交平台) · [购物与地区支付](#购物与地区支付) · [Apple 系统服务](#apple-系统服务) · [豆瓣](#豆瓣) · [TMDb](#tmdb) · [Docker / OCI](#docker--oci-镜像拉取) · [番茄小说](#番茄小说回国分流) · [示例配置](#示例配置)
 - [日志导出与候选规则开发](#日志导出与候选规则开发)
 - [授权与第三方来源](#授权与第三方来源)
 - 变更历史：[CHANGELOG.md](CHANGELOG.md)
@@ -414,6 +414,16 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/socia
 ```
 
 覆盖 Meta 家族（`meta.com`、Facebook、Instagram、Threads、WhatsApp、Oculus）、X / Twitter、Reddit 与 Discord 的精确官方域名后缀（统一走 `us`，不含 `DOMAIN-KEYWORD` 子串扫描，避免误伤国内或第三方混合域名）。Meta 账号统一认证入口（`auth.meta.com`、`accountscenter.meta.com`）同时保留在上方 `ai.list` 中，确保 Meta AI 登录链路不断裂。
+
+### 购物与地区支付
+
+文件：[rule/Surge/shopping.list](rule/Surge/shopping.list)
+
+```ini
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/shopping.list,自留地,extended-matching,no-resolve
+```
+
+覆盖海外区域购物与支付跳转链路（当前包含土耳其 `oyunfor.com`、PayTR 支付网关 `paytr.com` 及土耳其银行 3DS 验证域名 `bkm.com.tr`、`isbank.com.tr`），全部采用精确 `DOMAIN-SUFFIX` 规则，确保下单站点与支付跳转同源走策略组 `自留地`（例如土耳其出口），避免跨区风控拒付。
 
 ### Apple 系统服务
 
