@@ -4,7 +4,9 @@
   "output": "rule/Surge/generated/disney.list",
   "description": "Disney kept separate because the current profile routes it to 流媒体.",
   "suggested_policy": "流媒体",
-  "suggested_options": [],
+  "suggested_options": [
+    "extended-matching"
+  ],
   "included_rules": [],
   "excluded_rules": [],
   "unique_rule_count": 173,

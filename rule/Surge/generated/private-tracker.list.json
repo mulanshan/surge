@@ -4,7 +4,9 @@
   "output": "rule/Surge/generated/private-tracker.list",
   "description": "Private tracker services that should stay DIRECT for PT connectivity.",
   "suggested_policy": "DIRECT",
-  "suggested_options": [],
+  "suggested_options": [
+    "extended-matching"
+  ],
   "included_rules": [],
   "excluded_rules": [],
   "unique_rule_count": 248,
