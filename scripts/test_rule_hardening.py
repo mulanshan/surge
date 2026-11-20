@@ -864,6 +864,37 @@ class RepositoryInvariantTests(unittest.TestCase):
         )
         self.assertIn("IP-CIDR6,2001:4860::/32,no-resolve", lines)
 
+    def test_bahamut_excludes_unrelated_upstream_domains_and_hbo_includes_asia(self):
+        bahamut_lines = set(
+            (ROOT / "rule/Surge/generated/bahamut.list")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        for excluded in (
+            "DOMAIN-SUFFIX,digicert.com",
+            "DOMAIN-SUFFIX,gvt1.com",
+            "DOMAIN-SUFFIX,hinet.net",
+        ):
+            with self.subTest(excluded=excluded):
+                self.assertNotIn(excluded, bahamut_lines)
+        self.assertIn("DOMAIN-SUFFIX,gamer.com.tw", bahamut_lines)
+
+        hbo_lines = set(
+            (ROOT / "rule/Surge/generated/hbo-usa.list")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        for required in (
+            "DOMAIN,hbolb.onwardsmg.com",
+            "DOMAIN,hbounify-prod.evergent.com",
+            "DOMAIN-SUFFIX,hbogoasia.com",
+            "DOMAIN-SUFFIX,hbogoasia.hk",
+            "DOMAIN-SUFFIX,warnermediacdn.com",
+            "DOMAIN-SUFFIX,wbd.com",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, hbo_lines)
+
     def test_candidate_exporter_session_mode_pages_saved_sessions_with_stdin_auth(self):
         fixture_marker = "synthetic-session-export-marker"
         with tempfile.TemporaryDirectory() as temporary:

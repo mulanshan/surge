@@ -2,12 +2,18 @@
   "id": "bahamut",
   "name": "Bahamut",
   "output": "rule/Surge/generated/bahamut.list",
-  "description": "Bahamut kept separate because the current profile routes it to 流媒体.",
-  "suggested_policy": "流媒体",
-  "suggested_options": [],
+  "description": "Bahamut (巴哈姆特动画疯) Taiwan-exclusive anime streaming routed to hinet, excluding unrelated upstream CA / Google / ISP domains.",
+  "suggested_policy": "hinet",
+  "suggested_options": [
+    "extended-matching"
+  ],
   "included_rules": [],
-  "excluded_rules": [],
-  "unique_rule_count": 8,
+  "excluded_rules": [
+    "DOMAIN-SUFFIX,digicert.com",
+    "DOMAIN-SUFFIX,gvt1.com",
+    "DOMAIN-SUFFIX,hinet.net"
+  ],
+  "unique_rule_count": 5,
   "sources": [
     {
       "name": "blackmatrix7 Bahamut",
@@ -17,7 +23,7 @@
       "expected_sha256": "5c6618ac00734921dae209bb812c1b61cc88523e158b856548153d1d3d8df2fd",
       "license": "GPL-2.0-only",
       "license_url": "https://github.com/blackmatrix7/ios_rule_script/blob/master/LICENSE",
-      "rule_count": 8,
+      "rule_count": 5,
       "tracking_url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Bahamut/Bahamut.list"
     }
   ]

@@ -5,7 +5,9 @@ Release and rollout records for this repository. Runtime audit documents under
 
 ## 2026-11-20
 
-Added `rule/Surge/shopping.list` for regional storefront and payment-gateway routing (`自留地`), added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):
+Added `rule/Surge/web-video.list` for high-bandwidth web video / adult streaming (`us`), expanded HBO / Max Asia coverage (`流媒体`), sanitized and rerouted `bahamut.list` (`hinet`), aligned `extended-matching` across domain rulesets, added `rule/Surge/shopping.list` for regional storefront and payment-gateway routing (`自留地`), added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):
+
+- Added `rule/Surge/web-video.list` (pure `DOMAIN-SUFFIX` coverage for Pornhub + `phncdn.com`/`phprcdn.com`/`ypncdn.com` CDNs, Madou & adult web-video sites, Twitch, Vimeo, Dailymotion, and Kick routed to `us`), expanded `hbo-usa` in `managed-rules.yaml` with HBO/Max Asia/HK & `warnermediacdn.com`/`wbd.com` (`流媒体`), stripped upstream `digicert.com`/`gvt1.com`/`hinet.net` from `bahamut.list` and switched its suggested policy to `hinet`, enabled `extended-matching` uniformly across managed domain rulesets in `rule-section-managed.conf`, and added regression tests in `scripts/test_ai_routing.py` and `scripts/test_rule_hardening.py`.
 
 - Added `rule/Surge/shopping.list` (pure `DOMAIN-SUFFIX` rules for `oyunfor.com`, `paytr.com`, `bkm.com.tr`, and `isbank.com.tr` routed to `自留地`), wired it into `rule/Surge/generated/rule-section-managed.conf` and `README.md`, and added routing + syntax assertions in `scripts/test_ai_routing.py`.
 

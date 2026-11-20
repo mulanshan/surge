@@ -42,9 +42,9 @@ scripts/generate-managed-surge-rules.py --refresh-sources --only microsoft --sou
 | telegram | `telegram.list` | - | `Proxy` | 28 |
 | apple-tv | `apple-tv.list` | - | `流媒体` | 10 |
 | netflix | `netflix.list` | `netflix.domainset` (33) + `netflix.non-domain.list` (1125) | `Netflix` | 1158 |
-| bahamut | `bahamut.list` | - | `流媒体` | 8 |
+| bahamut | `bahamut.list` | - | `hinet` | 5 |
 | disney | `disney.list` | `disney.domainset` (172) + `disney.non-domain.list` (1) | `流媒体` | 173 |
-| hbo-usa | `hbo-usa.list` | - | `流媒体` | 11 |
+| hbo-usa | `hbo-usa.list` | - | `流媒体` | 24 |
 | prime-video | `prime-video.list` | - | `流媒体` | 18 |
 | streaming | `streaming.list` | `streaming.domainset` (258) + `streaming.non-domain.list` (63) | `自动` | 321 |
 | paypal | `paypal.list` | `paypal.domainset` (246) + `paypal.non-domain.list` (2) | `自动` | 248 |

@@ -97,6 +97,45 @@ class AIRoutingTests(unittest.TestCase):
             with self.subTest(host=host):
                 self.assertEqual(template_policy(host), "自留地")
 
+    def test_web_video_list_routes_sites_and_media_cdns_to_us(self):
+        rules = payload(ROOT / "rule/Surge/web-video.list")
+        self.assertTrue(rules)
+        for rule in rules:
+            with self.subTest(rule=rule):
+                self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
+        for host in (
+            "www.pornhub.com",
+            "ev.phncdn.com",
+            "di.phprcdn.com",
+            "madou.club",
+            "www.xvideos.com",
+            "jable.tv",
+            "missav.ws",
+            "www.twitch.tv",
+            "usher.ttvnw.net",
+            "player.vimeo.com",
+        ):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "us")
+
+    def test_hbo_asia_and_bahamut_sanitization_routing(self):
+        for host in (
+            "www.max.com",
+            "play.hbomax.com",
+            "www.hbogoasia.com",
+            "api.hbogoasia.hk",
+            "hbolb.onwardsmg.com",
+            "hbounify-prod.evergent.com",
+            "cdn.warnermediacdn.com",
+        ):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "流媒体")
+        for host in ("ani.gamer.com.tw", "bahamut.akamaized.net"):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "hinet")
+        self.assertNotEqual(template_policy("ocsp.digicert.com"), "hinet")
+        self.assertNotEqual(template_policy("ocsp.digicert.com"), "流媒体")
+
 
 if __name__ == "__main__":
     unittest.main()
