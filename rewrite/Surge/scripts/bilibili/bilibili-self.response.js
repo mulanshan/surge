@@ -588,25 +588,129 @@ function parseFields(bytes) {
   return fields;
 }
 
+function skipVarint(bytes, offset) {
+  let pos = offset;
+  for (let count = 0; count < 10 && pos < bytes.length; count += 1) {
+    const byte = bytes[pos];
+    pos += 1;
+    if ((byte & 0x80) === 0) return pos;
+  }
+  throw new Error("invalid protobuf varint");
+}
+
+function messageHasField(bytes, targetFieldNo) {
+  let matched = false;
+  let pos = 0;
+  while (pos < bytes.length) {
+    const tagInfo = readVarint(bytes, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+    if (wireType === WIRE_VARINT) {
+      pos = skipVarint(bytes, pos);
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(bytes, pos);
+      pos = lenInfo.offset + lenInfo.value;
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
+    }
+    if (pos > bytes.length) throw new Error("truncated protobuf field");
+    if (fieldNo === targetFieldNo) matched = true;
+  }
+  return matched;
+}
+
 function rebuildFields(fields) {
   return concatBytes(fields.map((field) => field.raw));
 }
 
-function isRelateV1Ad(payload) {
-  const fields = parseFields(payload);
-  for (const field of fields) {
-    if (field.fieldNo === RELATE_V1_CM_FIELD && field.wireType === WIRE_LENGTH && field.payload && field.payload.length > 0) {
-      return true;
+function isAsciiGotoAd(bytes, start, end) {
+  if (end - start !== 2) return false;
+  const b0 = bytes[start] | 0x20;
+  const b1 = bytes[start + 1] | 0x20;
+  return (b0 === 0x63 && b1 === 0x6d) || (b0 === 0x61 && b1 === 0x64);
+}
+
+function isRelateV1Ad(payload, startOffset = 0, endOffset = payload.length) {
+  let matched = false;
+  let pos = startOffset;
+  while (pos < endOffset) {
+    const tagInfo = readVarint(payload, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      pos = skipVarint(payload, pos);
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(payload, pos);
+      const startPayload = lenInfo.offset;
+      pos = startPayload + lenInfo.value;
+      if (pos <= endOffset) {
+        if (fieldNo === RELATE_V1_CM_FIELD && lenInfo.value > 0) {
+          matched = true;
+        } else if (fieldNo === RELATE_V1_GOTO_FIELD && isAsciiGotoAd(payload, startPayload, pos)) {
+          matched = true;
+        }
+      }
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
     }
-    if (field.fieldNo === RELATE_V1_GOTO_FIELD && field.wireType === WIRE_LENGTH && field.payload) {
-      const gotoStr = UTF8_DECODER.decode(field.payload).toLowerCase();
-      if (gotoStr === "cm" || gotoStr === "ad") return true;
-    }
+    if (pos > endOffset) throw new Error("truncated protobuf field");
   }
-  return false;
+  return matched;
+}
+
+function hasViewV1AdOrRelateAd(bytes) {
+  let matched = false;
+  let pos = 0;
+  while (pos < bytes.length) {
+    const tagInfo = readVarint(bytes, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      pos = skipVarint(bytes, pos);
+      if (VIEW_V1_AD_FIELDS.has(fieldNo)) matched = true;
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+      if (VIEW_V1_AD_FIELDS.has(fieldNo)) matched = true;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(bytes, pos);
+      const startPayload = lenInfo.offset;
+      pos = startPayload + lenInfo.value;
+      if (pos <= bytes.length) {
+        if (VIEW_V1_AD_FIELDS.has(fieldNo)) {
+          matched = true;
+        } else if (fieldNo === VIEW_V1_RELATES_FIELD && isRelateV1Ad(bytes, startPayload, pos)) {
+          matched = true;
+        }
+      }
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+      if (VIEW_V1_AD_FIELDS.has(fieldNo)) matched = true;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
+    }
+    if (pos > bytes.length) throw new Error("truncated protobuf field");
+  }
+  return matched;
 }
 
 function cleanViewV1Protobuf(bytes) {
+  if (!hasViewV1AdOrRelateAd(bytes)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -628,7 +732,39 @@ function cleanViewV1Protobuf(bytes) {
   return removed > 0 ? { bytes: rebuildFields(out), removed } : null;
 }
 
+function hasRepeatedMessageAd(bytes, itemFieldNo, predicate) {
+  let matched = false;
+  let pos = 0;
+  while (pos < bytes.length) {
+    const tagInfo = readVarint(bytes, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      pos = skipVarint(bytes, pos);
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(bytes, pos);
+      const startPayload = lenInfo.offset;
+      pos = startPayload + lenInfo.value;
+      if (pos <= bytes.length && fieldNo === itemFieldNo && predicate(bytes, startPayload, pos)) {
+        matched = true;
+      }
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
+    }
+    if (pos > bytes.length) throw new Error("truncated protobuf field");
+  }
+  return matched;
+}
+
 function cleanRelatesFeedV1Protobuf(bytes) {
+  if (!hasRepeatedMessageAd(bytes, 1, isRelateV1Ad)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -646,25 +782,46 @@ function cleanRelatesFeedV1Protobuf(bytes) {
   return removed > 0 ? { bytes: rebuildFields(out), removed } : null;
 }
 
-function isRelateCardUniteAd(payload) {
-  const fields = parseFields(payload);
-  for (const field of fields) {
-    if (field.fieldNo === RELATE_CARD_TYPE_FIELD && field.wireType === WIRE_VARINT && field.varintValue === RELATE_CARD_TYPE_CM) {
-      return true;
+function isRelateCardUniteAd(payload, startOffset = 0, endOffset = payload.length) {
+  let matched = false;
+  let pos = startOffset;
+  while (pos < endOffset) {
+    const tagInfo = readVarint(payload, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      const valInfo = readVarint(payload, pos);
+      pos = valInfo.offset;
+      if (fieldNo === RELATE_CARD_TYPE_FIELD && valInfo.value === RELATE_CARD_TYPE_CM) {
+        matched = true;
+      }
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(payload, pos);
+      pos = lenInfo.offset + lenInfo.value;
+      if (
+        pos <= endOffset &&
+        (fieldNo === RELATE_CARD_CM_FIELD || fieldNo === RELATE_CARD_CM_STOCK_FIELD) &&
+        lenInfo.value > 0
+      ) {
+        matched = true;
+      }
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
     }
-    if (
-      (field.fieldNo === RELATE_CARD_CM_FIELD || field.fieldNo === RELATE_CARD_CM_STOCK_FIELD) &&
-      field.wireType === WIRE_LENGTH &&
-      field.payload &&
-      field.payload.length > 0
-    ) {
-      return true;
-    }
+    if (pos > endOffset) throw new Error("truncated protobuf field");
   }
-  return false;
+  return matched;
 }
 
 function cleanCommonRelatesProtobuf(bytes) {
+  if (!hasRepeatedMessageAd(bytes, RELATES_CARDS_FIELD, isRelateCardUniteAd)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -686,6 +843,7 @@ function cleanCommonRelatesProtobuf(bytes) {
 }
 
 function cleanIntroductionModuleProtobuf(bytes) {
+  if (!messageHasField(bytes, MODULE_RELATES_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -712,6 +870,7 @@ function cleanIntroductionModuleProtobuf(bytes) {
 }
 
 function cleanIntroductionTabProtobuf(bytes) {
+  if (!messageHasField(bytes, INTRO_MODULES_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -734,6 +893,7 @@ function cleanIntroductionTabProtobuf(bytes) {
 }
 
 function cleanTabModuleProtobuf(bytes) {
+  if (!messageHasField(bytes, TAB_INTRODUCTION_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -754,6 +914,7 @@ function cleanTabModuleProtobuf(bytes) {
 }
 
 function cleanViewUniteTabProtobuf(bytes) {
+  if (!messageHasField(bytes, TAB_MODULE_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -774,6 +935,9 @@ function cleanViewUniteTabProtobuf(bytes) {
 }
 
 function cleanViewUniteProtobuf(bytes) {
+  if (!messageHasField(bytes, VIEWUNITE_CM_FIELD) && !messageHasField(bytes, VIEWUNITE_TAB_FIELD)) {
+    return null;
+  }
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -798,6 +962,7 @@ function cleanViewUniteProtobuf(bytes) {
 }
 
 function cleanRelatesFeedUniteProtobuf(bytes) {
+  if (!hasRepeatedMessageAd(bytes, 1, isRelateCardUniteAd)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -816,6 +981,7 @@ function cleanRelatesFeedUniteProtobuf(bytes) {
 }
 
 function cleanReplyMainProtobuf(bytes) {
+  if (!messageHasField(bytes, REPLY_MAIN_CM_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -832,21 +998,42 @@ function cleanReplyMainProtobuf(bytes) {
   return removed > 0 ? { bytes: rebuildFields(out), removed } : null;
 }
 
-function isDynamicAdItem(payload) {
-  const fields = parseFields(payload);
-  for (const field of fields) {
-    if (
-      (field.fieldNo === DYN_ITEM_CARD_TYPE_FIELD || field.fieldNo === DYN_ITEM_ITEM_TYPE_FIELD) &&
-      field.wireType === WIRE_VARINT &&
-      field.varintValue === DYNAMIC_TYPE_AD
-    ) {
-      return true;
+function isDynamicAdItem(payload, startOffset = 0, endOffset = payload.length) {
+  let matched = false;
+  let pos = startOffset;
+  while (pos < endOffset) {
+    const tagInfo = readVarint(payload, pos);
+    pos = tagInfo.offset;
+    const wireType = tagInfo.value & 7;
+    const fieldNo = Math.floor(tagInfo.value / 8);
+    if (fieldNo <= 0) throw new Error("invalid protobuf field number");
+
+    if (wireType === WIRE_VARINT) {
+      const valInfo = readVarint(payload, pos);
+      pos = valInfo.offset;
+      if (
+        (fieldNo === DYN_ITEM_CARD_TYPE_FIELD || fieldNo === DYN_ITEM_ITEM_TYPE_FIELD) &&
+        valInfo.value === DYNAMIC_TYPE_AD
+      ) {
+        matched = true;
+      }
+    } else if (wireType === WIRE_64BIT) {
+      pos += 8;
+    } else if (wireType === WIRE_LENGTH) {
+      const lenInfo = readVarint(payload, pos);
+      pos = lenInfo.offset + lenInfo.value;
+    } else if (wireType === WIRE_32BIT) {
+      pos += 4;
+    } else {
+      throw new Error(`unsupported wire type ${wireType}`);
     }
+    if (pos > endOffset) throw new Error("truncated protobuf field");
   }
-  return false;
+  return matched;
 }
 
 function cleanDynamicListProtobuf(bytes) {
+  if (!hasRepeatedMessageAd(bytes, DYN_LIST_ITEMS_FIELD, isDynamicAdItem)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;
@@ -865,6 +1052,7 @@ function cleanDynamicListProtobuf(bytes) {
 }
 
 function cleanDynamicAllProtobuf(bytes) {
+  if (!messageHasField(bytes, DYN_ALL_LIST_FIELD)) return null;
   const fields = parseFields(bytes);
   const out = [];
   let removed = 0;

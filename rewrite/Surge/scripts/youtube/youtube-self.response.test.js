@@ -140,6 +140,30 @@ cleanItem.set(new TextEncoder().encode("ordinary-feed-item"));
 }
 
 {
+  // Continuation / multi-shelf browse responses where 1 ItemSectionRenderer holds
+  // 1 strongly corroborated sponsored card (ad_ui + Sponsor badge) while >=50% of
+  // the surrounding browse envelope (shelves, tabs, continuation tokens) remains
+  // intact must strip the ad section without triggering browse-schema-safety.
+  const corroboratedAdCard = new Uint8Array(512);
+  corroboratedAdCard.set(
+    new TextEncoder().encode("inline_injection_entrypoint_layout.eml ad_badge.eml-fe 赞助商广告 观看"),
+  );
+  const singleAdItemSection = encodeLengthField(50195462, encodeLengthField(1, corroboratedAdCard));
+  const intactEnvelope = concatBytes(
+    encodeLengthField(1, new Uint8Array(1200).fill(0x78)),
+    encodeLengthField(9, concatBytes(encodeLengthField(2, new Uint8Array(1000).fill(0x79)), singleAdItemSection)),
+  );
+  const result = execute(intactEnvelope, "browse");
+  assertNoLogs(result, "single corroborated ad section inside intact browse envelope");
+  assert.ok(result.output && result.output.body instanceof Uint8Array);
+  assert.equal(
+    result.output.body.length,
+    intactEnvelope.length - singleAdItemSection.length,
+    "empty ad-only ItemSectionRenderer must be removed cleanly while preserving envelope",
+  );
+}
+
+{
   const mixedSection = encodeLengthField(
     50195462,
     concatBytes(encodeLengthField(1, adItem), encodeLengthField(1, cleanItem)),
