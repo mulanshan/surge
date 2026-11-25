@@ -208,3 +208,30 @@ the same pull request as the release notes.
   - Surge iOS `dump summary` and logs recorded `0` module/configuration warnings
     (memory steady at `31.7 MB`), and all six temporary candidate modules were
     disabled and removed after verification.
+## Live-device evidence for surge-self-v2026.11.25
+
+- Registered payload commit: `b3f1b90605e6d187cd403b94a34b2f703edf0628`.
+- Device and runtime: iPhone running iOS `27.2.1 (24B156)` with
+  `Surge iOS 6.0.1 (4037)` (`Core 6012000`, Controller Protocol `45`), exercised
+  between `2026-11-25 17:38 +08:00` and `2026-11-25 17:40 +08:00`; Surge Mac
+  (`6.12.0`, `Core 6012000`) remained free of script-backed candidate modules
+  throughout.
+- Readiness, rule matching, and script integrity: verified all nine immutable
+  `https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.25/...`
+  script URLs returned HTTP `200` with exact manifest SHA-256 digests and all
+  `44/44` iOS external resources reported `ready=1` (`0` load errors).
+- Exercised release change surface and result (`passed`):
+  - Verified live `rule match` on iOS for `httpdns.bilivideo.com` -> `REJECT`,
+    `mcdn.bilivideo.cn` -> `REJECT`, `szbdyd.com` -> `REJECT`, and
+    `youtubei.googleapis.com` -> `us` (`google.domainset`).
+  - Executed the tagged `.11.25` scripts directly inside the on-device
+    `Surge iOS 6.0.1` JavaScriptCore engine (`17:40:04 +08:00`) with zero
+    exceptions: `youtube.self.response` stripped a single-card corroborated
+    (`ad_ui` + `赞助商广告`) `ItemSectionRenderer` inside an intact `browse`
+    envelope (`2731 -> 2209` bytes) in `4 ms` with zero false-positive
+    `browse-schema-safety` aborts while preserving bare-section safety guards;
+    `bilibili.self.response` traversed an ad-free `1,442,458`-byte (`1.44 MB`)
+    uncompressed `ViewUnite` gRPC payload via zero-allocation wire cursors in
+    `2 ms` and cleanly stripped commercial `cm` / `RelateCard` entries.
+  - Surge iOS `file` and `memory` logs recorded `0` script/module errors across
+    the validation window (memory steady at `24.7 MB`).
