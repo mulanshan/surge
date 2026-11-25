@@ -423,8 +423,32 @@ assert.doesNotMatch(moduleText, /^#!name=.*self/im);
 assert.match(moduleText, /#!requirement=CORE_VERSION>=20 && SYSTEM = 'iOS'/);
 assert.match(
   moduleText,
-  /#!arguments=清理明确广告:true,隐藏底栏会员购:false,PCDN节点策略:DIRECT,启用调试模式:false/,
+  /#!arguments=清理明确广告:true,隐藏底栏会员购:false,PCDN节点策略:REJECT,启用调试模式:false/,
 );
+
+// 11. Large (>1 MB) ad-free ViewUnite & Reply/MainList zero-allocation cursor fast-path (< 50 ms)
+{
+  const heavyBlob = new Uint8Array(65536).fill(0x62);
+  const nonRelateModules = Array.from({ length: 16 }, (_, idx) =>
+    fBytes(2, concatBytes([fVarint(1, idx + 1), fBytes(3, heavyBlob)])),
+  );
+  const organicCards = Array.from({ length: 48 }, (_, idx) =>
+    fBytes(1, concatBytes([fVarint(1, 1), fBytes(2, heavyBlob.subarray(0, 8192)), fVarint(9, idx)])),
+  );
+  const relatesMod = fBytes(2, fBytes(22, concatBytes(organicCards)));
+  const introTab = fBytes(2, concatBytes([...nonRelateModules, relatesMod]));
+  const viewUniteClean = wrapGrpc(fBytes(5, fBytes(1, introTab)));
+  assert.ok(viewUniteClean.length > 1024 * 1024, "synthetic ViewUnite payload must exceed 1 MB");
+
+  const t0 = Date.now();
+  const vuRes = execute(
+    "https://grpc.biliapi.net/bilibili.app.viewunite.v1.View/View",
+    viewUniteClean,
+  );
+  const dt = Date.now() - t0;
+  assert.deepEqual(vuRes.output, {});
+  assert.ok(dt < 50, `clean >1MB ViewUnite fast-path took ${dt}ms (expected < 50ms)`);
+}
 assert.match(moduleText, /binary-body-mode=1/);
 assert.match(moduleText, /max-size=6291456/);
 assert.ok(

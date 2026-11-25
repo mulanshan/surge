@@ -351,3 +351,11 @@ iPhone and iPad upgraded to Surge 6:
   with TLS verification and runtime `X-Key` lookup, exposing 72 native Surge MCP
   tools while keeping `http-api-mcp` disabled on LAN-bound `DMIT.conf` and
   `DMIT-ATV.conf`.
+- **Surge 6 profile hygiene (2026-11-25)**: All three `[General]` shells use
+  Surge 6's `block-quic = per-policy` (`auto` remains accepted as a cross-version
+  alias), `DMIT.conf` and `DMIT-ATV.conf` keep `allow-wifi-access = false`
+  (Ponte uses `:6208` independently; redeploy `DMIT-ATV.conf` from Surge iOS to
+  persist `[General]` changes on tvOS), shared rules live exclusively in
+  `DMIT-Common.dconf` rather than outer shell `[Rule]` sections, and `DOMAIN-SET`
+  lines specify `update-interval=86400` so tvOS/iOS refresh `.domainset` payloads
+  daily alongside `RULE-SET` lists.

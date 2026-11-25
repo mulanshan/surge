@@ -30,7 +30,7 @@ Reviewed public architectural discussions and Surge module conventions across `B
 - Single response script: `rewrite/Surge/scripts/bilibili/bilibili-self.response.js` (`binary-body-mode=1`, `max-size=6291456`).
 - Network and header rules:
   - `DOMAIN,httpdns.bilivideo.com,REJECT` to prevent HTTPDNS MITM bypass without whole-domain blocking `bilibili.com`, `biliapi.net`, `bilivideo.com`, or `cm.bilibili.com`.
-  - Optional PCDN policy parameter (`PCDN节点策略`, default `DIRECT`; user-selectable `REJECT`) scoped to `mcdn.bilivideo.cn` and `szbdyd.com`.
+  - Optional PCDN policy parameter (`PCDN节点策略`, default `REJECT`; user-selectable `DIRECT`) scoped to `mcdn.bilivideo.cn` and `szbdyd.com` to prevent P2P UDP NAT session exhaustion on iOS/iPadOS.
   - `[Header Rewrite]` removes `grpc-accept-encoding` **only** on the six whitelisted gRPC RPC paths handled by the script, preserving gzip compression on danmaku (`DmSegMobile`) and playback endpoints.
 - Strict double allowlist (host + exact pathname, then explicit commercial field/enum markers):
   - **JSON**:

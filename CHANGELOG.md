@@ -3,6 +3,14 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-25
+
+Registered candidate bundle `surge-self-v2026.11.25` after a four-device Surge 6 runtime and log audit (Mac `6.12.0 (12900)`, iPhone & iPad `6.0.1 (4037)`, Apple TV `6.0.1 (4039)`), fixing YouTube single-card continuation ad false-positive aborts, adding zero-allocation gRPC cursor fast-paths and default `PCDN节点策略:REJECT` to Bilibili, and aligning `rule-section-managed.conf` and `local-surge-control` notes:
+
+- `YouTube` (`youtube-self`): allowed `cleanFeedSurfaceProtobuf` to strip 1–2 item `ItemSectionRenderer` sponsored blocks inside intact `browse`/`next` envelopes (`ratio >= 0.5`) when corroborated by both explicit `ad_ui` and sponsor-badge/ad-network byte markers, eliminating false-positive `browse-schema-safety` aborts observed on iOS (`sections=1 items=1 removed=1 remaining=0 ratio=0.808`) while dropping empty ad-only `ItemSectionRenderer` shells and preserving bare-payload over-removal guards.
+- `哔哩哔哩` (`bilibili-self`): replaced recursive `parseFields()` allocations in `isRelateCardUniteAd`, `isRelateV1Ad`, `isDynamicAdItem`, and non-matching `ViewUnite`/`Reply`/`Dynamic` subtrees with zero-allocation wire-cursor fast-paths to eliminate 0.5–2.1 s JSC GC spikes on >1 MB uncompressed gRPC payloads, and switched `#!arguments` default `PCDN节点策略` from `DIRECT` to `REJECT` (`mcdn.bilivideo.cn`, `szbdyd.com`) to prevent `[SGUDPForwarder] UDP NAT context reached limit: 300` bursts on iOS.
+- Aligned `rule/Surge/generated/rule-section-managed.conf` with active `DMIT-Common.dconf` (`douban.list -> hinet` and `,no-resolve` across residual `.non-domain.list` / `apple-*` / `telegram` rulesets), added a Douban routing assertion in `scripts/test_ai_routing.py`, and updated `local-surge-control` docs for `block-quic = per-policy`, `DOMAIN-SET` `update-interval=86400`, and `DMIT-ATV.conf` `allow-wifi-access = false`.
+
 ## 2026-11-20
 
 Added `rule/Surge/web-video.list` for high-bandwidth web video / adult streaming (`us`), expanded HBO / Max Asia coverage (`流媒体`), sanitized and rerouted `bahamut.list` (`hinet`), aligned `extended-matching` across domain rulesets, added `rule/Surge/shopping.list` for regional storefront and payment-gateway routing (`自留地`), added Google IPv6 prefix coverage (`2001:4860::/32`), aligned `google` managed-rule policy metadata to `us`, recorded Surge 6 unified Core `6012000` / Controller Protocol `45` baselines (Mac `6.12.0 (12900)`, tvOS `6.0.1 (4039)`, and iOS/iPadOS 6), and bumped pinned GitHub Actions (`setup-python` & `setup-node` `v7.1.0`):

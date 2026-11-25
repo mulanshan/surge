@@ -1198,6 +1198,10 @@ function cleanKnownFeedItemSections(bytes, depth, counters) {
     }
 
     if (payload !== field.payload) {
+      if (field.fieldNo === ITEM_SECTION_RENDERER_FIELD && payload.length === 0) {
+        changed = true;
+        continue;
+      }
       out.push({ raw: encodeLengthField(field.fieldNo, payload) });
       changed = true;
     } else {
@@ -1226,8 +1230,15 @@ function cleanFeedSurfaceProtobuf(bytes, surface = "browse") {
 
   const ratio = output.length / Math.max(bytes.length, 1);
   const remainingItems = counters.items - counters.removed;
+  const singleSectionAdInIntactEnvelope =
+    remainingItems === 0 &&
+    counters.items <= 2 &&
+    ratio >= 0.5 &&
+    bytesContainsAnySubsequence(bytes, FEED_AD_UI_MARKER_BYTES) &&
+    (bytesContainsAnySubsequence(bytes, FEED_AD_BADGE_TEXT_MARKER_BYTES) ||
+      bytesContainsAnySubsequence(bytes, FEED_AD_NETWORK_MARKER_BYTES));
   const tooManyItemsRemoved =
-    remainingItems <= 0 ||
+    (!singleSectionAdInIntactEnvelope && remainingItems <= 0) ||
     counters.removed > Math.max(4, Math.floor(counters.items / 2));
   if (tooManyItemsRemoved) {
     const hits = markerHits(bytes);
