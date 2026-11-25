@@ -6,7 +6,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 | Module | Channel | Last live evidence | Required companion | Scope note |
 | --- | --- | --- | --- | --- |
-| YouTube | stable | 2026-11-13, `.11.13.2` zero-decode protobuf feed scan, Shorts ad stripping & bottom-bar switches on iOS 5.23.0 | none | Playback & Shorts ads, feed cards, optional bottom-bar switches, background playback and PiP |
+| YouTube | stable | 2026-11-25, `.11.25` single-section corroborated ad fix, zero-decode feed scan & Shorts ad stripping on iOS 6.0.1 | none | Playback & Shorts ads, feed cards, optional bottom-bar switches, background playback and PiP |
 | Instagram | limited | 2026-07-13, native HTTPS fallback and netseer rejection | none | Web endpoints only; pinned native API stays outside MITM |
 | 高德地图 | stable | 2026-11-13, `.11.13.2` iOS 5.23.0 UA-scoped HTTPDNS rule, `m6` coverage & `afootprint` switch | 基础去广告模块 recommended | Conservative first-party response cleanup + optional nearby promo switch |
 | 扫描全能王 | stable | 2026-11-13, `.11.13.2` iOS 5.23.0 `get_startpic` & `intsig` dual-host validation | 基础去广告模块 required | First-party splash, operations and ad containers; purchase/VIP untouched |
@@ -14,7 +14,7 @@ scripts used by a stable module are pinned to an immutable repository tag.
 | 微信 | limited | 2026-11-13, `.11.13.1` iOS 5.23.0 Mini-Program, Official Account article + `wxa`/`badjs` rules, and MMTLS boundary pass | 基础去广告模块 recommended | Official-account ads, CPS product cards, optional bottom feed, and exact mini-program/telemetry hosts; native MMTLS feeds excluded |
 | 小红书 | stable | 2026-11-13, `.11.13.2` iOS 5.23.0 `ads/resource` envelope-preserving cleanup & `ads-img-al` CDN rule | none | Explicit structured ads only; save/watermark and search UI excluded |
 | 微博 | stable | 2026-11-13, `.11.13.2` iOS 5.23.0 HTTPDNS block, `actionad.php` & sub-comment ad filter | none | Endpoint/container allowlists; account, membership, messages and wallet excluded |
-| 哔哩哔哩 | stable | 2026-11-13, `.11.13` Bilibili 9.19.0 on iOS 5.23.0 live HTTP/2 JSON + gRPC validation and canonical cloud promotion | none | Dual JSON + unary gRPC ad cleanup; optional bottom Mall tab & PCDN switches; account/VIP/pay excluded |
+| 哔哩哔哩 | stable | 2026-11-25, `.11.25` zero-allocation gRPC wire-cursor fast-path (`2 ms` on `1.44 MB` `ViewUnite`) & default PCDN `REJECT` on iOS 6.0.1 | none | Dual JSON + unary gRPC ad cleanup; optional bottom Mall tab & PCDN switches; account/VIP/pay excluded |
 | 基础去广告模块 | stable | 2026-11-13 Mac/iOS traffic-stat & rule-match review (119 rules) | none | Domain rules only; no script or MITM |
 
 ## Status meanings
@@ -27,23 +27,24 @@ scripts used by a stable module are pinned to an immutable repository tag.
 
 ## Current distribution and validated baseline
 
-- Active distribution: `surge-self-v2026.11.13.2`. Its manifest records
+- Active distribution: `surge-self-v2026.11.25`. Its manifest records
   `live_device_validation: passed` and `rollback_eligible: false` (active bundles
   are never rollback targets against themselves).
-- Previous distributions: `surge-self-v2026.11.13.1` (`inactive`, nine-script
+- Previous distributions: `surge-self-v2026.11.13.2` (`inactive`, nine-script
+  bundle), `surge-self-v2026.11.13.1` (`inactive`, nine-script
   bundle), `surge-self-v2026.11.13` (`inactive`, nine-script bundle),
   `surge-self-v2026.11.11` (`inactive`, eight-script bundle), and
   `surge-self-v2026.07.13.4` (`inactive`, `rollback_eligible: false` —
   certification provenance is retained below).
-- Supported runtime used for the `.11.13.2` validation:
-  - Surge Mac 6.9.1 (12290)
-  - Surge iOS 5.23.0 (3867)
+- Supported runtime used for the `.11.25` validation:
+  - Surge Mac 6.12.0 (12900)
+  - Surge iOS 6.0.1 (4037)
 - All nine script-backed public module install URLs live directly under
   `rewrite/Surge/` on `main` (`youtube-self.sgmodule`, `instagram-self.sgmodule`,
   `amap-self.sgmodule`, `camscanner-self.sgmodule`, `jd-self.sgmodule`,
   `wechat-self.sgmodule`, `xiaohongshu-self.sgmodule`, `weibo-self.sgmodule`,
   `bilibili-self.sgmodule`) and pin `script-path` to immutable tag
-  `surge-self-v2026.11.13.2` (`?v=20261113-3`).
+  `surge-self-v2026.11.25` (`?v=20261125-1`).
 - `rewrite/Surge/candidates/` has been emptied after promoting Bilibili to its
   canonical `main` cloud module path.
 

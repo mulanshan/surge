@@ -2,11 +2,12 @@
   "schema_version": 2,
   "tag": "surge-self-v2026.11.13.2",
   "integrity": "intact",
-  "distribution": "active",
+  "distribution": "inactive",
   "live_device_validation": "passed",
   "rollback_eligible": false,
   "release_commit": "3dd01c6de4fef056adfef84cbcd61d4a0652567d",
   "supersedes": "surge-self-v2026.11.13.1",
+  "superseded_by": "surge-self-v2026.11.25",
   "scripts": [
     {
       "name": "YouTube",
