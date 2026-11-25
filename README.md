@@ -52,7 +52,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/youtube-sel
 - 支持 `reel/reel_watch_sequence` Shorts 插播广告剥离与可选底栏入口精简开关（`隐藏上传按钮`、`隐藏Shorts入口`、`隐藏选段入口`，默认均关闭），信息流按零 UTF-8 解码原始字节扫描
 - 保留 googlevideo 初始化广告与广告统计 Map Local 拦截
 
-已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.13.2`，query 版本为 `v=20261113-3`。
+已安装当前订阅的设备只需在 Surge 中更新模块，旧显示名 `YouTube Self` 会变为 `YouTube`；新设备使用上面的固定地址安装一次。其他旧模块，如 `Youtube (Music) Enhance`、`YouTube Self Fast`、`YouTube Self iOS`、`YouTube Self Local`、`YouTube Safe Lite`、`YouTube Readable Enhance`、本地候选模块和抓包/调试模块应停用并移除。更新后确认脚本来自当前已通过真机验证的正式分发 tag `surge-self-v2026.11.25`，query 版本为 `v=20261125-1`。
 
 能力边界（SSAP）：YouTube 自 2024 年起试验并逐步扩大服务端广告注入（SSAI，社区称 SSAP），把广告直接拼进视频流。本模块与所有 protobuf 改写路线一样，只能拦截客户端插入的广告；命中 SSAP 实验的账号或设备会出现"模块开着但仍有广告"，这是预期行为而非模块故障。
 
@@ -256,7 +256,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/jd-self.sgm
 https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/wechat-self.sgmodule
 ```
 
-这是自有可审计的微信去广告模块（固定到 `surge-self-v2026.11.13.2`）：
+这是自有可审计的微信去广告模块（固定到 `surge-self-v2026.11.25`）：
 
 - 清理公众号文章 `/mp/getappmsgad` 与 `/mp/getappmsgext` 返回中的明确广告/推广字段，完整保留阅读数、点赞、合集与赞赏头像
 - 对公众号商品推广接口 `/mp/cps_product_info` 进行受控空列表清理（支持 `清理明确广告` 开关）
@@ -287,7 +287,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/xiaohongshu
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的小红书正式云端去广告模块：
 
 - 模块：`rewrite/Surge/xiaohongshu-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
+- 脚本：`rewrite/Surge/scripts/xiaohongshu/xiaohongshu-self.response.js`（固定到 `surge-self-v2026.11.25`）
 - 调研与安全边界：[docs/XIAOHONGSHU_SELF_RESEARCH.md](docs/XIAOHONGSHU_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -310,7 +310,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/weibo-self.
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的微博正式云端去广告模块：
 
 - 模块：`rewrite/Surge/weibo-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
+- 脚本：`rewrite/Surge/scripts/weibo/weibo-self.response.js`（固定到 `surge-self-v2026.11.25`）
 - 调研与安全边界：[docs/WEIBO_SELF_RESEARCH.md](docs/WEIBO_SELF_RESEARCH.md)
 
 当前范围与安全边界：
@@ -333,7 +333,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/bilibili-se
 这是按“自有单模块 + 单响应脚本 + 不可变发布”维护的哔哩哔哩正式云端去广告模块：
 
 - 模块：`rewrite/Surge/bilibili-self.sgmodule`
-- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.13.2`）
+- 脚本：`rewrite/Surge/scripts/bilibili/bilibili-self.response.js`（固定到 `surge-self-v2026.11.25`）
 - 调研与安全边界：[docs/BILIBILI_SELF_RESEARCH.md](docs/BILIBILI_SELF_RESEARCH.md)
 
 当前范围与安全边界：

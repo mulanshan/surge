@@ -17,7 +17,7 @@ DOMAIN,adashx.ut.amap.com,REJECT
 AND,((DOMAIN,amdc.m.taobao.com), (USER-AGENT,AMap*)),{{{高德HTTPDNS策略}}}
 
 [Script]
-amap.self.response = type=http-response,pattern=^https?:\/\/(?:m5|m5-zb|m5-x|m6)\.amap\.com\/+ws\/(?:(?:valueadded|aos)\/alimama\/splash_screen(?:_rt)?|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword|shield\/frogserver\/afootprint)(?:\?.*)?$,requires-body=1,max-size=2097152,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.13.2/rewrite/Surge/scripts/amap/amap-self.response.js?v=20261113-3,argument="{\"cleanAds\":{{{清理明确广告}}},\"cleanNearbyPromotions\":{{{精简周边与出行推广}}},\"debug\":{{{启用调试模式}}}}"
+amap.self.response = type=http-response,pattern=^https?:\/\/(?:m5|m5-zb|m5-x|m6)\.amap\.com\/+ws\/(?:(?:valueadded|aos)\/alimama\/splash_screen(?:_rt)?|msgbox\/pull|message\/notice\/list|faas\/amap-navigation\/main-page|shield\/dsp\/profile\/index\/nodefaas|shield\/search\/new_hotword|shield\/frogserver\/afootprint)(?:\?.*)?$,requires-body=1,max-size=2097152,debug={{{启用调试模式}}},script-path=https://raw.githubusercontent.com/mulanshan/surge/surge-self-v2026.11.25/rewrite/Surge/scripts/amap/amap-self.response.js?v=20261125-1,argument="{\"cleanAds\":{{{清理明确广告}}},\"cleanNearbyPromotions\":{{{精简周边与出行推广}}},\"debug\":{{{启用调试模式}}}}"
 
 [Map Local]
 # 明显广告/归因接口，返回空对象或空响应即可；避免对天气、导航、搜索主业务做整接口拦截。
