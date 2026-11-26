@@ -3,6 +3,14 @@
 Release and rollout records for this repository. Runtime audit documents under
 `docs/` are frozen point-in-time snapshots; ongoing change history lives here.
 
+## 2026-11-26
+
+Aligned cookie-bearing routes with the live mulanshan sing-box gateway after a Mac / iOS / tvOS + sing-box exit audit (exit endpoints compared by hash: Surge `us` == `[DMIT] dmit-us`, `ECS国际` == `[ECS] ECS国际`, `hinet` == `[HiNet] tw-hinet`):
+
+- Added `DOMAIN-SUFFIX,ig.me` to `rule/Surge/social.list` so the Instagram short-link host follows `us`, matching sing-box `X-Ins-Fixed` (it previously fell through to `FINAL` -> `HK`).
+- Removed the cookieless image CDN `doubanio.com` from `rule/Surge/douban.list`; it now falls through to `china-direct` (`DIRECT`) exactly like sing-box, while `douban.com` / `douban.fm` keep the shared HiNet cookie-sync exit.
+- Added `test_cookie_sync_hosts_match_mulanshan_sing_box_exits` to `scripts/test_ai_routing.py` and documented the cross-gateway contract in `README.md`.
+
 ## 2026-11-25
 
 Activated canonical bundle `surge-self-v2026.11.25` across all nine cloud modules (`?v=20261125-1`) after passed Surge iOS 6.0.1 live-device validation (`docs/MODULE_STATUS.md#live-device-evidence-for-surge-self-v20261125`) and a four-device Surge 6 runtime and log audit (Mac `6.12.0 (12900)`, iPhone & iPad `6.0.1 (4037)`, Apple TV `6.0.1 (4039)`), fixing YouTube single-card continuation ad false-positive aborts, adding zero-allocation gRPC cursor fast-paths and default `PCDN节点策略:REJECT` to Bilibili, and aligning `rule-section-managed.conf` and `local-surge-control` notes:

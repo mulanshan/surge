@@ -413,7 +413,7 @@ AI 规则按三层保存：
 RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/social.list,us,extended-matching,no-resolve
 ```
 
-覆盖 Meta 家族（`meta.com`、Facebook、Instagram、Threads、WhatsApp、Oculus）、X / Twitter、Reddit 与 Discord 的精确官方域名后缀（统一走 `us`，不含 `DOMAIN-KEYWORD` 子串扫描，避免误伤国内或第三方混合域名）。Meta 账号统一认证入口（`auth.meta.com`、`accountscenter.meta.com`）同时保留在上方 `ai.list` 中，确保 Meta AI 登录链路不断裂。
+覆盖 Meta 家族（`meta.com`、Facebook、Instagram 及短链 `ig.me`、Threads、WhatsApp、Oculus）、X / Twitter、Reddit 与 Discord 的精确官方域名后缀（统一走 `us`，不含 `DOMAIN-KEYWORD` 子串扫描，避免误伤国内或第三方混合域名）。其中 X / Instagram 全部域名与 mulanshan sing-box 网关的 `X-Ins-Fixed` → `[DMIT] dmit-us` 是同一台出口（Surge 的 `us` 即 `dmit-us`），保证浏览器经 CookieCloud 同步到服务器的登录态 IP 一致。Meta 账号统一认证入口（`auth.meta.com`、`accountscenter.meta.com`）同时保留在上方 `ai.list` 中，确保 Meta AI 登录链路不断裂。
 
 ### 海外网页视频
 
@@ -464,10 +464,10 @@ Resolve 版。当前主配置没有引用完整 Amazon 规则，只保留更细�
 文件：[rule/Surge/douban.list](rule/Surge/douban.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douban.list,Proxy,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douban.list,hinet,extended-matching,no-resolve
 ```
 
-覆盖豆瓣网页、移动网页、App/API 和常见图片静态资源域名。
+覆盖豆瓣网页、移动网页、App/API 与 `douban.fm` 这些带登录 Cookie 的域名。当前活跃配置与 mulanshan sing-box 网关（`Douban-Selector` → `HiNet-Cookie-Sync`）统一走同一台台湾 HiNet 出口，避免浏览器与 CookieCloud 同步到服务器的 Cookie 因出口 IP 不同而失效。不带 Cookie 的图片 CDN `doubanio.com` 不在此列表中，会落到 `china-direct` 直连（与 sing-box 一致），不占用 HiNet 带宽。
 
 ### TMDb
 
