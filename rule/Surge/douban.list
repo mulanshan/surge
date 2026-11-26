@@ -1,11 +1,14 @@
-# Douban / 豆瓣
+# Douban / 豆瓣 (cookie-bearing web, mobile web and App/API hosts only)
 #
 # Covers:
 # - Desktop web: www.douban.com, movie.douban.com, book.douban.com, music.douban.com
 # - Mobile web: m.douban.com
 # - App/API paths under douban.com, including Frodo app entry
-# - Image/static resources commonly served from doubanio.com
+# - douban.fm
+#
+# The cookieless image CDN doubanio.com is intentionally NOT listed here: it
+# falls through to china-direct (DIRECT), matching the mulanshan sing-box
+# gateway, so image traffic does not consume the cookie-sync exit bandwidth.
 
 DOMAIN-SUFFIX,douban.com
-DOMAIN-SUFFIX,doubanio.com
 DOMAIN-SUFFIX,douban.fm

@@ -136,6 +136,17 @@ class AIRoutingTests(unittest.TestCase):
         self.assertNotEqual(template_policy("ocsp.digicert.com"), "hinet")
         self.assertNotEqual(template_policy("ocsp.digicert.com"), "流媒体")
 
+    def test_cookie_sync_hosts_match_mulanshan_sing_box_exits(self):
+        # Cookie-bearing hosts must leave through the same exit as the
+        # mulanshan sing-box gateway (X-Ins-Fixed -> dmit-us == Surge `us`).
+        for host in ("x.com", "pbs.twimg.com", "t.co", "www.instagram.com", "ig.me", "scontent.cdninstagram.com"):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "us")
+        # The cookieless douban image CDN stays DIRECT on both gateways.
+        douban_rules = payload(ROOT / "rule/Surge/douban.list")
+        self.assertFalse(any(matches(rule, "img1.doubanio.com") for rule in douban_rules))
+        self.assertEqual(template_policy("img1.doubanio.com"), "DIRECT")
+
 
 if __name__ == "__main__":
     unittest.main()
