@@ -62,7 +62,7 @@ class AIRoutingTests(unittest.TestCase):
             "copilot.microsoft.com", "api.githubcopilot.com", "copilot-proxy.githubusercontent.com",
             "gemini.google.com", "generativelanguage.googleapis.com", "notebooklm-pa.googleapis.com",
             "cloudaicompanion.googleapis.com", "cursor.com", "api.openrouter.ai", "api.groq.com",
-            "manus.im", "midjourney.com", "api.elevenlabs.io", "api.deepseek.com", "chat.qwen.ai",
+            "manus.im", "midjourney.com", "api.elevenlabs.io", "chat.qwen.ai",
             "kimi.com", "doubao.com", "open.bigmodel.cn", "yuanbao.tencent.com",
         ):
             with self.subTest(host=host):
@@ -70,9 +70,16 @@ class AIRoutingTests(unittest.TestCase):
 
     def test_expanded_ai_list_does_not_claim_whole_vendors_or_ai_tld(self):
         rules = payload(ROOT / "rule/Surge/ai.list")
-        for host in ("google.com", "mail.google.com", "microsoft.com", "login.microsoftonline.com", "github.com", "ordinary.ai", "notmuse.ai"):
+        for host in (
+            "google.com", "mail.google.com", "microsoft.com", "login.microsoftonline.com",
+            "github.com", "ordinary.ai", "notmuse.ai",
+            "deepseek.com", "api.deepseek.com", "chat.deepseek.com", "deepseeksvc.com",
+        ):
             with self.subTest(host=host):
                 self.assertFalse(any(matches(rule, host) for rule in rules))
+        for host in ("deepseek.com", "api.deepseek.com", "chat.deepseek.com", "deepseeksvc.com"):
+            with self.subTest(host=host):
+                self.assertIsNone(template_policy(host))
 
     def test_social_list_uses_exact_suffixes_without_keyword_rules(self):
         rules = payload(ROOT / "rule/Surge/social.list")

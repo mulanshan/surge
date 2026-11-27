@@ -176,10 +176,8 @@ DOMAIN-SUFFIX,minimax.io
 DOMAIN-SUFFIX,klingai.com
 DOMAIN-SUFFIX,kling-ai.com
 
-# Chinese AI services also use us in the personal all-AI policy.
+# Chinese AI services also use us in the personal all-AI policy (DeepSeek is omitted to stay DIRECT).
 # Limit cloud-vendor matches to their AI products.
-DOMAIN-SUFFIX,deepseek.com
-DOMAIN-SUFFIX,deepseeksvc.com
 DOMAIN-SUFFIX,qwen.ai
 DOMAIN-SUFFIX,qwenlm.ai
 DOMAIN-SUFFIX,qianwen.com
