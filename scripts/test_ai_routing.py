@@ -130,9 +130,15 @@ class AIRoutingTests(unittest.TestCase):
         ):
             with self.subTest(host=host):
                 self.assertEqual(template_policy(host), "流媒体")
-        for host in ("ani.gamer.com.tw", "bahamut.akamaized.net", "www.douban.com", "movie.douban.com"):
+        for host in ("ani.gamer.com.tw", "bahamut.akamaized.net"):
             with self.subTest(host=host):
                 self.assertEqual(template_policy(host), "hinet")
+        for host in ("www.douban.com", "movie.douban.com"):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "DIRECT")
+        for host in ("www.themoviedb.org", "api.themoviedb.org", "image.tmdb.org"):
+            with self.subTest(host=host):
+                self.assertEqual(template_policy(host), "us")
         self.assertNotEqual(template_policy("ocsp.digicert.com"), "hinet")
         self.assertNotEqual(template_policy("ocsp.digicert.com"), "流媒体")
 
