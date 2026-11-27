@@ -13,7 +13,7 @@
 [Rule]
 # 阻断 HTTPDNS 直连 IP 调度，确保域名级 MITM 与分流规则稳定生效。
 DOMAIN,httpdns.bilivideo.com,REJECT
-# 可选 PCDN 节点策略（默认 DIRECT；改为 REJECT 强制客户端回退官方 upos CDN）。
+# 可选 PCDN 节点策略（默认 REJECT 强制客户端回退官方 upos CDN；需要 PCDN 时可改为 DIRECT）。
 DOMAIN-SUFFIX,mcdn.bilivideo.cn,{{{PCDN节点策略}}}
 DOMAIN-SUFFIX,szbdyd.com,{{{PCDN节点策略}}}
 

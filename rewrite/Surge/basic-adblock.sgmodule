@@ -3,11 +3,12 @@
 #!author=mulanshan
 #!category=AdBlock
 #!tag=基础去广告
-#!date=2026-11-13
+#!date=2026-11-27
 
 [Rule]
 # Google / AdMob 广告网络。来自 iPhone 请求日志与 Mac 月度流量统计。
 DOMAIN-SUFFIX,doubleclick.net,REJECT
+DOMAIN-SUFFIX,doubleclick-cn.net,REJECT
 DOMAIN-SUFFIX,googleadservices.com,REJECT
 DOMAIN-SUFFIX,googlesyndication.com,REJECT
 DOMAIN-SUFFIX,googleadsserving.cn,REJECT

@@ -189,9 +189,9 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/basic-adblo
 这是以后统一使用的去广告入口。主配置 `[Rule]` 不再手工添加去广告 ruleset；模块集中维护跨 App
 广告网络和少量日志确认的精确应用规则，模块规则由 Surge 自动插入主配置规则顶部。
 
-当前范围（119 条精确规则）：
+当前范围（120 条精确规则）：
 
-- Google / AdMob 广告：DoubleClick、Google Ad Services、Google Syndication、`app-ads-services.com` 等
+- Google / AdMob 广告：DoubleClick（`doubleclick.net`、`doubleclick-cn.net`）、Google Ad Services、Google Syndication、`app-ads-services.com` 等
 - 腾讯广告 SDK：GDT / 优量汇的明确广告入口（`a/c/mi/rpt/v/win.gdt.qq.com`、`sdk/sdkreport/tangram.e.qq.com` 等）
 - 字节 / 穿山甲：专用穿山甲 SDK/DSP 域（`pangolin-sdk-toutiao*`、`pangolin-dsp-toutiao.com`）与日志已确认的广告素材主机
 - 国内移动广告交易与聚合 SDK：`tanx.com`、`adukwai.com`、`anythinktech.com` 及快手/Sigmob/百青藤精确 SDK 入口
@@ -341,7 +341,7 @@ https://raw.githubusercontent.com/mulanshan/surge/main/rewrite/Surge/bilibili-se
 - 清理白名单 JSON 接口（开屏 `/x/v2/splash/*`、首页推荐流与竖屏 Story 流 `/x/v2/feed/index*`、搜索推广 `/x/v2/search/square`、直播间广告横幅），精准区分真广告与 `is_ad_loc` 正常推荐视频
 - 清理白名单 HTTP/2 一元未压缩 gRPC Protobuf 接口（视频详情与相关推荐 `viewunite.v1` / `view.v1`、评论区商业条 `reply.v1` 并完整保留 UP 主置顶评论 `up_top`、动态流广告卡 `dynamic.v2` `DYNAMIC_TYPE_AD`）
 - 精确拒绝 `httpdns.bilivideo.com` 防止绕过域名级 MITM，不整域拒绝 `bilibili.com` 或 `cm.bilibili.com`，不手写宽泛 `UDP REJECT`
-- 提供可选参数开关：`隐藏底栏会员购`（默认 `false`）与 `PCDN节点策略`（默认 `DIRECT`，可改为 `REJECT`）
+- 提供可选参数开关：`隐藏底栏会员购`（默认 `false`）与 `PCDN节点策略`（默认 `REJECT`，需要 PCDN 时可改为 `DIRECT`）
 - 账号、大会员、登录、钱包、支付、播放流与弹幕包不在改写范围内；不使用第三方脚本，不记录或上传原始请求/响应
 
 ## rule / Surge
@@ -464,20 +464,20 @@ Resolve 版。当前主配置没有引用完整 Amazon 规则，只保留更细�
 文件：[rule/Surge/douban.list](rule/Surge/douban.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douban.list,hinet,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/douban.list,DIRECT,extended-matching,no-resolve
 ```
 
-覆盖豆瓣网页、移动网页、App/API 与 `douban.fm` 这些带登录 Cookie 的域名。当前活跃配置与 mulanshan sing-box 网关（`Douban-Selector` → `HiNet-Cookie-Sync`）统一走同一台台湾 HiNet 出口，避免浏览器与 CookieCloud 同步到服务器的 Cookie 因出口 IP 不同而失效。不带 Cookie 的图片 CDN `doubanio.com` 不在此列表中，会落到 `china-direct` 直连（与 sing-box 一致），不占用 HiNet 带宽。
+覆盖豆瓣网页、移动网页、App/API 与 `douban.fm` 这些带登录 Cookie 的域名。日常状态下活跃配置与 mulanshan sing-box 网关（`Douban-Selector` → `direct`）及 Emby 神医助手（刮削白名单模式）统一走家庭宽带 `DIRECT` 直连，保持浏览器与 CookieCloud 同出口 IP；当未来需要大批量刮削时，可将此处与 sing-box `Douban-Selector` 同步切回台湾 `hinet` 出口。不带 Cookie 的图片 CDN `doubanio.com` 始终走 `DIRECT` 直连。
 
 ### TMDb
 
 文件：[rule/Surge/tmdb.list](rule/Surge/tmdb.list)
 
 ```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,hinet,extended-matching,no-resolve
+RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/tmdb.list,us,extended-matching,no-resolve
 ```
 
-覆盖 The Movie Database 网站、API 和图片资源域名。当前活跃配置（`DMIT-Common.dconf`）与参考模板均使用台湾出口 `hinet`；使用时按自己的策略组替换。
+覆盖 The Movie Database 网站、API 和图片资源域名。当前活跃配置（`DMIT-Common.dconf`）与参考模板均对齐 mulanshan sing-box 网关（`Metadata-CDN`）走单跳高速出口 `us`；使用时按自己的策略组替换。
 
 ### Docker / OCI 镜像拉取
 
