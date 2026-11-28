@@ -88,21 +88,24 @@ class AIRoutingTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
 
-    def test_shopping_list_routes_storefront_and_payment_chain_to_ziliudi(self):
-        rules = payload(ROOT / "rule/Surge/shopping.list")
-        self.assertTrue(rules)
-        for rule in rules:
-            with self.subTest(rule=rule):
-                self.assertTrue(rule.startswith(("DOMAIN,", "DOMAIN-SUFFIX,")))
+    def test_oyunfor_paytr_and_3ds_route_direct_without_shopping_list(self):
+        self.assertFalse((ROOT / "rule/Surge/shopping.list").exists())
         for host in (
             "www.oyunfor.com",
             "node2.oyunfor.com",
             "www.paytr.com",
             "acs.bkm.com.tr",
             "3dsecure.isbank.com.tr",
+            "centinelapi.cardinalcommerce.com",
+            "secure.visa.com",
+            "verifiedbyvisa.com",
+            "acs.arcot.com",
+            "acs.modirum.com",
+            "www.mastercard.com",
+            "acs.mastercard.us",
         ):
             with self.subTest(host=host):
-                self.assertEqual(template_policy(host), "自留地")
+                self.assertEqual(template_policy(host), "DIRECT")
 
     def test_web_video_list_routes_sites_and_media_cdns_to_us(self):
         rules = payload(ROOT / "rule/Surge/web-video.list")
