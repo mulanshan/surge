@@ -425,16 +425,6 @@ RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/web-v
 
 覆盖海外大流量网页视频与在线视频 CDN（Pornhub 完整域名与 `phncdn.com`/`phprcdn.com`/`ypncdn.com` 媒体 CDN、麻豆及常见成人网页视频站、Twitch、Vimeo、Dailymotion、Kick），统一走 `us`（DMIT 优化大流量线路），避免网页与视频流 CDN 分裂落入 `global` / `FINAL` 消耗阿里云 ECS 中转流量。全部采用精确 `DOMAIN-SUFFIX` 规则。
 
-### 购物与地区支付
-
-文件：[rule/Surge/shopping.list](rule/Surge/shopping.list)
-
-```ini
-RULE-SET,https://raw.githubusercontent.com/mulanshan/surge/main/rule/Surge/shopping.list,自留地,extended-matching,no-resolve
-```
-
-覆盖海外区域购物与支付跳转链路（当前包含土耳其 `oyunfor.com`、PayTR 支付网关 `paytr.com` 及土耳其银行 3DS 验证域名 `bkm.com.tr`、`isbank.com.tr`），全部采用精确 `DOMAIN-SUFFIX` 规则，确保下单站点与支付跳转同源走策略组 `自留地`（例如土耳其出口），避免跨区风控拒付。
-
 ### Apple 系统服务
 
 文件：[rule/Surge/generated/apple.list](rule/Surge/generated/apple.list)
